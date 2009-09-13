@@ -19,12 +19,14 @@ import Text.Printf
 import Prelude hiding (catch)
 import Debug.Trace
 import System.IO
+import System.Random.Mersenne (MTGen)
 import Graphics.Rendering.Chart.Simple
 import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
 import Statistics.Resampling (resample)
-import System.Random.Mersenne
-import Statistics.Function (createU)
+import Statistics.Function (createU, sort)
 import Statistics.Types (Sample)
+import Statistics.KernelDensity
+import Statistics.Quantile as Q (weightedAvg)
 import qualified Statistics.Function as F
 
 data Config = Config {
@@ -156,15 +158,6 @@ runBenchmark prm env (Benchmark desc b) = do
     rpt n k | k <= 0    = return ()
             | otherwise = run b k >> rpt n (k-1)
 
-simplePDF :: (Double -> Double)
-          -> (Double -> Double -> Double -> Double -> Double)
-          -> Sample
-          -> (Points, UArr Double)
-simplePDF fbw fpdf sample = (points, estimatePDF fpdf bw sample points)
-    where points = choosePDFPoints numPoints bw sample
-          bw = bandwidth fbw sample
-          numPoints = min (lengthU sample) 100
-
 fib :: Int -> Int
 fib 0 = 0
 fib 1 = 1
@@ -201,9 +194,9 @@ bchart gen b = do
   prm <- getParams
   env <- sampleEnvironment prm
   (actions, times) <- runBenchmark prm env b
-  let (points, pdf) = simplePDF epanechnikovBW epanechnikovPDF times
+  let (points, pdf) = epanechnikovPDF 100 times
   writeFile "times.dat" (unlines . map show . fromU $ times)
-  plotWindow [(0::Double)..] (fromU . unsort . sort $ times) ("run"::String) ("times"::String)
+  plotWindow [(0::Double)..] (fromU . sort $ times) ("run"::String) ("times"::String)
   plotWindow (fromU . fromPoints $ points) (fromU pdf) ("points"::String) ("pdf"::String)
   let ests = [mean,stddev]
   res <- resample gen ests 10 times
@@ -266,102 +259,6 @@ main = benchmark [bench "sleep 0.1" $ threadDelay 100000,
                   bench "return nothing" $ \(k::Int) -> (1::Int),
                   bench "empty putStr" $ putStr ""]
 
-newtype Sorted a = Sorted { unsort :: a }
-    deriving (Eq, Ord, Show)
-
-instance Functor Sorted where
-    fmap f (Sorted a) = Sorted (f a)
-
-sort :: (UA a, Ord a) => UArr a -> Sorted (UArr a)
-sort = Sorted . F.sort
-
-isSorted :: (UA a, Ord a) => UArr a -> Bool
-isSorted a = sort a == Sorted a
-
--- | Two divided by the square root of pi.
-m_2_sqrt_pi = 2 / sqrt pi
-
--- | One divided by the square root of two.
-m_sqrt_1_2 = 1 / sqrt 2
-
--- | Bandwidth estimator for an Epanechnikov kernel.
-epanechnikovBW :: Double -> Double
-epanechnikovBW n = (80 / (n * m_2_sqrt_pi)) ** 0.2
-
--- | Bandwidth estimator for a Gaussian kernel.
-gaussianBW :: Double -> Double
-gaussianBW n = (4 / (n * 3)) ** 0.2
-
--- | Compute the optimal bandwidth from the observed data for the given
--- kernel.
-bandwidth :: (Double -> Double)
-          -> Sample
-          -> Double
-bandwidth k values = stddev values * k (fromIntegral $ lengthU values)
-
-newtype Points = Points { fromPoints :: UArr Double }
-
--- | Choose a uniform range of points at which to estimate a sample's
--- probability density function.
---
--- If you are using a Gaussian kernel, multiply the sample's bandwidth
--- by 3 before passing it to this function.
-choosePDFPoints :: Int             -- ^ Number of points to select
-                -> Double          -- ^ Sample bandwidth
-                -> Sample          -- ^ Input data
-                -> Points
-choosePDFPoints n h sample = Points . mapU f $ enumFromToU 0 n'
-  where lo  = minimumU sample - h
-        hi  = maximumU sample + h
-        d   = (hi - lo) / fromIntegral n'
-        f i = lo + fromIntegral i * d
-        n'  = n - 1
-
--- | Epanechnikov kernel for probability density function estimation.
-epanechnikovPDF :: Double       -- ^ Scaling factor (1\//nh/)
-                -> Double       -- ^ Bandwidth (/h/)
-                -> Double       -- ^ Point at which to sample input (/p/)
-                -> Double       -- ^ Sample value (/v/)
-                -> Double
-epanechnikovPDF f h p v
-    | abs u <= 1 = f * (1 - u * u)
-    | otherwise  = 0
-    where u = (v - p) / (h * 0.75)
-
-gaussianPDF f h p v = exp (-0.5 * u * u) * g
-    where u = (v - p) / h
-          g = f * m_2_sqrt_pi * m_sqrt_1_2
-
--- | Kernel density estimator, providing a non-parametric way of
--- estimating the probability density function (or /PDF/) of a random
--- variable.
-estimatePDF :: (Double -> Double -> Double -> Double -> Double)
-            -- ^ Kernel function
-            -> Double           -- ^ Bandwidth
-            -> Sample           -- ^ Sample data
-            -> Points           -- ^ Points in sample range at which to estimate
-            -> UArr Double
-estimatePDF kernel h sample = mapU k . fromPoints
-  where
-    k p = sumU . mapU (kernel f h p) $ sample
-    f   = 1 / (h * fromIntegral (lengthU sample))
-
--- | Use the weighted average method to estimate the @k@th
--- @q@-quantile of a set of samples.
-quantile :: Int -> Int -> Sorted Sample -> Double
-quantile k q (Sorted a) =
-    assert (q >= 2) .
-    assert (k >= 0) .
-    assert (k < q) .
-    assert (allU (not . isNaN) a) $
-    aj + g * (aj1 - aj)
-  where
-    j   = floor idx
-    idx = fromIntegral (lengthU a - 1) * fromIntegral k / fromIntegral q
-    g   = idx - fromIntegral j
-    aj  = indexU a j
-    aj1 = indexU a (j+1)
-
 data Outliers = Outliers {
       samplesSeen :: !Int
     , lowSevere :: !Int
@@ -379,8 +276,8 @@ addOutliers (Outliers s a b c d) (Outliers t w x y z) =
     Outliers (s+t) (a+w) (b+x) (c+y) (d+z)
 
 -- | Classify outliers in a data set, using the boxplot technique.
-classifyOutliers :: Sorted Sample -> Outliers
-classifyOutliers sa = foldlU ((. outlier) . mappend) mempty (unsort sa)
+classifyOutliers :: Sample -> Outliers
+classifyOutliers sa = foldlU ((. outlier) . mappend) mempty (sort sa)
     where outlier e = Outliers {
                         samplesSeen = 1
                       , lowSevere = if e <= loS then 1 else 0
@@ -392,8 +289,8 @@ classifyOutliers sa = foldlU ((. outlier) . mappend) mempty (unsort sa)
           loM = q1 - (iqr * 1.5)
           hiM = q3 + (iqr * 1.5)
           hiS = q3 + (iqr * 3)
-          q1  = quantile 1 4 sa
-          q3  = quantile 3 4 sa
+          q1  = Q.weightedAvg 1 4 sa
+          q3  = Q.weightedAvg 3 4 sa
           iqr = q3 - q1
 
 autocovariance :: Sample -> UArr Double
