@@ -8,6 +8,7 @@ module Criterion
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
+import Data.Function (on)
 import Control.Parallel.Strategies
 import Data.Array.Vector
 import Math.Statistics.Fusion
@@ -163,19 +164,25 @@ fib 0 = 0
 fib 1 = 1
 fib n = fib (n-1) + fib (n-2)
 
-sdInfo :: Estimate -> Estimate -> Double -> IO ()
-sdInfo m sd a = do
-  hPrintf stdout "variance introduced by outliers: %.3f%%\n" (varOutMin * 100)
-  hPrintf stdout "variance is %s by outliers\n" wibble
+data OutlierVariance = Unaffected
+                     | Slight
+                     | Moderate
+                     | Severe
+                       deriving (Eq, Ord, Show)
+
+minBy :: (Ord b) => (a -> b) -> a -> a -> b
+minBy = on min
+
+outlierVariance :: Estimate -> Estimate -> Double -> (OutlierVariance, Double)
+outlierVariance m sd a = (effect, varOutMin)
   where
-    wibble :: String
-      | varOutMin < 0.01 = "unaffected"
-      | varOutMin < 0.1 = "somewhat inflated"
-      | varOutMin < 0.5 = "inflated"
-      | otherwise = "severely inflated"
-    varOutMin = min (varOutliers 1)
-                    (varOutliers (min (cMax 0) (cMax muGMin))) / sB2
-    varOutliers c = (ac / a) * (sB2 - ac * sG2) where ac = a - c
+    effect | varOutMin < 0.01 = Unaffected
+           | varOutMin < 0.1  = Slight
+           | varOutMin < 0.5  = Moderate
+           | otherwise        = Severe
+    varOutMin = (minBy varOutliers 1 (minBy cMax 0 muGMin)) / sB2
+    varOutliers c = (ac / a) * (sB2 - ac * sG2)
+        where ac = a - c
     sigmaB = estPoint sd
     muA = estPoint m / a
     muGMin = muA / 2
@@ -188,6 +195,19 @@ sdInfo m sd a = do
         k0 = -a * a * maMX2
         maMX2 = k * 2 where k = muA - x
         det = k1 * k1 - 4 * sG2 * k0
+
+sdInfo :: Estimate -> Estimate -> Double -> IO ()
+sdInfo m sd a = do
+  hPrintf stdout "variance introduced by outliers: %.3f%%\n" (v * 100)
+  hPrintf stdout "variance is %s by outliers\n" wibble
+  where
+    wibble :: String
+           = case effect of
+               Unaffected -> "unaffected"
+               Slight -> "somewhat inflated"
+               Moderate -> "inflated"
+               Severe -> "severely inflated"
+    (effect, v) = outlierVariance m sd a
 
 bchart :: MTGen -> Benchmark -> IO ()
 bchart gen b = do
