@@ -20,7 +20,7 @@ import Text.Printf
 import Prelude hiding (catch)
 import Debug.Trace
 import System.IO
-import System.Random.Mersenne (MTGen)
+import System.Random.Mersenne (MTGen, getStdGen)
 import Graphics.Rendering.Chart.Simple
 import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
 import Statistics.Resampling (resample)
@@ -218,6 +218,7 @@ bchart gen b = do
   writeFile "times.dat" (unlines . map show . fromU $ times)
   plotWindow [(0::Double)..] (fromU . sort $ times) ("run"::String) ("times"::String)
   plotWindow (fromU . fromPoints $ points) (fromU pdf) ("points"::String) ("pdf"::String)
+  print (points,pdf)
   let ests = [mean,stddev]
   res <- resample gen ests 10 times
   let [em,es] = bootstrapBCA 0.95 times ests res
