@@ -1,11 +1,13 @@
 {-# LANGUAGE BangPatterns, DeriveDataTypeable, FlexibleInstances, ScopedTypeVariables, TypeOperators, GADTs #-}
 
---module Criterion where
+module Criterion
+    (
+     main
+    ) where
 
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
-import Control.Monad.ST
 import Control.Parallel.Strategies
 import Data.Array.Vector
 import Math.Statistics.Fusion
@@ -18,10 +20,11 @@ import Prelude hiding (catch)
 import Debug.Trace
 import System.IO
 import Graphics.Rendering.Chart.Simple
-import qualified Data.Map as M
-import Bootstrap
+import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
+import Statistics.Resampling (resample)
 import System.Random.Mersenne
 import Statistics.Function (createU)
+import Statistics.Types (Sample)
 import qualified Statistics.Function as F
 
 data Config = Config {
@@ -188,10 +191,10 @@ sdInfo m sd a = do
     sB2 = sigmaB * sigmaB
     cMax x = fromIntegral . floor $ -2 * k0 / (k1 + sqrt det)
       where
-	k1 = sB2 - a * sG2 + a * maMX2
-	k0 = -a * a * maMX2
+        k1 = sB2 - a * sG2 + a * maMX2
+        k0 = -a * a * maMX2
         maMX2 = k * 2 where k = muA - x
-	det = k1 * k1 - 4 * sG2 * k0
+        det = k1 * k1 - 4 * sG2 * k0
 
 bchart :: MTGen -> Benchmark -> IO ()
 bchart gen b = do
@@ -203,7 +206,7 @@ bchart gen b = do
   plotWindow [(0::Double)..] (fromU . unsort . sort $ times) ("run"::String) ("times"::String)
   plotWindow (fromU . fromPoints $ points) (fromU pdf) ("points"::String) ("pdf"::String)
   let ests = [mean,stddev]
-  res <- doResampling gen ests 10 times
+  res <- resample gen ests 10 times
   let [em,es] = bootstrapBCA 0.95 times ests res
   tell "mean" em
   tell "stddev" es
@@ -443,18 +446,18 @@ nums = toU [47, 64, 23, 71, 38, 64, 55, 41, 59, 48]
 
 n70 :: UArr Double
 n70 = toU [ 47, 64, 23, 71, 38, 64, 55, 41, 59, 48,
-	    71, 35, 57, 40, 58, 44, 80, 55, 37, 74,
-	    51, 57, 50, 60, 45, 57, 50, 45, 25, 59,
-	    50, 71, 56, 74, 50, 58, 45, 54, 36, 54,
-	    48, 55, 45, 57, 50, 62, 44, 64, 43, 52,
-	    38, 59, 55, 41, 53, 49, 34, 35, 54, 45,
-	    68, 38, 50, 60, 39, 59, 40, 57, 54, 23 ]
+            71, 35, 57, 40, 58, 44, 80, 55, 37, 74,
+            51, 57, 50, 60, 45, 57, 50, 45, 25, 59,
+            50, 71, 56, 74, 50, 58, 45, 54, 36, 54,
+            48, 55, 45, 57, 50, 62, 44, 64, 43, 52,
+            38, 59, 55, 41, 53, 49, 34, 35, 54, 45,
+            68, 38, 50, 60, 39, 59, 40, 57, 54, 23 ]
 
 r15 :: UArr Double
 r15 = toU [ 1.0,
-	    -- BOX-JENKINS does not have this lag 0 result in Table
-	    -- 2.2 on p. 34, but you need it in order to compare with
-	    -- r below
-	    -0.39, 0.30, -0.17, 0.07, -0.10,
-	    -0.05, 0.04, -0.04, -0.01, 0.01,
-	    0.11, -0.07, 0.15, 0.04, -0.01 ]
+            -- BOX-JENKINS does not have this lag 0 result in Table
+            -- 2.2 on p. 34, but you need it in order to compare with
+            -- r below
+            -0.39, 0.30, -0.17, 0.07, -0.10,
+            -0.05, 0.04, -0.04, -0.01, 0.01,
+            0.11, -0.07, 0.15, 0.04, -0.01 ]

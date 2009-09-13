@@ -23,7 +23,6 @@ library
     statistics-fusion,
     uvector,
     uvector-algorithms >= 0.2,
-    containers,
     Chart,
     statistics,
     time,
