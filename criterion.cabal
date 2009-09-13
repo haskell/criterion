@@ -17,8 +17,16 @@ library
     Criterion
 
   build-depends:
-    base       < 5
-    bytestring >= 0.9 && < 1.0
+    base       < 5,
+    bytestring >= 0.9 && < 1.0,
+    mersenne-random,
+    statistics-fusion,
+    uvector,
+    uvector-algorithms==0.1.1,
+    containers,
+    Chart,
+    time,
+    parallel
 
   -- gather extensive profiling data for now
   ghc-prof-options: -auto-all
