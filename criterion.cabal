@@ -22,9 +22,10 @@ library
     mersenne-random,
     statistics-fusion,
     uvector,
-    uvector-algorithms==0.1.1,
+    uvector-algorithms >= 0.2,
     containers,
     Chart,
+    statistics,
     time,
     parallel
 

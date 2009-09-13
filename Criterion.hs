@@ -7,8 +7,6 @@ import Control.Exception
 import Control.Monad
 import Control.Monad.ST
 import Control.Parallel.Strategies
-import Data.Array.Vector.Algorithms.Immutable (apply)
-import qualified Data.Array.Vector.Algorithms.Intro as I (sort)
 import Data.Array.Vector
 import Math.Statistics.Fusion
 import Data.Int
@@ -21,9 +19,10 @@ import Debug.Trace
 import System.IO
 import Graphics.Rendering.Chart.Simple
 import qualified Data.Map as M
-import VectorUtil
 import Bootstrap
 import System.Random.Mersenne
+import Statistics.Function (createU)
+import qualified Statistics.Function as F
 
 data Config = Config {
       cfgConfidence :: Double
@@ -271,7 +270,7 @@ instance Functor Sorted where
     fmap f (Sorted a) = Sorted (f a)
 
 sort :: (UA a, Ord a) => UArr a -> Sorted (UArr a)
-sort a = Sorted (apply I.sort a)
+sort = Sorted . F.sort
 
 isSorted :: (UA a, Ord a) => UArr a -> Bool
 isSorted a = sort a == Sorted a

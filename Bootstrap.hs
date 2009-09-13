@@ -4,10 +4,10 @@ import Control.Monad
 import Control.Monad.ST
 import Data.Array.Vector
 import System.Random.Mersenne
-import VectorUtil
 import Data.Array.Vector.Algorithms.Intro (sort)
 import Distribution.Normal hiding (mean)
 import Math.Statistics.Fusion
+import Statistics.Function (createU)
 
 type Estimator = UArr Double -> Double
 
