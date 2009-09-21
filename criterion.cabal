@@ -19,12 +19,11 @@ library
   build-depends:
     base       < 5,
     bytestring >= 0.9 && < 1.0,
-    mersenne-random,
     statistics-fusion,
     uvector,
     uvector-algorithms >= 0.2,
     Chart,
-    statistics,
+    statistics >= 0.3.2,
     time,
     parallel
 

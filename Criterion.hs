@@ -8,7 +8,6 @@ module Criterion
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
-import Data.Function (on)
 import Control.Parallel.Strategies
 import Data.Array.Vector
 import Math.Statistics.Fusion
@@ -20,13 +19,13 @@ import Text.Printf
 import Prelude hiding (catch)
 import Debug.Trace
 import System.IO
-import System.Random.Mersenne (MTGen, getStdGen)
 import Graphics.Rendering.Chart.Simple
 import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
 import Statistics.Resampling (resample)
-import Statistics.Function (createU, sort)
+import Statistics.Function (createIO, sort)
 import Statistics.Types (Sample)
 import Statistics.KernelDensity
+import Statistics.RandomVariate
 import Statistics.Quantile as Q (weightedAvg)
 import qualified Statistics.Function as F
 
@@ -80,15 +79,15 @@ flush :: Params -> IO ()
 flush prm = hFlush stdout
 
 sampleClockResolution k = do
-  times <- createU (k+1) (const getTime)
+  times <- createIO (k+1) (const getTime)
   return (lengthU times,
           tailU . filterU (>=0) . zipWithU (-) (tailU times) $ times)
 
 sampleClockCost timeLimit = do
-  let act k = fst `fmap` time (repeatTimes k getTime)
+  let act k = fst `fmap` time (replicateM_ k getTime)
   act 10
   (_, seed, elapsed) <- runForAtLeast 0.01 10000 act
-  times <- createU (ceiling (timeLimit / elapsed)) (const (act seed))
+  times <- createIO (ceiling (timeLimit / elapsed)) (const (act seed))
   return (lengthU times * seed, mapU (/ fromIntegral seed) times)
 
 anyOutliers :: Outliers -> Bool
@@ -138,26 +137,24 @@ sampleEnvironment prm = do
 getTime :: IO Double
 getTime = (fromRational . toRational) `fmap` getPOSIXTime
       
-repeatTimes :: Int -> IO a -> IO ()
-repeatTimes k = sequence_ . take k . repeat
-
 runBenchmark :: Params -> Environment -> Benchmark -> IO (Int, Sample)
 runBenchmark prm env (Benchmark desc b) = do
   note prm "\nbenchmarking %s\n" desc
-  runForAtLeast 0.1 10000 (\k -> repeatTimes k getTime)
+  runForAtLeast 0.1 10000 (\k -> replicateM_ k getTime)
   let runTime    = envClockResolution env * 100000
       settleTime = 0.01
-  (elapsed, seed, _) <- runForAtLeast settleTime 1 (rpt 0)
-  let ratio = settleTime / elapsed
-      newSeed = ceiling . toRational $ fromIntegral seed * (settleTime / elapsed)
-      niters = ceiling . toRational $ runTime / settleTime
+  (elapsed, seed, _) <- runForAtLeast settleTime 1 rpt
+  let newSeed = ceiling $ fromIntegral seed * (settleTime / elapsed)
+      niters = ceiling $ runTime / settleTime
   times <- mapU ((/ fromIntegral newSeed) . subtract (envClockCost env)) `fmap`
-           createU niters (\k -> fmap fst . time . rpt k $ newSeed)
+           createIO niters (\k -> fmap fst . time . rpt $ newSeed)
   analyseMean prm times (lengthU times * newSeed)
   return (lengthU times * newSeed, times)
   where
-    rpt n k | k <= 0    = return ()
-            | otherwise = run b k >> rpt n (k-1)
+    rpt k | k <= 0    = return ()
+          | otherwise = run b k >> rpt (k-1)
+
+-- getStdGen >>= \g -> bchart g . bench "fib 20" $ \(k::Int) -> fib 20
 
 fib :: Int -> Int
 fib 0 = 0
@@ -171,7 +168,7 @@ data OutlierVariance = Unaffected
                        deriving (Eq, Ord, Show)
 
 minBy :: (Ord b) => (a -> b) -> a -> a -> b
-minBy = on min
+minBy f a b = min (f a) (f b)
 
 outlierVariance :: Estimate -> Estimate -> Double -> (OutlierVariance, Double)
 outlierVariance m sd a = (effect, varOutMin)
@@ -180,21 +177,21 @@ outlierVariance m sd a = (effect, varOutMin)
            | varOutMin < 0.1  = Slight
            | varOutMin < 0.5  = Moderate
            | otherwise        = Severe
-    varOutMin = (minBy varOutliers 1 (minBy cMax 0 muGMin)) / sB2
-    varOutliers c = (ac / a) * (sB2 - ac * sG2)
-        where ac = a - c
-    sigmaB = estPoint sd
-    muA = estPoint m / a
-    muGMin = muA / 2
-    sigmaG = min (muGMin / 4) (sigmaB / sqrt a)
-    sG2 = sigmaG * sigmaG
-    sB2 = sigmaB * sigmaB
-    cMax x = fromIntegral . floor $ -2 * k0 / (k1 + sqrt det)
+    varOutMin = (minBy varOut 1 (minBy cMax 0 µgMin)) / σb2
+    varOut c  = (ac / a) * (σb2 - ac * σg2) where ac = a - c
+    σb        = estPoint sd
+    µa        = estPoint m / a
+    µgMin     = µa / 2
+    σg        = min (µgMin / 4) (σb / sqrt a)
+    σg2       = σg * σg
+    σb2       = σb * σb
+    cMax x    = fromIntegral . floor $ -2 * k0 / (k1 + sqrt det)
       where
-        k1 = sB2 - a * sG2 + a * maMX2
-        k0 = -a * a * maMX2
-        maMX2 = k * 2 where k = muA - x
-        det = k1 * k1 - 4 * sG2 * k0
+        k1    = σb2 - a * σg2 + ad
+        k0    = -a * ad
+        ad    = a * d
+        d     = k * 2 where k = µa - x
+        det   = k1 * k1 - 4 * σg2 * k0
 
 sdInfo :: Estimate -> Estimate -> Double -> IO ()
 sdInfo m sd a = do
@@ -209,8 +206,8 @@ sdInfo m sd a = do
                Severe -> "severely inflated"
     (effect, v) = outlierVariance m sd a
 
-bchart :: MTGen -> Benchmark -> IO ()
-bchart gen b = do
+bchart :: Benchmark -> IO ()
+bchart b = do
   prm <- getParams
   env <- sampleEnvironment prm
   (actions, times) <- runBenchmark prm env b
@@ -218,9 +215,8 @@ bchart gen b = do
   writeFile "times.dat" (unlines . map show . fromU $ times)
   plotWindow [(0::Double)..] (fromU . sort $ times) ("run"::String) ("times"::String)
   plotWindow (fromU . fromPoints $ points) (fromU pdf) ("points"::String) ("pdf"::String)
-  print (points,pdf)
   let ests = [mean,stddev]
-  res <- resample gen ests 10 times
+  res <- withSystemRandom (\gen -> resample gen ests 10 times)
   let [em,es] = bootstrapBCA 0.95 times ests res
   tell "mean" em
   tell "stddev" es
@@ -314,24 +310,6 @@ classifyOutliers sa = foldlU ((. outlier) . mappend) mempty (sort sa)
           q3  = Q.weightedAvg 3 4 sa
           iqr = q3 - q1
 
-autocovariance :: Sample -> UArr Double
-autocovariance a = mapU f . enumFromToU 0 $ l-2
-  where f k = sumU (zipWithU (*) (takeU (l-k) c) (sliceU c k (l-k)))
-              / fromIntegral l
-        c   = mapU (subtract (mean a)) a
-        l   = lengthU a
-
--- | Given a data set, compute its autocorrelation function, and the upper
--- and lower bounds of confidence intervals for each element.
-autocorrelation :: Sample -> (UArr Double, UArr Double, UArr Double)
-autocorrelation a = (r, ci (-), ci (+))
-  where r           = mapU (/ headU c) c
-          where c   = autocovariance a
-        dllse       = mapU f . scanl1U (+) . mapU (join (*)) $ r
-          where f v = 1.96 * sqrt ((v * 2 + 1) / l)
-        l           = fromIntegral (lengthU a)
-        ci f        = consU 1 . tailU . mapU (f (-1/l)) $ dllse
-
 runForAtLeast :: Double -> Int -> (Int -> IO a) -> IO (Double, Int, a)
 runForAtLeast howLong initSeed act = loop initSeed (0::Int) =<< getTime
   where
@@ -343,39 +321,3 @@ runForAtLeast howLong initSeed act = loop initSeed (0::Int) =<< getTime
       if elapsed < howLong
         then loop (seed * 2) (iters+1) initTime
         else return (elapsed, seed, result)
-
-allSane :: UArr Double -> Bool
-allSane = allU sane
-    where sane e = not (isNaN e || isInfinite e)
-
-repeatFor :: Double -> IO a -> IO (Double, [a])
-repeatFor howlong act = loop [] =<< getTime
-  where
-    loop acc initTime = do
-      now <- getTime
-      if now - initTime > howlong
-        then return (now - initTime, acc)
-        else do
-          a <- act
-          loop (a:acc) initTime
-
-nums :: UArr Double
-nums = toU [47, 64, 23, 71, 38, 64, 55, 41, 59, 48]
-
-n70 :: UArr Double
-n70 = toU [ 47, 64, 23, 71, 38, 64, 55, 41, 59, 48,
-            71, 35, 57, 40, 58, 44, 80, 55, 37, 74,
-            51, 57, 50, 60, 45, 57, 50, 45, 25, 59,
-            50, 71, 56, 74, 50, 58, 45, 54, 36, 54,
-            48, 55, 45, 57, 50, 62, 44, 64, 43, 52,
-            38, 59, 55, 41, 53, 49, 34, 35, 54, 45,
-            68, 38, 50, 60, 39, 59, 40, 57, 54, 23 ]
-
-r15 :: UArr Double
-r15 = toU [ 1.0,
-            -- BOX-JENKINS does not have this lag 0 result in Table
-            -- 2.2 on p. 34, but you need it in order to compare with
-            -- r below
-            -0.39, 0.30, -0.17, 0.07, -0.10,
-            -0.05, 0.04, -0.04, -0.01, 0.01,
-            0.11, -0.07, 0.15, 0.04, -0.01 ]
