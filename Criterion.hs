@@ -2,7 +2,9 @@
 
 module Criterion
     (
-     main
+      Benchmarkable(..)
+    , Benchmark
+    , bench
     ) where
 
 import Control.Concurrent
@@ -64,16 +66,21 @@ data Environment = Environment {
     , envClockCost :: Double
     } deriving (Eq, Read, Show)
 
-snd3 :: (a,b,c) -> b
-snd3 (_,b,_) = b
+snd3 :: (a :*: b :*: c) -> b
+snd3 (_ :*: b :*: _) = b
 
-thd3 :: (a,b,c) -> c
-thd3 (_,_,c) = c
+thd3 :: (a :*: b :*: c) -> c
+thd3 (_ :*: _:*: c) = c
 
 note :: (HPrintfType r) => Params -> String -> r
 note prm msg = if True
                then hPrintf stdout msg
                else hPrintf (prmNull prm) msg
+
+prolix :: (HPrintfType r) => Params -> String -> r
+prolix prm msg = if True
+                 then hPrintf stdout msg
+                 else hPrintf (prmNull prm) msg
 
 flush :: Params -> IO ()
 flush prm = hFlush stdout
@@ -84,22 +91,19 @@ sampleClockResolution k = do
           tailU . filterU (>=0) . zipWithU (-) (tailU times) $ times)
 
 sampleClockCost timeLimit = do
-  let act k = fst `fmap` time (replicateM_ k getTime)
+  let act k = time_ (replicateM_ k getTime)
   act 10
-  (_, seed, elapsed) <- runForAtLeast 0.01 10000 act
+  (_ :*: seed :*: elapsed) <- runForAtLeast 0.01 10000 act
   times <- createIO (ceiling (timeLimit / elapsed)) (const (act seed))
   return (lengthU times * seed, mapU (/ fromIntegral seed) times)
 
-anyOutliers :: Outliers -> Bool
-anyOutliers (Outliers _ a b c d) = a > 0 || b > 0 || c > 0 || d > 0
-
+countOutliers :: Outliers -> Int64
 countOutliers (Outliers _ a b c d) = a + b + c + d
 
 noteOutliers :: Params -> Outliers -> IO ()
 noteOutliers prm o = do
-  let frac :: Int -> Double
-      frac n = 100 * fromIntegral n / fromIntegral (samplesSeen o)
-      check :: Int -> String -> IO ()
+  let frac n = (100::Double) * fromIntegral n / fromIntegral (samplesSeen o)
+      check :: Int64 -> String -> IO ()
       check k d = when (frac k > 0) $
                   note prm "  %d (%.1g%%) %s\n" k (frac k) d
       outCount = countOutliers o
@@ -115,7 +119,7 @@ analyseMean :: Params -> UArr Double -> Int -> IO Double
 analyseMean prm a iters = do
   let m = mean a
   note prm "mean is %s (%d iterations, %d samples)\n" (secs m) iters (lengthU a)
-  noteOutliers prm . classifyOutliers . sort $ a
+  noteOutliers prm . classifyOutliers $ a
   return m
 
 sampleEnvironment :: Params -> IO Environment
@@ -134,32 +138,32 @@ sampleEnvironment prm = do
              , envClockCost = clockCost
              }
 
+fib :: Int -> Int
+fib 0 = 0
+fib 1 = 1
+fib n = fib (n-1) + fib (n-2)
+
 getTime :: IO Double
 getTime = (fromRational . toRational) `fmap` getPOSIXTime
       
 runBenchmark :: Params -> Environment -> Benchmark -> IO (Int, Sample)
 runBenchmark prm env (Benchmark desc b) = do
   note prm "\nbenchmarking %s\n" desc
-  runForAtLeast 0.1 10000 (\k -> replicateM_ k getTime)
-  let runTime    = envClockResolution env * 100000
-      settleTime = 0.01
-  (elapsed, seed, _) <- runForAtLeast settleTime 1 rpt
-  let newSeed = ceiling $ fromIntegral seed * (settleTime / elapsed)
-      niters = ceiling $ runTime / settleTime
-  times <- mapU ((/ fromIntegral newSeed) . subtract (envClockCost env)) `fmap`
-           createIO niters (\k -> fmap fst . time . rpt $ newSeed)
-  analyseMean prm times (lengthU times * newSeed)
-  return (lengthU times * newSeed, times)
+  runForAtLeast 0.1 10000 (`replicateM_` getTime)
+  let minTime    = envClockResolution env * 1000
+  (testTime :*: testIters :*: _) <- runForAtLeast (min minTime 0.1) 1 rpt
+  prolix prm "ran %d iterations in %s\n" testIters (secs testTime)
+  let newIters = ceiling $ minTime * fromIntegral testIters / testTime
+  print ("newIters",newIters)
+  times <- mapU ((/ fromIntegral newIters) . subtract (envClockCost env)) `fmap`
+           createIO newIters (\k -> time_ . rpt $ newIters)
+  analyseMean prm times (lengthU times * newIters)
+  return (lengthU times * newIters, times)
   where
     rpt k | k <= 0    = return ()
           | otherwise = run b k >> rpt (k-1)
 
 -- getStdGen >>= \g -> bchart g . bench "fib 20" $ \(k::Int) -> fib 20
-
-fib :: Int -> Int
-fib 0 = 0
-fib 1 = 1
-fib n = fib (n-1) + fib (n-2)
 
 data OutlierVariance = Unaffected
                      | Slight
@@ -233,12 +237,19 @@ benchmark bs = do
   env <- sampleEnvironment prm
   mapM_ (runBenchmark prm env) bs
 
-time :: IO a -> IO (Double, a)
+time :: IO a -> IO (Double :*: a)
 time act = do
   start <- getTime
   result <- act
   end <- getTime
-  return (end - start, result)
+  return (end - start :*: result)
+
+time_ :: IO a -> IO Double
+time_ act = do
+  start <- getTime
+  act
+  end <- getTime
+  return $! end - start
 
 busyLoop :: Int64 -> Int64
 busyLoop i | i <= 0 = i
@@ -272,16 +283,16 @@ bench = Benchmark
 instance Show Benchmark where
     show (Benchmark d _) = "Benchmark " ++ show d
 
-main = benchmark [bench "sleep 0.1" $ threadDelay 100000,
-                  bench "return nothing" $ \(k::Int) -> (1::Int),
-                  bench "empty putStr" $ putStr ""]
-
 data Outliers = Outliers {
-      samplesSeen :: !Int
-    , lowSevere :: !Int
-    , lowMild :: !Int
-    , highMild :: !Int
-    , highSevere :: !Int
+      samplesSeen :: {-# UNPACK #-} !Int64
+    , lowSevere   :: {-# UNPACK #-} !Int64
+    -- ^ More than 3 times the IQR below the first quartile.
+    , lowMild     :: {-# UNPACK #-} !Int64
+    -- ^ Between 1.5 and 3 times the IQR below the first quartile.
+    , highMild    :: {-# UNPACK #-} !Int64
+    -- ^ Between 1.5 and 3 times the IQR above the third quartile.
+    , highSevere  :: {-# UNPACK #-} !Int64
+    -- ^ More than 3 times the IQR above the third quartile.
     } deriving (Eq, Read, Show)
 
 instance Monoid Outliers where
@@ -294,7 +305,7 @@ addOutliers (Outliers s a b c d) (Outliers t w x y z) =
 
 -- | Classify outliers in a data set, using the boxplot technique.
 classifyOutliers :: Sample -> Outliers
-classifyOutliers sa = foldlU ((. outlier) . mappend) mempty (sort sa)
+classifyOutliers sa = foldlU ((. outlier) . mappend) mempty ssa
     where outlier e = Outliers {
                         samplesSeen = 1
                       , lowSevere = if e <= loS then 1 else 0
@@ -306,18 +317,19 @@ classifyOutliers sa = foldlU ((. outlier) . mappend) mempty (sort sa)
           loM = q1 - (iqr * 1.5)
           hiM = q3 + (iqr * 1.5)
           hiS = q3 + (iqr * 3)
-          q1  = Q.weightedAvg 1 4 sa
-          q3  = Q.weightedAvg 3 4 sa
+          q1  = Q.weightedAvg 1 4 ssa
+          q3  = Q.weightedAvg 3 4 ssa
+          ssa = sort sa
           iqr = q3 - q1
 
-runForAtLeast :: Double -> Int -> (Int -> IO a) -> IO (Double, Int, a)
+runForAtLeast :: Double -> Int -> (Int -> IO a) -> IO (Double :*: Int :*: a)
 runForAtLeast howLong initSeed act = loop initSeed (0::Int) =<< getTime
   where
     loop !seed !iters initTime = do
       now <- getTime
       when (now - initTime > howLong * 10) $
         fail (printf "took too long to run: seed %d, iters %d" seed iters)
-      (elapsed, result) <- time (act seed)
+      elapsed :*: result <- time (act seed)
       if elapsed < howLong
         then loop (seed * 2) (iters+1) initTime
-        else return (elapsed, seed, result)
+        else return (elapsed :*: seed :*: result)
