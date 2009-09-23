@@ -15,10 +15,15 @@ extra-source-files: README
 library
   exposed-modules:
     Criterion
+    Criterion.Config
+    Criterion.Main
+    Criterion.Plot
 
   build-depends:
     base       < 5,
     bytestring >= 0.9 && < 1.0,
+    containers,
+    filepath,
     statistics-fusion,
     uvector,
     uvector-algorithms >= 0.2,

@@ -5,12 +5,15 @@ module Criterion
       Benchmarkable(..)
     , Benchmark
     , bench
+    , sampleEnvironment
+    , runBenchmark
     ) where
 
 import Control.Concurrent
 import Control.Exception
 import Control.Monad
 import Control.Parallel.Strategies
+import Criterion.Config
 import Data.Array.Vector
 import Math.Statistics.Fusion
 import Data.Int
@@ -21,6 +24,7 @@ import Text.Printf
 import Prelude hiding (catch)
 import Debug.Trace
 import System.IO
+import Criterion.Types
 import Graphics.Rendering.Chart.Simple
 import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
 import Statistics.Resampling (resample)
@@ -30,36 +34,8 @@ import Statistics.KernelDensity
 import Statistics.RandomVariate
 import Statistics.Quantile as Q (weightedAvg)
 import qualified Statistics.Function as F
-
-data Config = Config {
-      cfgConfidence :: Double
-    } deriving (Eq, Read, Show, Typeable)
-
-defaultConfig = Config {
-                  cfgConfidence = 0.95
-                }
-
-data Params = Params {
-      prmConfig :: Config
-    , prmNull :: Handle
-    } deriving (Typeable)
-
-getParams :: IO Params
-getParams = do
-  null <- openFile "/dev/null" ReadWriteMode
-  return $ Params {
-               prmConfig = defaultConfig
-             , prmNull = null
-             }
-
-class Benchmarkable b where
-    run :: b -> Int -> IO ()
-
-instance (NFData a) => Benchmarkable (Int -> a) where
-    run f u = evaluate (f u) >> return ()
-
-instance Benchmarkable (IO a) where
-    run a _ = a >> return ()
+import System.IO.Unsafe
+import System.Mem
 
 data Environment = Environment {
       envClockResolution :: Double
@@ -72,71 +48,75 @@ snd3 (_ :*: b :*: _) = b
 thd3 :: (a :*: b :*: c) -> c
 thd3 (_ :*: _:*: c) = c
 
-note :: (HPrintfType r) => Params -> String -> r
-note prm msg = if True
+nullDev :: Handle
+nullDev = unsafePerformIO $ openBinaryFile "/dev/null" WriteMode
+{-# NOINLINE nullDev #-}
+
+note :: (HPrintfType r) => Config -> String -> r
+note cfg msg = if cfgVerbosity cfg > Quiet
                then hPrintf stdout msg
-               else hPrintf (prmNull prm) msg
+               else hPrintf nullDev msg
 
-prolix :: (HPrintfType r) => Params -> String -> r
-prolix prm msg = if True
+prolix :: (HPrintfType r) => Config -> String -> r
+prolix cfg msg = if cfgVerbosity cfg == Verbose
                  then hPrintf stdout msg
-                 else hPrintf (prmNull prm) msg
+                 else hPrintf nullDev msg
 
-flush :: Params -> IO ()
+flush :: Config -> IO ()
 flush prm = hFlush stdout
-
-sampleClockResolution k = do
-  times <- createIO (k+1) (const getTime)
-  return (lengthU times,
-          tailU . filterU (>=0) . zipWithU (-) (tailU times) $ times)
-
-sampleClockCost timeLimit = do
-  let act k = time_ (replicateM_ k getTime)
-  act 10
-  (_ :*: seed :*: elapsed) <- runForAtLeast 0.01 10000 act
-  times <- createIO (ceiling (timeLimit / elapsed)) (const (act seed))
-  return (lengthU times * seed, mapU (/ fromIntegral seed) times)
 
 countOutliers :: Outliers -> Int64
 countOutliers (Outliers _ a b c d) = a + b + c + d
 
-noteOutliers :: Params -> Outliers -> IO ()
+noteOutliers :: Config -> Outliers -> IO ()
 noteOutliers prm o = do
   let frac n = (100::Double) * fromIntegral n / fromIntegral (samplesSeen o)
-      check :: Int64 -> String -> IO ()
-      check k d = when (frac k > 0) $
-                  note prm "  %d (%.1g%%) %s\n" k (frac k) d
+      check :: Int64 -> Double -> String -> IO ()
+      check k t d = when (frac k > t) $
+                    note prm "  %d (%.1g%%) %s\n" k (frac k) d
       outCount = countOutliers o
   when (outCount > 0) $ do
     note prm "found %d outliers among %d samples (%.1g%%):\n"
              outCount (samplesSeen o) (frac outCount)
-    check (lowSevere o) "low severe"
-    check (lowMild o) "low mild"
-    check (highMild o) "high mild"
-    check (highSevere o) "high severe"
+    check (lowSevere o) 0 "low severe"
+    check (lowMild o) 1 "low mild"
+    check (highMild o) 1 "high mild"
+    check (highSevere o) 0 "high severe"
 
-analyseMean :: Params -> UArr Double -> Int -> IO Double
+analyseMean :: Config -> Sample -> Int -> IO Double
 analyseMean prm a iters = do
   let m = mean a
-  note prm "mean is %s (%d iterations, %d samples)\n" (secs m) iters (lengthU a)
+  note prm "mean is %s (%d iterations)\n" (secs m) iters
   noteOutliers prm . classifyOutliers $ a
   return m
+ where n = lengthU a
 
-sampleEnvironment :: Params -> IO Environment
+sampleEnvironment :: Config -> IO Environment
 sampleEnvironment prm = do
   note prm "warming up\n"
-  let settleTime = 1
-  seed <- snd3 `fmap` runForAtLeast 0.25 10000 sampleClockResolution
-  note prm "estimating clock resolution..." >> flush prm
-  (rcount, resSamples) <- thd3 `fmap` runForAtLeast settleTime seed sampleClockResolution
-  clockRes <- analyseMean prm resSamples rcount
-  note prm "estimating clock cost..." >> flush prm
-  (ccount, costSamples) <- sampleClockCost (max (100000 * clockRes) settleTime)
-  clockCost <- analyseMean prm costSamples ccount
+  seed <- snd3 `fmap` runForAtLeast 0.1 10000 resolution
+  note prm "estimating clock resolution...\n"
+  clockRes <- thd3 `fmap` runForAtLeast 0.5 seed resolution >>=
+              uncurry (analyseMean prm)
+  note prm "estimating cost of a clock call...\n"
+  clockCost <- cost (min (100000 * clockRes) 1) >>= uncurry (analyseMean prm)
   return $ Environment {
                envClockResolution = clockRes
              , envClockCost = clockCost
              }
+  where
+    resolution k = do
+      times <- createIO (k+1) (const getTime)
+      return (tailU . filterU (>=0) . zipWithU (-) (tailU times) $ times,
+              lengthU times)
+    cost timeLimit = do
+      let timeClock k = time_ (replicateM_ k getTime)
+      timeClock 1
+      (_ :*: iters :*: elapsed) <- runForAtLeast 0.01 10000 timeClock
+      times <- createIO (ceiling (timeLimit / elapsed)) $ \_ -> timeClock iters
+      return (mapU (/ fromIntegral iters) times, lengthU times)
+
+
 
 fib :: Int -> Int
 fib 0 = 0
@@ -146,7 +126,7 @@ fib n = fib (n-1) + fib (n-2)
 getTime :: IO Double
 getTime = (fromRational . toRational) `fmap` getPOSIXTime
       
-runBenchmark :: Params -> Environment -> Benchmark -> IO (Int, Sample)
+runBenchmark :: Config -> Environment -> Benchmark -> IO (Int, Sample)
 runBenchmark prm env (Benchmark desc b) = do
   note prm "\nbenchmarking %s\n" desc
   runForAtLeast 0.1 10000 (`replicateM_` getTime)
@@ -154,11 +134,14 @@ runBenchmark prm env (Benchmark desc b) = do
   (testTime :*: testIters :*: _) <- runForAtLeast (min minTime 0.1) 1 rpt
   prolix prm "ran %d iterations in %s\n" testIters (secs testTime)
   let newIters = ceiling $ minTime * fromIntegral testIters / testTime
-  print ("newIters",newIters)
+      sampleCount = 100
+  note prm "collecting %d samples, %d iterations each, in estimated %s\n"
+       sampleCount newIters (secs (fromIntegral sampleCount * fromIntegral newIters * testTime / fromIntegral testIters))
   times <- mapU ((/ fromIntegral newIters) . subtract (envClockCost env)) `fmap`
-           createIO newIters (\k -> time_ . rpt $ newIters)
-  analyseMean prm times (lengthU times * newIters)
-  return (lengthU times * newIters, times)
+           createIO sampleCount (\k -> time_ (rpt newIters))
+  let totalIters = lengthU times * newIters
+  analyseMean prm times totalIters
+  return (totalIters, times)
   where
     rpt k | k <= 0    = return ()
           | otherwise = run b k >> rpt (k-1)
@@ -174,7 +157,11 @@ data OutlierVariance = Unaffected
 minBy :: (Ord b) => (a -> b) -> a -> a -> b
 minBy f a b = min (f a) (f b)
 
-outlierVariance :: Estimate -> Estimate -> Double -> (OutlierVariance, Double)
+outlierVariance :: Estimate     -- ^ Bootstrap estimate of sample mean.
+                -> Estimate     -- ^ Bootstrap estimate of sample
+                                --   standard deviation.
+                -> Double       -- ^ Number of original iterations.
+                -> (OutlierVariance, Double)
 outlierVariance m sd a = (effect, varOutMin)
   where
     effect | varOutMin < 0.01 = Unaffected
@@ -205,38 +192,33 @@ sdInfo m sd a = do
     wibble :: String
            = case effect of
                Unaffected -> "unaffected"
-               Slight -> "somewhat inflated"
-               Moderate -> "inflated"
+               Slight -> "slightly inflated"
+               Moderate -> "moderately inflated"
                Severe -> "severely inflated"
     (effect, v) = outlierVariance m sd a
 
-bchart :: Benchmark -> IO ()
-bchart b = do
-  prm <- getParams
-  env <- sampleEnvironment prm
-  (actions, times) <- runBenchmark prm env b
+runAndAnalyse :: Config -> Environment -> Benchmark -> IO ()
+runAndAnalyse cfg env b = do
+  (totalIters, times) <- runBenchmark cfg env b
   let (points, pdf) = epanechnikovPDF 100 times
   writeFile "times.dat" (unlines . map show . fromU $ times)
   plotWindow [(0::Double)..] (fromU . sort $ times) ("run"::String) ("times"::String)
   plotWindow (fromU . fromPoints $ points) (fromU pdf) ("points"::String) ("pdf"::String)
   let ests = [mean,stddev]
-  res <- withSystemRandom (\gen -> resample gen ests 10 times)
-  let [em,es] = bootstrapBCA 0.95 times ests res
-  tell "mean" em
-  tell "stddev" es
-  sdInfo em es (fromIntegral $ actions)
+      numResamples = fromLJ cfgResamples cfg
+  note cfg "bootstrapping with %d resamples\n" numResamples
+  res <- withSystemRandom (\gen -> resample gen ests numResamples times)
+  let [em,es] = bootstrapBCA (fromLJ cfgConfInterval cfg) times ests res
+  tell cfg "bootstrapped mean" em
+  tell cfg "bootstrapped standard deviation" es
+  sdInfo em es (fromIntegral $ totalIters)
 
-tell :: String -> Estimate -> IO ()
-tell t e = hPrintf stdout "%s: %s, lb %s, ub %s, ci %.3f\n" t
-           (secs $ estPoint e)
-           (secs $ estLowerBound e) (secs $ estUpperBound e)
-           (estConfidenceLevel e)
+tell :: Config -> String -> Estimate -> IO ()
+tell cfg t e = note cfg "%s: %s, lb %s, ub %s, ci %.3f\n" t
+               (secs $ estPoint e)
+               (secs $ estLowerBound e) (secs $ estUpperBound e)
+               (estConfidenceLevel e)
         
-benchmark bs = do
-  prm <- getParams
-  env <- sampleEnvironment prm
-  mapM_ (runBenchmark prm env) bs
-
 time :: IO a -> IO (Double :*: a)
 time act = do
   start <- getTime
@@ -247,7 +229,7 @@ time act = do
 time_ :: IO a -> IO Double
 time_ act = do
   start <- getTime
-  act
+  result <- act
   end <- getTime
   return $! end - start
 
@@ -273,15 +255,6 @@ secs k
                | t >= 1e2 = printf "%.4f %s" t u
                | t >= 1e1 = printf "%.5f %s" t u
                | otherwise = printf "%.6f %s" t u
-
-data Benchmark where
-    Benchmark :: Benchmarkable b => String -> b -> Benchmark
-
-bench :: Benchmarkable b => String -> b -> Benchmark
-bench = Benchmark
-
-instance Show Benchmark where
-    show (Benchmark d _) = "Benchmark " ++ show d
 
 data Outliers = Outliers {
       samplesSeen :: {-# UNPACK #-} !Int64
