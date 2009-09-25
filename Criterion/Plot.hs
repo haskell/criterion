@@ -45,7 +45,7 @@ plot CSV title xlabel ylabel xdata ydata = do
       putLn h (show x ++ ',' : show y)
 
 plot dest _ _ _ _ _ = do
-  printError "plot %s: not yet implemented" (show dest)
+  printError "plot %s: not yet implemented\n" (show dest)
 
 writeTo :: FilePath -> (Handle -> IO a) -> IO a
 writeTo "-" act  = act stdout

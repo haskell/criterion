@@ -29,7 +29,7 @@ import Statistics.Sample (mean, stdDev)
 import Statistics.Types (Sample)
 import System.Mem (performGC)
 
-runBenchmark :: Config -> Environment -> Benchmark -> IO (Int, Sample)
+runBenchmark :: Config -> Environment -> Benchmark -> IO Sample
 runBenchmark cfg env (Benchmark desc b) = do
   note cfg "\nbenchmarking %s\n" desc
   runForAtLeast 0.1 10000 (`replicateM_` getTime)
@@ -46,15 +46,16 @@ runBenchmark cfg env (Benchmark desc b) = do
            createIO sampleCount $ \_ -> do
              when (fromLJ cfgPerformGC cfg) $ performGC
              time_ (rpt newIters)
-  return (lengthU times * newIters, times)
+  return times
   where
     rpt k | k <= 0    = return ()
           | otherwise = run b k >> rpt (k-1)
 
 runAndAnalyse :: Config -> Environment -> Benchmark -> IO ()
 runAndAnalyse cfg env b = do
-  (totalIters, times) <- runBenchmark cfg env b
-  analyseMean cfg times totalIters
+  times <- runBenchmark cfg env b
+  let numSamples = lengthU times
+  analyseMean cfg times numSamples
   plotWith Timing cfg (benchName b ++ " timing") "sample" "time"
            (mapU fromIntegral $ indices times) times
   let (points, pdf) = epanechnikovPDF 100 times
@@ -65,7 +66,7 @@ runAndAnalyse cfg env b = do
   note cfg "bootstrapping with %d resamples\n" numResamples
   res <- withSystemRandom (\gen -> resample gen ests numResamples times)
   let [em,es] = bootstrapBCA (fromLJ cfgConfInterval cfg) times ests res
-      (effect, v) = outlierVariance em es (fromIntegral $ totalIters)
+      (effect, v) = outlierVariance em es (fromIntegral $ numSamples)
       wibble = case effect of
                  Unaffected -> "unaffected" :: String
                  Slight -> "slightly inflated"
