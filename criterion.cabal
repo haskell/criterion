@@ -15,20 +15,25 @@ extra-source-files: README
 library
   exposed-modules:
     Criterion
+    Criterion.Analysis
     Criterion.Config
+    Criterion.Environment
+    Criterion.IO
     Criterion.Main
+    Criterion.Measurement
+    Criterion.MultiMap
     Criterion.Plot
+    Criterion.Types
 
   build-depends:
     base       < 5,
     bytestring >= 0.9 && < 1.0,
     containers,
     filepath,
-    statistics-fusion,
     uvector,
     uvector-algorithms >= 0.2,
     Chart,
-    statistics >= 0.3.2,
+    statistics >= 0.3.4,
     time,
     parallel
 

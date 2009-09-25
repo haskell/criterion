@@ -2,9 +2,8 @@
 
 module Criterion.Config
     (
-      module Data.Monoid
-    , Config(..)
-    , PlotType(..)
+      Config(..)
+    , PlotOutput(..)
     , Plot(..)
     , PrintExit(..)
     , Verbosity(..)
@@ -13,10 +12,10 @@ module Criterion.Config
     , ljust
     ) where
 
-import Data.Monoid
-import Data.Typeable
-import Data.Function
-import Data.Set
+import Criterion.MultiMap (MultiMap)
+import Data.Function (on)
+import Data.Monoid (Monoid(..), Last(..))
+import Data.Typeable (Typeable)
 
 data Verbosity = Quiet
                | Normal
@@ -36,31 +35,27 @@ instance Monoid PrintExit where
     mempty  = Nada
     mappend = max
 
-data PlotType = CSV
-              | PDF
-              | PNG
-              | SVG
-              | Window
-                deriving (Eq, Ord, Bounded, Enum, Read, Show)
+data PlotOutput = CSV
+                | PDF
+                | PNG
+                | SVG
+                | Window
+                  deriving (Eq, Ord, Bounded, Enum, Read, Show)
 
-data Plot = KernelDensity PlotType
-          | Timing PlotType
+data Plot = KernelDensity
+          | Timing
             deriving (Eq, Ord, Read, Show)
 
 data Config = Config {
       cfgBanner       :: Last String
     , cfgConfInterval :: Last Double
     , cfgPerformGC    :: Last Bool
-    , cfgPlot         :: Set Plot
+    , cfgPlot         :: MultiMap Plot PlotOutput
     , cfgPrintExit    :: PrintExit
     , cfgResamples    :: Last Int
     , cfgSamples      :: Last Int
     , cfgVerbosity    :: Verbosity
     } deriving (Eq, Read, Show, Typeable)
-
-instance Monoid Bool where
-    mempty  = False
-    mappend = (||)
 
 emptyConfig :: Config
 emptyConfig = Config {
@@ -79,7 +74,7 @@ defaultConfig = Config {
                   cfgBanner       = ljust "hi mom!"
                 , cfgConfInterval = ljust 0.95
                 , cfgPerformGC    = ljust False
-                , cfgPlot         = empty
+                , cfgPlot         = mempty
                 , cfgPrintExit    = Nada
                 , cfgResamples    = ljust (100 * 1000)
                 , cfgSamples      = ljust 100
@@ -94,6 +89,7 @@ fromLJ f cfg = case f cfg of
                  Last Nothing  -> fromLJ f defaultConfig
                  Last (Just a) -> a
 
+appendConfig :: Config -> Config -> Config
 appendConfig a b =
     Config {
       cfgBanner       = app cfgBanner a b

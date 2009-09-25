@@ -1,31 +1,33 @@
 module Criterion.Main
     (
-      module Criterion
+      Benchmarkable(..)
+    , Benchmark
+    , bench
     , defaultMain
     , defaultOptions
     , parseCommandLine
     ) where
 
-import Control.Exception (evaluate)
+import Control.Monad (forM_, when)
+import Criterion (Benchmarkable(..), Benchmark, bench, runAndAnalyse)
+import Criterion.Config
+import Criterion.Environment (measureEnvironment)
+import Criterion.IO (note, printError)
+import Criterion.MultiMap (singleton)
+import Criterion.Types (benchName)
 import Data.Char (toLower)
 import Data.List (isPrefixOf)
-import Data.Map (fromList, lookup)
-import Data.Set (singleton)
-import Control.Monad
-import Criterion
-import Criterion.Config
-import Criterion.Types
+import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt
-import System.IO
-import System.Environment
-import System.Exit
-import Prelude hiding (lookup)
+import System.Environment (getArgs, getProgName)
+import System.Exit (ExitCode(..), exitWith)
+import qualified Data.Map as M
 
-plot :: (PlotType -> Plot) -> String -> IO Config
-plot f s = case lookup s m of
+plot :: Plot -> String -> IO Config
+plot p s = case M.lookup s m of
              Nothing -> parseError "unknown plot type"
-             Just t  -> return mempty { cfgPlot = singleton (f t) }
-  where m = fromList $ ("win", Window) :
+             Just t  -> return mempty { cfgPlot = singleton p t }
+  where m = M.fromList $ ("win", Window) :
             [(map toLower (show t),t) | t <- [minBound..maxBound]]
 
 ci :: String -> IO Config
@@ -50,9 +52,8 @@ pos q f s =
 
 parseError :: String -> IO a
 parseError msg = do
-  p <- getProgName
-  hPutStrLn stderr $ "Error: " ++ msg
-  hPutStrLn stderr $ "Run \"" ++ p ++ " --help\" for usage information"
+  printError "Error: %s" msg
+  printError "Run \"%s --help\" for usage information\n" =<< getProgName
   exitWith (ExitFailure 64)
 
 noArg :: Config -> ArgDescr (IO Config)
@@ -75,7 +76,7 @@ defaultOptions = [
  , Option [] ["resamples"]
           (ReqArg (pos "resample count"$ \n -> mempty { cfgResamples = n }) "N")
           "number of bootstrap resamples to perform"
- , Option [] ["samples"]
+ , Option ['s'] ["samples"]
           (ReqArg (pos "sample count" $ \n -> mempty { cfgSamples = n }) "N")
           "number of samples to collect"
  , Option ['t'] ["plot-timing"] (ReqArg (plot Timing) "TYPE")
@@ -89,8 +90,8 @@ defaultOptions = [
 printBanner :: Config -> IO ()
 printBanner cfg =
     case cfgBanner cfg of
-      Last (Just b) -> hPutStrLn stdout b
-      _             -> hPutStrLn stdout "hi mom!"
+      Last (Just b) -> note cfg b
+      _             -> note cfg "hi mom!"
 
 printUsage :: [OptDescr (IO Config)] -> ExitCode -> IO a
 printUsage options exitCode = do
@@ -112,8 +113,7 @@ parseCommandLine options args =
 defaultMain :: [Benchmark] -> IO ()
 defaultMain bs = do
   (cfg, args) <- parseCommandLine defaultOptions =<< getArgs
-  env <- sampleEnvironment cfg
+  env <- measureEnvironment cfg
   let shouldRun b = null args || any (`isPrefixOf` b) args
-  forM_ bs $ \b -> when (shouldRun . benchName $ b) $ do
-                     runBenchmark cfg env b
-                     return ()
+  forM_ bs $ \b -> when (shouldRun . benchName $ b) $
+                     runAndAnalyse cfg env b
