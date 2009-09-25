@@ -5,7 +5,7 @@ module Criterion.IO
     , prolix
     ) where
 
-import Criterion.Config (Config, Verbosity(..), cfgVerbosity)
+import Criterion.Config (Config, Verbosity(..), cfgVerbosity, fromLJ)
 import System.IO (Handle, IOMode(..), openBinaryFile, stderr, stdout)
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Printf (HPrintfType, hPrintf)
@@ -16,12 +16,12 @@ nullDev = unsafePerformIO $ openBinaryFile "/dev/null" WriteMode
 {-# NOINLINE nullDev #-}
 
 note :: (HPrintfType r) => Config -> String -> r
-note cfg msg = if cfgVerbosity cfg > Quiet
+note cfg msg = if fromLJ cfgVerbosity cfg > Quiet
                then hPrintf stdout msg
                else hPrintf nullDev msg
 
 prolix :: (HPrintfType r) => Config -> String -> r
-prolix cfg msg = if cfgVerbosity cfg == Verbose
+prolix cfg msg = if fromLJ cfgVerbosity cfg == Verbose
                  then hPrintf stdout msg
                  else hPrintf nullDev msg
 

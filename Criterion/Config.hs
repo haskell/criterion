@@ -22,10 +22,6 @@ data Verbosity = Quiet
                | Verbose
                  deriving (Eq, Ord, Bounded, Enum, Read, Show)
 
-instance Monoid Verbosity where
-    mempty        = Normal
-    _ `mappend` b = b
-                   
 data PrintExit = Nada
                | Version
                | Help
@@ -54,7 +50,7 @@ data Config = Config {
     , cfgPrintExit    :: PrintExit
     , cfgResamples    :: Last Int
     , cfgSamples      :: Last Int
-    , cfgVerbosity    :: Verbosity
+    , cfgVerbosity    :: Last Verbosity
     } deriving (Eq, Read, Show, Typeable)
 
 emptyConfig :: Config
@@ -78,7 +74,7 @@ defaultConfig = Config {
                 , cfgPrintExit    = Nada
                 , cfgResamples    = ljust (100 * 1000)
                 , cfgSamples      = ljust 100
-                , cfgVerbosity    = Normal
+                , cfgVerbosity    = ljust Normal
                 }
 
 ljust :: a -> Last a

@@ -71,7 +71,7 @@ defaultOptions = [
           "bootstrap confidence interval"
  , Option ['k'] ["plot-kde"] (ReqArg (plot KernelDensity) "TYPE")
           "plot kernel density"
- , Option ['q'] ["quiet"] (noArg mempty { cfgVerbosity = Quiet })
+ , Option ['q'] ["quiet"] (noArg mempty { cfgVerbosity = ljust Quiet })
           "print less output"
  , Option [] ["resamples"]
           (ReqArg (pos "resample count"$ \n -> mempty { cfgResamples = n }) "N")
@@ -83,7 +83,7 @@ defaultOptions = [
           "plot timings"
  , Option ['V'] ["version"] (noArg mempty { cfgPrintExit = Version })
           "display version, then exit"
- , Option ['v'] ["verbose"] (noArg mempty { cfgVerbosity = Verbose })
+ , Option ['v'] ["verbose"] (noArg mempty { cfgVerbosity = ljust Verbose })
           "print more output"
  ]
 
