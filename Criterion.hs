@@ -10,14 +10,15 @@ module Criterion
     ) where
 
 import Control.Monad (replicateM_, when)
-import Criterion.Analysis
-import Criterion.Environment
-import Criterion.Measurement
-import Criterion.Config
-import Criterion.IO
+import Criterion.Analysis (OutlierVariance(..), classifyOutliers,
+                           outlierVariance, noteOutliers)
+import Criterion.Config (Config(..), Plot(..), fromLJ)
+import Criterion.Environment (Environment(..))
+import Criterion.IO (note, prolix)
+import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Plot (plotWith)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, benchName)
-import Data.Array.Vector
+import Data.Array.Vector ((:*:)(..), lengthU, mapU)
 import Prelude hiding (catch)
 import Statistics.Function (createIO)
 import Statistics.Function (indices)
@@ -34,28 +35,28 @@ runBenchmark cfg env (Benchmark desc b) = do
   note cfg "\nbenchmarking %s\n" desc
   runForAtLeast 0.1 10000 (`replicateM_` getTime)
   let minTime = envClockResolution env * 1000
-  (testTime :*: testIters :*: _) <- runForAtLeast (min minTime 0.1) 1 rpt
+  (testTime :*: testIters :*: _) <- runForAtLeast (min minTime 0.1) 1 timeLoop
   prolix cfg "ran %d iterations in %s\n" testIters (secs testTime)
   let newIters    = ceiling $ minTime * testItersD / testTime
       sampleCount = fromLJ cfgSamples cfg
       newItersD   = fromIntegral newIters
       testItersD  = fromIntegral testIters
   note cfg "collecting %d samples, %d iterations each, in estimated %s\n"
-       sampleCount newIters (secs (fromIntegral sampleCount * newItersD * testTime / testItersD))
+       sampleCount newIters (secs (fromIntegral sampleCount * newItersD *
+                                   testTime / testItersD))
   times <- fmap (mapU ((/ newItersD) . subtract (envClockCost env))) .
-           createIO sampleCount $ \_ -> do
+           createIO sampleCount . const $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
-             time_ (rpt newIters)
+             time_ (timeLoop newIters)
   return times
   where
-    rpt k | k <= 0    = return ()
-          | otherwise = run b k >> rpt (k-1)
+    timeLoop k | k <= 0    = return ()
+               | otherwise = run b k >> timeLoop (k-1)
 
 runAndAnalyse :: Config -> Environment -> Benchmark -> IO ()
 runAndAnalyse cfg env b = do
   times <- runBenchmark cfg env b
   let numSamples = lengthU times
-  analyseMean cfg times numSamples
   plotWith Timing cfg (benchName b ++ " timing") "sample" "time"
            (mapU fromIntegral $ indices times) times
   let (points, pdf) = epanechnikovPDF 100 times
@@ -73,11 +74,12 @@ runAndAnalyse cfg env b = do
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
   bs "mean" em
-  bs "standard deviation" es
+  bs "std dev" es
+  noteOutliers cfg (classifyOutliers times)
   note cfg "variance introduced by outliers: %.3f%%\n" (v * 100)
   note cfg "variance is %s by outliers\n" wibble
   where bs :: String -> Estimate -> IO ()
-        bs d e = note cfg "bootstrapped %s: %s, lb %s, ub %s, ci %.3f\n" d
+        bs d e = note cfg "%s: %s, lb %s, ub %s, ci %.3f\n" d
                    (secs $ estPoint e)
                    (secs $ estLowerBound e) (secs $ estUpperBound e)
                    (estConfidenceLevel e)

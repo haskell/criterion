@@ -5,6 +5,7 @@ module Criterion.Analysis
     , analyseMean
     , countOutliers
     , classifyOutliers
+    , noteOutliers
     , outlierVariance
     ) where
 
@@ -115,7 +116,7 @@ noteOutliers cfg o = do
                     note cfg "  %d (%.1g%%) %s\n" k (frac k) d
       outCount = countOutliers o
   when (outCount > 0) $ do
-    note cfg "found %d outliers among %d samples (%.1g%%):\n"
+    note cfg "found %d outliers among %d samples (%.1g%%)\n"
              outCount (samplesSeen o) (frac outCount)
     check (lowSevere o) 0 "low severe"
     check (lowMild o) 1 "low mild"
