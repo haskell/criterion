@@ -5,6 +5,7 @@ module Criterion.Main
     , bench
     , bgroup
     , defaultMain
+    , defaultMainWith
     , defaultOptions
     , parseCommandLine
     ) where
@@ -98,20 +99,24 @@ printUsage options exitCode = do
   putStr (usageInfo ("Usage: " ++ p ++ " [OPTIONS]") options)
   exitWith exitCode
 
-parseCommandLine :: [OptDescr (IO Config)] -> [String] -> IO (Config, [String])
-parseCommandLine options args =
+parseCommandLine :: Config -> [OptDescr (IO Config)] -> [String]
+                 -> IO (Config, [String])
+parseCommandLine defCfg options args =
   case getOpt Permute options args of
     (_, _, (err:_)) -> parseError err
     (opts, rest, _) -> do
-      cfg <- (mappend defaultConfig . mconcat) `fmap` sequence opts
+      cfg <- (mappend defCfg . mconcat) `fmap` sequence opts
       case cfgPrintExit cfg of
         Help ->    printBanner cfg >> printUsage options ExitSuccess
         Version -> printBanner cfg >> exitWith ExitSuccess
         _ ->       return (cfg, rest)
 
 defaultMain :: [Benchmark] -> IO ()
-defaultMain bs = do
-  (cfg, args) <- parseCommandLine defaultOptions =<< getArgs
+defaultMain = defaultMainWith defaultConfig
+
+defaultMainWith :: Config -> [Benchmark] -> IO ()
+defaultMainWith defCfg bs = do
+  (cfg, args) <- parseCommandLine defCfg defaultOptions =<< getArgs
   env <- measureEnvironment cfg
   let shouldRun b = null args || any (`isPrefixOf` b) args
   mapM_ (runAndAnalyse shouldRun cfg env) bs
