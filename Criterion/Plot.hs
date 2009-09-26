@@ -8,7 +8,6 @@ module Criterion.Plot
     ) where
 
 import Criterion.Config
-import Criterion.IO (printError)
 import Data.Accessor ((^=))
 import Data.Array.Vector
 import Data.Char (isSpace)
@@ -32,45 +31,48 @@ plotWith p cfg plot =
 plotTiming :: PlotOutput -> String -> Sample -> IO ()
 
 plotTiming CSV desc times = do
-  writeTo (manglePath "csv" desc) $ \h -> do
+  writeTo (manglePath "csv" (desc ++ " timings")) $ \h -> do
     putLn h (escapeCSV "sample" ++ ',' : escapeCSV "execution time")
     forM_ (fromU $ indexedU times) $ \(x :*: y) ->
       putLn h (show x ++ ',' : show y)
 
 plotTiming (PDF x y) desc times =
   renderableToPDFFile (renderTiming desc times) x y
-                      (manglePath "png" $ desc ++ " timings")
+                      (manglePath "pdf" $ printf "%s timings %dx%d" desc x y)
 
 plotTiming (PNG x y) desc times =
   renderableToPNGFile (renderTiming desc times) x y
-                      (manglePath "png" $ desc ++ " timings")
+                      (manglePath "png" $ printf "%s timings %dx%d" desc x y)
 
 plotTiming (SVG x y) desc times =
   renderableToSVGFile (renderTiming desc times) x y
-                      (manglePath "png" $ desc ++ " timings")
+                      (manglePath "svg" $ printf "%s timings %dx%d" desc x y)
 
 plotTiming (Window x y) desc times =
   renderableToWindow (renderTiming desc times) x y
 
 plotKDE :: PlotOutput -> String -> Points -> UArr Double -> IO ()
 
+plotKDE CSV desc points pdf = do
+  writeTo (manglePath "csv" (desc ++ " densities")) $ \h -> do
+    putLn h (escapeCSV "execution time" ++ ',' : escapeCSV "probability")
+    forM_ (zip (fromU pdf) (fromU (fromPoints points))) $ \(x, y) ->
+      putLn h (show x ++ ',' : show y)
+
 plotKDE (PDF x y) desc points pdf =
   renderableToPDFFile (renderKDE desc points pdf) x y
-                      (manglePath "png" $ desc ++ " densities")
+                      (manglePath "pdf" $ printf "%s densities %dx%d" desc x y)
 
 plotKDE (PNG x y) desc points pdf =
   renderableToPNGFile (renderKDE desc points pdf) x y
-                      (manglePath "png" $ desc ++ " densities")
+                      (manglePath "png" $ printf "%s densities %dx%d" desc x y)
 
 plotKDE (SVG x y) desc points pdf =
   renderableToSVGFile (renderKDE desc points pdf) x y
-                      (manglePath "png" $ desc ++ " densities")
+                      (manglePath "svg" $ printf "%s densities %dx%d" desc x y)
 
 plotKDE (Window x y) desc points pdf =
     renderableToWindow (renderKDE desc points pdf) x y
-
-plotKDE dest _desc _points _pdf = do
-  printError "plotKDE %s: not yet implemented\n" (show dest)
 
 renderTiming :: String -> Sample -> Renderable ()
 renderTiming desc times = toRenderable layout
