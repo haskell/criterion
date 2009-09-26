@@ -1,5 +1,3 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, FlexibleInstances, GeneralizedNewtypeDeriving, ScopedTypeVariables, TypeOperators, GADTs #-}
-
 module Criterion
     (
       Benchmarkable(..)
