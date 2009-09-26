@@ -27,7 +27,7 @@ parsePlot :: Parser PlotOutput
 parsePlot = try (dim "window" Window 800 600)
     `mplus` try (dim "win" Window 800 600)
     `mplus` try (dim "pdf" PDF 432 324)
-    `mplus` try (dim "win" PNG 800 600)
+    `mplus` try (dim "png" PNG 800 600)
     `mplus` try (dim "svg" SVG 432 324)
     `mplus` (string "csv" >> return CSV)
   where dim s c dx dy = do
@@ -46,7 +46,7 @@ parsePlot = try (dim "window" Window 800 600)
 
 plot :: Plot -> String -> IO Config
 plot p s = case parse parsePlot "" s of
-             Left _err -> parseError "unknown plot type"
+             Left _err -> parseError "unknown plot type\n"
              Right t   -> return mempty { cfgPlot = singleton p t }
 
 ci :: String -> IO Config
