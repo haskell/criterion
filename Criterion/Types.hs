@@ -4,7 +4,8 @@ module Criterion.Types
       Benchmarkable(..)
     , Benchmark(..)
     , bench
-    , benchName
+    , bgroup
+    , benchNames
     ) where
 
 import Control.Parallel.Strategies
@@ -20,13 +21,19 @@ instance Benchmarkable (IO a) where
     run a _ = a >> return ()
 
 data Benchmark where
-    Benchmark :: Benchmarkable b => String -> b -> Benchmark
+    Benchmark  :: Benchmarkable b => String -> b -> Benchmark
+    BenchGroup :: String -> [Benchmark] -> Benchmark
 
 bench :: Benchmarkable b => String -> b -> Benchmark
 bench = Benchmark
 
-benchName :: Benchmark -> String
-benchName (Benchmark d _) = d
+bgroup :: String -> [Benchmark] -> Benchmark
+bgroup = BenchGroup
+
+benchNames :: Benchmark -> [String]
+benchNames (Benchmark d _)   = [d]
+benchNames (BenchGroup d bs) = d : concatMap benchNames bs
 
 instance Show Benchmark where
-    show = ("Benchmark " ++) . benchName
+    show (Benchmark d _)  = ("Benchmark " ++ show d)
+    show (BenchGroup d _) = ("BenchGroup " ++ show d)

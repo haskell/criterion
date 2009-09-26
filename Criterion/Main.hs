@@ -3,18 +3,17 @@ module Criterion.Main
       Benchmarkable(..)
     , Benchmark
     , bench
+    , bgroup
     , defaultMain
     , defaultOptions
     , parseCommandLine
     ) where
 
-import Control.Monad (forM_, when)
-import Criterion (Benchmarkable(..), Benchmark, bench, runAndAnalyse)
+import Criterion (Benchmarkable(..), Benchmark, bench, bgroup, runAndAnalyse)
 import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.MultiMap (singleton)
-import Criterion.Types (benchName)
 import Data.Char (toLower)
 import Data.List (isPrefixOf)
 import Data.Monoid (Monoid(..), Last(..))
@@ -115,5 +114,4 @@ defaultMain bs = do
   (cfg, args) <- parseCommandLine defaultOptions =<< getArgs
   env <- measureEnvironment cfg
   let shouldRun b = null args || any (`isPrefixOf` b) args
-  forM_ bs $ \b -> when (shouldRun . benchName $ b) $
-                     runAndAnalyse cfg env b
+  mapM_ (runAndAnalyse shouldRun cfg env) bs

@@ -5,6 +5,7 @@ module Criterion
       Benchmarkable(..)
     , Benchmark
     , bench
+    , bgroup
     , runBenchmark
     , runAndAnalyse
     ) where
@@ -17,7 +18,7 @@ import Criterion.Environment (Environment(..))
 import Criterion.IO (note, prolix)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Plot (plotWith)
-import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, benchName)
+import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, bgroup)
 import Data.Array.Vector ((:*:)(..), lengthU, mapU)
 import Prelude hiding (catch)
 import Statistics.Function (createIO)
@@ -30,9 +31,8 @@ import Statistics.Sample (mean, stdDev)
 import Statistics.Types (Sample)
 import System.Mem (performGC)
 
-runBenchmark :: Config -> Environment -> Benchmark -> IO Sample
-runBenchmark cfg env (Benchmark desc b) = do
-  note cfg "\nbenchmarking %s\n" desc
+runBenchmark :: Benchmarkable b => Config -> Environment -> b -> IO Sample
+runBenchmark cfg env b = do
   runForAtLeast 0.1 10000 (`replicateM_` getTime)
   let minTime = envClockResolution env * 1000
   (testTime :*: testIters :*: _) <- runForAtLeast (min minTime 0.1) 1 timeLoop
@@ -53,14 +53,15 @@ runBenchmark cfg env (Benchmark desc b) = do
     timeLoop k | k <= 0    = return ()
                | otherwise = run b k >> timeLoop (k-1)
 
-runAndAnalyse :: Config -> Environment -> Benchmark -> IO ()
-runAndAnalyse cfg env b = do
+runAndAnalyseOne :: Benchmarkable b => Config -> Environment -> String -> b
+                 -> IO ()
+runAndAnalyseOne cfg env desc b = do
   times <- runBenchmark cfg env b
   let numSamples = lengthU times
-  plotWith Timing cfg (benchName b ++ " timing") "sample" "time"
+  plotWith Timing cfg (desc ++ " timing") "sample" "time"
            (mapU fromIntegral $ indices times) times
   let (points, pdf) = epanechnikovPDF 100 times
-  plotWith KernelDensity cfg (benchName b ++ " kde") "time" "pdf"
+  plotWith KernelDensity cfg (desc ++ " kde") "time" "pdf"
            (fromPoints points) pdf
   let ests = [mean,stdDev]
       numResamples = fromLJ cfgResamples cfg
@@ -83,3 +84,13 @@ runAndAnalyse cfg env b = do
                    (secs $ estPoint e)
                    (secs $ estLowerBound e) (secs $ estUpperBound e)
                    (estConfidenceLevel e)
+
+runAndAnalyse :: (String -> Bool) -> Config -> Environment -> Benchmark -> IO ()
+runAndAnalyse p cfg env (Benchmark desc b)
+    | p desc    = do note cfg "\nbenchmarking %s\n" desc
+                     runAndAnalyseOne cfg env desc b
+    | otherwise = return ()
+runAndAnalyse p cfg env (BenchGroup desc bs) =
+    mapM_ (runAndAnalyse p' cfg env) bs
+  where p' | p desc    = const True
+           | otherwise = p
