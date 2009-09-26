@@ -37,37 +37,37 @@ plotTiming CSV desc times = do
     forM_ (fromU $ indexedU times) $ \(x :*: y) ->
       putLn h (show x ++ ',' : show y)
 
-plotTiming PDF desc times =
-  renderableToPNGFile (renderTiming desc times) 800 600
+plotTiming (PDF x y) desc times =
+  renderableToPDFFile (renderTiming desc times) x y
                       (manglePath "png" $ desc ++ " timings")
 
-plotTiming PNG desc times =
-  renderableToPNGFile (renderTiming desc times) 800 600
+plotTiming (PNG x y) desc times =
+  renderableToPNGFile (renderTiming desc times) x y
                       (manglePath "png" $ desc ++ " timings")
 
-plotTiming SVG desc times =
-  renderableToSVGFile (renderTiming desc times) 800 600
+plotTiming (SVG x y) desc times =
+  renderableToSVGFile (renderTiming desc times) x y
                       (manglePath "png" $ desc ++ " timings")
 
-plotTiming Window desc times =
-  renderableToWindow (renderTiming desc times) 800 600
+plotTiming (Window x y) desc times =
+  renderableToWindow (renderTiming desc times) x y
 
 plotKDE :: PlotOutput -> String -> Points -> UArr Double -> IO ()
 
-plotKDE PDF desc points pdf =
-  renderableToPDFFile (renderKDE desc points pdf) 800 600
+plotKDE (PDF x y) desc points pdf =
+  renderableToPDFFile (renderKDE desc points pdf) x y
                       (manglePath "png" $ desc ++ " densities")
 
-plotKDE PNG desc points pdf =
-  renderableToPNGFile (renderKDE desc points pdf) 800 600
+plotKDE (PNG x y) desc points pdf =
+  renderableToPNGFile (renderKDE desc points pdf) x y
                       (manglePath "png" $ desc ++ " densities")
 
-plotKDE SVG desc points pdf =
-  renderableToSVGFile (renderKDE desc points pdf) 800 600
+plotKDE (SVG x y) desc points pdf =
+  renderableToSVGFile (renderKDE desc points pdf) x y
                       (manglePath "png" $ desc ++ " densities")
 
-plotKDE Window desc points pdf =
-    renderableToWindow (renderKDE desc points pdf) 800 600
+plotKDE (Window x y) desc points pdf =
+    renderableToWindow (renderKDE desc points pdf) x y
 
 plotKDE dest _desc _points _pdf = do
   printError "plotKDE %s: not yet implemented\n" (show dest)

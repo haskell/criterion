@@ -10,25 +10,44 @@ module Criterion.Main
     , parseCommandLine
     ) where
 
+import Control.Monad (MonadPlus(..))
 import Criterion (Benchmarkable(..), Benchmark, bench, bgroup, runAndAnalyse)
 import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.MultiMap (singleton)
-import Data.Char (toLower)
 import Data.List (isPrefixOf)
 import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
 import System.Exit (ExitCode(..), exitWith)
-import qualified Data.Map as M
+import Text.ParserCombinators.Parsec
+
+parsePlot :: Parser PlotOutput
+parsePlot = try (dim "window" Window 800 600)
+    `mplus` try (dim "win" Window 800 600)
+    `mplus` try (dim "pdf" PDF 432 324)
+    `mplus` try (dim "win" PNG 800 600)
+    `mplus` try (dim "svg" SVG 432 324)
+    `mplus` (string "csv" >> return CSV)
+  where dim s c dx dy = do
+          string s
+          try (uncurry c `fmap` dimensions) `mplus`
+              (eof >> return (c dx dy))
+        dimensions = do
+            char ':'
+            a <- many1 digit
+            char 'x'
+            b <- many1 digit
+            case (reads a, reads b) of
+              ([(x,[])],[(y,[])]) -> return (x, y)
+              _                   -> mzero
+           <?> "dimensions"
 
 plot :: Plot -> String -> IO Config
-plot p s = case M.lookup s m of
-             Nothing -> parseError "unknown plot type"
-             Just t  -> return mempty { cfgPlot = singleton p t }
-  where m = M.fromList $ ("win", Window) :
-            [(map toLower (show t),t) | t <- [minBound..maxBound]]
+plot p s = case parse parsePlot "" s of
+             Left _err -> parseError "unknown plot type"
+             Right t   -> return mempty { cfgPlot = singleton p t }
 
 ci :: String -> IO Config
 ci s = case reads s' of
@@ -90,13 +109,25 @@ defaultOptions = [
 printBanner :: Config -> IO ()
 printBanner cfg =
     case cfgBanner cfg of
-      Last (Just b) -> note cfg b
+      Last (Just b) -> note cfg "%s\n" b
       _             -> note cfg "Hey, nobody told me what version I am!\n"
 
 printUsage :: [OptDescr (IO Config)] -> ExitCode -> IO a
 printUsage options exitCode = do
   p <- getProgName
   putStr (usageInfo ("Usage: " ++ p ++ " [OPTIONS]") options)
+  mapM_ putStrLn [
+       ""
+    , "Plot types:"
+    , "  window or win   display a window immediately"
+    , "  csv             save a CSV file"
+    , "  pdf             save a PDF file"
+    , "  png             save a PNG file"
+    , "  svg             save an SVG file"
+    , ""
+    , "You can specify plot dimensions via a suffix, e.g. \"window:640x480\""
+    , "Units are pixels for png and window, 72dpi points for pdf and svg"
+    ]
   exitWith exitCode
 
 parseCommandLine :: Config -> [OptDescr (IO Config)] -> [String]

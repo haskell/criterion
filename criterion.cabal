@@ -33,6 +33,7 @@ library
     data-accessor,
     filepath,
     parallel,
+    parsec,
     statistics >= 0.3.4,
     time,
     uvector,

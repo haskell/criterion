@@ -32,11 +32,11 @@ instance Monoid PrintExit where
     mappend = max
 
 data PlotOutput = CSV
-                | PDF
-                | PNG
-                | SVG
-                | Window
-                  deriving (Eq, Ord, Bounded, Enum, Read, Show)
+                | PDF Int Int
+                | PNG Int Int
+                | SVG Int Int
+                | Window Int Int
+                  deriving (Eq, Ord, Read, Show)
 
 data Plot = KernelDensity
           | Timing
@@ -67,7 +67,7 @@ emptyConfig = Config {
 
 defaultConfig :: Config
 defaultConfig = Config {
-                  cfgBanner       = ljust "hi mom!"
+                  cfgBanner       = ljust "I don't know what version I am."
                 , cfgConfInterval = ljust 0.95
                 , cfgPerformGC    = ljust False
                 , cfgPlot         = mempty
