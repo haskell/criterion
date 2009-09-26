@@ -1,16 +1,15 @@
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE FlexibleInstances, ScopedTypeVariables #-}
 
--- cabal install judy.
+-- cabal install judy
 
-import Criterion.Main
+import Control.Monad (forM_)
 import Criterion.Config
-
-import Control.Monad
-import qualified Data.Judy as J
+import Criterion.Main
 import qualified Data.IntMap as I
-import Data.List
+import qualified Data.Judy as J
 
+-- Work around the fact that the GC won't run finalizers aggressively
+-- enough for us.
 myConfig = defaultConfig { cfgPerformGC = ljust True }
 
 main = defaultMainWith myConfig [
