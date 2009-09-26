@@ -46,7 +46,7 @@ plotTiming PNG desc times =
                       (manglePath "png" $ desc ++ " timings")
 
 plotTiming SVG desc times =
-  renderableToPNGFile (renderTiming desc times) 800 600
+  renderableToSVGFile (renderTiming desc times) 800 600
                       (manglePath "png" $ desc ++ " timings")
 
 plotTiming Window desc times =
@@ -63,7 +63,7 @@ plotKDE PNG desc points pdf =
                       (manglePath "png" $ desc ++ " densities")
 
 plotKDE SVG desc points pdf =
-  renderableToPDFFile (renderKDE desc points pdf) 800 600
+  renderableToSVGFile (renderKDE desc points pdf) 800 600
                       (manglePath "png" $ desc ++ " densities")
 
 plotKDE Window desc points pdf =
