@@ -26,16 +26,17 @@ library
     Criterion.Types
 
   build-depends:
-    base       < 5,
+    Chart,
+    base < 5,
     bytestring >= 0.9 && < 1.0,
     containers,
+    data-accessor,
     filepath,
-    uvector,
-    uvector-algorithms >= 0.2,
-    Chart,
+    parallel,
     statistics >= 0.3.4,
     time,
-    parallel
+    uvector,
+    uvector-algorithms >= 0.2
 
   -- gather extensive profiling data for now
   ghc-prof-options: -auto-all

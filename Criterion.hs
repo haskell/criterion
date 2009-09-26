@@ -17,7 +17,7 @@ import Criterion.Config (Config(..), Plot(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (note, prolix)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
-import Criterion.Plot (plotWith)
+import Criterion.Plot (plotWith, foo, bar)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, bgroup)
 import Data.Array.Vector ((:*:)(..), lengthU, mapU)
 import Prelude hiding (catch)
@@ -60,9 +60,11 @@ runAndAnalyseOne cfg env desc b = do
   let numSamples = lengthU times
   plotWith Timing cfg (desc ++ " timing") "sample" "time"
            (mapU fromIntegral $ indices times) times
+  foo desc times
   let (points, pdf) = epanechnikovPDF 100 times
   plotWith KernelDensity cfg (desc ++ " kde") "time" "pdf"
            (fromPoints points) pdf
+  bar desc points pdf
   let ests = [mean,stdDev]
       numResamples = fromLJ cfgResamples cfg
   note cfg "bootstrapping with %d resamples\n" numResamples
