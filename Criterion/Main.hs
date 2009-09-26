@@ -91,7 +91,7 @@ printBanner :: Config -> IO ()
 printBanner cfg =
     case cfgBanner cfg of
       Last (Just b) -> note cfg b
-      _             -> note cfg "hi mom!"
+      _             -> note cfg "Hey, nobody told me what version I am!\n"
 
 printUsage :: [OptDescr (IO Config)] -> ExitCode -> IO a
 printUsage options exitCode = do
