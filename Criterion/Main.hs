@@ -89,7 +89,7 @@ defaultOptions = [
  , Option ['I'] ["ci"] (ReqArg ci "CI")
           "bootstrap confidence interval"
  , Option ['k'] ["plot-kde"] (ReqArg (plot KernelDensity) "TYPE")
-          "plot kernel density"
+          "plot kernel density estimate of probabilities"
  , Option ['q'] ["quiet"] (noArg mempty { cfgVerbosity = ljust Quiet })
           "print less output"
  , Option [] ["resamples"]
