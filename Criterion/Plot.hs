@@ -2,77 +2,57 @@
 
 module Criterion.Plot
     (
-      plotWith
-    , foo
-    , bar
+      plotKDE
+    , plotTiming
+    , plotWith
     ) where
 
 import Criterion.Config
 import Criterion.IO (printError)
+import Data.Accessor ((^=))
 import Data.Array.Vector
 import Data.Char (isSpace)
 import Data.Foldable (forM_)
 import Data.List (group)
+import Graphics.Rendering.Chart hiding (Plot,c)
+import Graphics.Rendering.Chart.Gtk (renderableToWindow)
 import Statistics.KernelDensity (Points, fromPoints)
-import Graphics.Rendering.Chart.Simple hiding (plot)
+import Statistics.Types (Sample)
 import System.FilePath (addExtension, pathSeparator)
 import System.IO (IOMode(..), Handle, hPutStr, stdout, withBinaryFile)
+import Text.Printf (printf)
 import qualified Criterion.MultiMap as M
-import Graphics.Rendering.Chart hiding (Plot,c)
-import Graphics.Rendering.Chart.Gtk
-import Data.Accessor
-import Statistics.Types (Sample)
-import Text.Printf
 
-manglePath :: String -> String -> FilePath
-manglePath _ "-"    = "-"
-manglePath sfx name = (`addExtension` sfx) .
-                      concatMap (replace ((==) '-' . head) "-") .
-                      group .
-                      map (replace isSpace '-') .
-                      map (replace (==pathSeparator) '-') $
-                      name
-    where replace p r c | p c       = r
-                        | otherwise = c
-
-plotWith :: Plot -> Config -> String -> String -> String
-         -> UArr Double -> UArr Double -> IO ()
-plotWith p cfg title xlabel ylabel xdata ydata =
+plotWith :: Plot -> Config -> (PlotOutput -> IO ()) -> IO ()
+plotWith p cfg plot =
   case M.lookup p (cfgPlot cfg) of
     Nothing -> return ()
-    Just s -> forM_ s $ \t -> plot t title xlabel ylabel xdata ydata
-            
-plot :: PlotOutput -> String -> String -> String
-     -> UArr Double -> UArr Double -> IO ()
+    Just s -> forM_ s $ plot
 
-plot Window _title xlabel ylabel xdata ydata = do
-  plotWindow xlabel (fromU xdata) ylabel (fromU ydata)
+plotTiming :: PlotOutput -> String -> Sample -> IO ()
 
-plot CSV title xlabel ylabel xdata ydata = do
-  writeTo (manglePath "csv" title) $ \h -> do
-    putLn h (escapeCSV xlabel ++ ',' : escapeCSV ylabel)
-    forM_ (fromU $ zipU xdata ydata) $ \(x :*: y) ->
+plotTiming Window desc times =
+  renderableToWindow (renderTiming desc times) 800 600
+
+plotTiming CSV desc times = do
+  writeTo (manglePath "csv" desc) $ \h -> do
+    putLn h (escapeCSV "sample" ++ ',' : escapeCSV "execution time")
+    forM_ (fromU $ indexedU times) $ \(x :*: y) ->
       putLn h (show x ++ ',' : show y)
 
-plot dest _ _ _ _ _ = do
-  printError "plot %s: not yet implemented\n" (show dest)
+plotTiming dest _desc _times = do
+  printError "plotTimes %s: not yet implemented\n" (show dest)
 
-writeTo :: FilePath -> (Handle -> IO a) -> IO a
-writeTo "-" act  = act stdout
-writeTo path act = withBinaryFile path WriteMode act
+plotKDE :: PlotOutput -> String -> Points -> UArr Double -> IO ()
 
-escapeCSV :: String -> String
-escapeCSV xs | any (`elem`xs) escapes = '"' : concatMap esc xs ++ "\""
-          | otherwise              = xs
-    where esc '"' = "\"\""
-          esc c   = [c]
-          escapes = "\"\r\n,"
+plotKDE Window desc points pdf =
+    renderableToWindow (renderKDE desc points pdf) 800 600
 
-putLn :: Handle -> String -> IO ()
-putLn h s = hPutStr h (s ++ "\r\n")
+plotKDE dest _desc _points _pdf = do
+  printError "plotKDE %s: not yet implemented\n" (show dest)
 
-renderTimes :: String -> Sample -> Renderable ()
-renderTimes desc times = toRenderable layout
+renderTiming :: String -> Sample -> Renderable ()
+renderTiming desc times = toRenderable layout
   where
     layout = layout1_title ^= "Execution times for \"" ++ desc ++ "\""
            $ layout1_plots ^= [ Left (plotBars bars) ]
@@ -95,7 +75,7 @@ renderKDE desc points pdf = toRenderable layout
   where
     layout = layout1_title ^= "Densities of execution times for \"" ++
                               desc ++ "\""
-           $ layout1_plots ^= [ Left (toPlot lines) ]
+           $ layout1_plots ^= [ Left (toPlot info) ]
            $ layout1_left_axis ^= leftAxis
            $ layout1_bottom_axis ^= bottomAxis
            $ defaultLayout1 :: Layout1 Double Double
@@ -107,8 +87,8 @@ renderKDE desc points pdf = toRenderable layout
                $ laxis_title ^= "execution time"
                $ defaultLayoutAxis
 
-    lines = plot_lines_values ^= [zip (fromU (fromPoints points)) (fromU spdf)]
-          $ defaultPlotLines
+    info = plot_lines_values ^= [zip (fromU (fromPoints points)) (fromU spdf)]
+         $ defaultPlotLines
 
     spdf = mapU (/ sumU pdf) pdf
 
@@ -116,8 +96,30 @@ secAxis :: LinearAxisParams
 secAxis = la_labelf ^= secs
         $ defaultLinearAxis
 
-foo desc times = renderableToWindow (renderTimes desc times) 800 600
-bar desc points pdf = renderableToWindow (renderKDE desc points pdf) 800 600
+writeTo :: FilePath -> (Handle -> IO a) -> IO a
+writeTo "-" act  = act stdout
+writeTo path act = withBinaryFile path WriteMode act
+
+escapeCSV :: String -> String
+escapeCSV xs | any (`elem`xs) escapes = '"' : concatMap esc xs ++ "\""
+          | otherwise              = xs
+    where esc '"' = "\"\""
+          esc c   = [c]
+          escapes = "\"\r\n,"
+
+putLn :: Handle -> String -> IO ()
+putLn h s = hPutStr h (s ++ "\r\n")
+
+manglePath :: String -> String -> FilePath
+manglePath _ "-"    = "-"
+manglePath sfx name = (`addExtension` sfx) .
+                      concatMap (replace ((==) '-' . head) "-") .
+                      group .
+                      map (replace isSpace '-') .
+                      map (replace (==pathSeparator) '-') $
+                      name
+    where replace p r c | p c       = r
+                        | otherwise = c
 
 secs :: Double -> String
 secs k

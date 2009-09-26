@@ -17,13 +17,12 @@ import Criterion.Config (Config(..), Plot(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (note, prolix)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
-import Criterion.Plot (plotWith, foo, bar)
+import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, bgroup)
 import Data.Array.Vector ((:*:)(..), lengthU, mapU)
 import Prelude hiding (catch)
 import Statistics.Function (createIO)
-import Statistics.Function (indices)
-import Statistics.KernelDensity (epanechnikovPDF, fromPoints)
+import Statistics.KernelDensity (epanechnikovPDF)
 import Statistics.RandomVariate (withSystemRandom)
 import Statistics.Resampling (resample)
 import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
@@ -58,13 +57,9 @@ runAndAnalyseOne :: Benchmarkable b => Config -> Environment -> String -> b
 runAndAnalyseOne cfg env desc b = do
   times <- runBenchmark cfg env b
   let numSamples = lengthU times
-  plotWith Timing cfg (desc ++ " timing") "sample" "time"
-           (mapU fromIntegral $ indices times) times
-  foo desc times
-  let (points, pdf) = epanechnikovPDF 100 times
-  plotWith KernelDensity cfg (desc ++ " kde") "time" "pdf"
-           (fromPoints points) pdf
-  bar desc points pdf
+  plotWith Timing cfg $ \o -> plotTiming o desc times
+  plotWith KernelDensity cfg $ \o -> uncurry (plotKDE o desc)
+                                     (epanechnikovPDF 100 times)
   let ests = [mean,stdDev]
       numResamples = fromLJ cfgResamples cfg
   note cfg "bootstrapping with %d resamples\n" numResamples
