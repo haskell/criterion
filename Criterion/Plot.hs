@@ -31,30 +31,43 @@ plotWith p cfg plot =
 
 plotTiming :: PlotOutput -> String -> Sample -> IO ()
 
-plotTiming Window desc times =
-  renderableToWindow (renderTiming desc times) 800 600
-
-plotTiming PNG desc times =
-  renderableToPNGFile (renderTiming desc times) 800 600
-                      (manglePath "png" $ desc ++ " timings")
-
 plotTiming CSV desc times = do
   writeTo (manglePath "csv" desc) $ \h -> do
     putLn h (escapeCSV "sample" ++ ',' : escapeCSV "execution time")
     forM_ (fromU $ indexedU times) $ \(x :*: y) ->
       putLn h (show x ++ ',' : show y)
 
-plotTiming dest _desc _times = do
-  printError "plotTimes %s: not yet implemented\n" (show dest)
+plotTiming PDF desc times =
+  renderableToPNGFile (renderTiming desc times) 800 600
+                      (manglePath "png" $ desc ++ " timings")
+
+plotTiming PNG desc times =
+  renderableToPNGFile (renderTiming desc times) 800 600
+                      (manglePath "png" $ desc ++ " timings")
+
+plotTiming SVG desc times =
+  renderableToPNGFile (renderTiming desc times) 800 600
+                      (manglePath "png" $ desc ++ " timings")
+
+plotTiming Window desc times =
+  renderableToWindow (renderTiming desc times) 800 600
 
 plotKDE :: PlotOutput -> String -> Points -> UArr Double -> IO ()
 
-plotKDE Window desc points pdf =
-    renderableToWindow (renderKDE desc points pdf) 800 600
+plotKDE PDF desc points pdf =
+  renderableToPDFFile (renderKDE desc points pdf) 800 600
+                      (manglePath "png" $ desc ++ " densities")
 
 plotKDE PNG desc points pdf =
   renderableToPNGFile (renderKDE desc points pdf) 800 600
                       (manglePath "png" $ desc ++ " densities")
+
+plotKDE SVG desc points pdf =
+  renderableToPDFFile (renderKDE desc points pdf) 800 600
+                      (manglePath "png" $ desc ++ " densities")
+
+plotKDE Window desc points pdf =
+    renderableToWindow (renderKDE desc points pdf) 800 600
 
 plotKDE dest _desc _points _pdf = do
   printError "plotKDE %s: not yet implemented\n" (show dest)
