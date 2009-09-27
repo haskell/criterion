@@ -1,3 +1,14 @@
+-- |
+-- Module      : Criterion
+-- Copyright   : (c) Bryan O'Sullivan 2009
+--
+-- License     : BSD-style
+-- Maintainer  : bos@serpentine.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- Core benchmarking code.
+
 module Criterion
     (
       Benchmarkable(..)
@@ -18,7 +29,6 @@ import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, bgroup)
 import Data.Array.Vector ((:*:)(..), lengthU, mapU)
-import Prelude hiding (catch)
 import Statistics.Function (createIO)
 import Statistics.KernelDensity (epanechnikovPDF)
 import Statistics.RandomVariate (withSystemRandom)
@@ -28,6 +38,7 @@ import Statistics.Sample (mean, stdDev)
 import Statistics.Types (Sample)
 import System.Mem (performGC)
 
+-- | Run a single benchmark and return timings for executing it.
 runBenchmark :: Benchmarkable b => Config -> Environment -> b -> IO Sample
 runBenchmark cfg env b = do
   runForAtLeast 0.1 10000 (`replicateM_` getTime)
@@ -50,6 +61,7 @@ runBenchmark cfg env b = do
     timeLoop k | k <= 0    = return ()
                | otherwise = run b k >> timeLoop (k-1)
 
+-- | Run a single benchmark and analyse its performance.
 runAndAnalyseOne :: Benchmarkable b => Config -> Environment -> String -> b
                  -> IO ()
 runAndAnalyseOne cfg env desc b = do

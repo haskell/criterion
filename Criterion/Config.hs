@@ -32,26 +32,29 @@ instance Monoid PrintExit where
     mempty  = Nada
     mappend = max
 
-data PlotOutput = CSV
-                | PDF Int Int
-                | PNG Int Int
-                | SVG Int Int
-                | Window Int Int
+-- | Supported plot outputs.  Some outputs support width and height in
+-- varying units.
+data PlotOutput = CSV           -- ^ Textual CSV file.
+                | PDF Int Int   -- ^ PDF file, dimensions in points.
+                | PNG Int Int   -- ^ PNG file, dimensions in pixels.
+                | SVG Int Int   -- ^ SVG file, dimensions in points.
+                | Window Int Int-- ^ Display in a window, dimensions in pixels.
                   deriving (Eq, Ord, Read, Show)
 
+-- | What to plot.
 data Plot = KernelDensity
           | Timing
             deriving (Eq, Ord, Read, Show)
 
 data Config = Config {
-      cfgBanner       :: Last String
-    , cfgConfInterval :: Last Double
-    , cfgPerformGC    :: Last Bool
-    , cfgPlot         :: MultiMap Plot PlotOutput
-    , cfgPrintExit    :: PrintExit
-    , cfgResamples    :: Last Int
-    , cfgSamples      :: Last Int
-    , cfgVerbosity    :: Last Verbosity
+      cfgBanner       :: Last String -- ^ The \"version\" banner to print.
+    , cfgConfInterval :: Last Double -- ^ Confidence interval to use.
+    , cfgPerformGC    :: Last Bool   -- ^ Whether to run the GC between passes.
+    , cfgPlot         :: MultiMap Plot PlotOutput -- ^ What to plot, and where.
+    , cfgPrintExit    :: PrintExit   -- ^ Whether to print information and exit.
+    , cfgResamples    :: Last Int    -- ^ Number of resamples to perform.
+    , cfgSamples      :: Last Int    -- ^ Number of samples to collect.
+    , cfgVerbosity    :: Last Verbosity -- ^ Whether to run verbosely.
     } deriving (Eq, Read, Show, Typeable)
 
 emptyConfig :: Config
@@ -66,6 +69,7 @@ emptyConfig = Config {
               , cfgVerbosity    = mempty
               }
 
+-- | A configuration with sensible defaults.
 defaultConfig :: Config
 defaultConfig = Config {
                   cfgBanner       = ljust "I don't know what version I am."
@@ -78,10 +82,14 @@ defaultConfig = Config {
                 , cfgVerbosity    = ljust Normal
                 }
 
+-- | Constructor for 'Last' values.
 ljust :: a -> Last a
 ljust = Last . Just
 
-fromLJ :: (Config -> Last a) -> Config -> a
+-- | Deconstructor for 'Last' values.
+fromLJ :: (Config -> Last a)    -- ^ Field to access.
+       -> Config                -- ^ Default to use.
+       -> a
 fromLJ f cfg = case f cfg of
                  Last Nothing  -> fromLJ f defaultConfig
                  Last (Just a) -> a

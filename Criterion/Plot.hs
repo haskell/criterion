@@ -164,4 +164,4 @@ secs k
                | t >= 1e3  = printf "%.0f %s" t u
                | t >= 1e2  = printf "%.0f %s" t u
                | t >= 1e1  = printf "%.1f %s" t u
-               | otherwise = printf "%.1f %s" t u
+               | otherwise = printf "%.2f %s" t u

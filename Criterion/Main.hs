@@ -11,18 +11,20 @@ module Criterion.Main
     ) where
 
 import Control.Monad (MonadPlus(..))
-import Criterion (Benchmarkable(..), Benchmark, bench, bgroup, runAndAnalyse)
+import Criterion (runAndAnalyse)
 import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.MultiMap (singleton)
-import Data.List (isPrefixOf)
+import Criterion.Types (Benchmarkable(..), Benchmark, bench, benchNames, bgroup)
+import Data.List (isPrefixOf, sort)
 import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
 import System.Exit (ExitCode(..), exitWith)
 import Text.ParserCombinators.Parsec
 
+-- | Parse a plot output.
 parsePlot :: Parser PlotOutput
 parsePlot = try (dim "window" Window 800 600)
     `mplus` try (dim "win" Window 800 600)
@@ -44,11 +46,13 @@ parsePlot = try (dim "window" Window 800 600)
               _                   -> mzero
            <?> "dimensions"
 
+-- | Parse a plot type.
 plot :: Plot -> String -> IO Config
 plot p s = case parse parsePlot "" s of
              Left _err -> parseError "unknown plot type\n"
              Right t   -> return mempty { cfgPlot = singleton p t }
 
+-- | Parse a confidence interval.
 ci :: String -> IO Config
 ci s = case reads s' of
          [(d,"%")] -> check (d/100)
@@ -61,6 +65,7 @@ ci s = case reads s' of
                 | d >= 1 = parseError "confidence interval is greater than 1"
                 | otherwise = return mempty { cfgConfInterval = ljust d }
 
+-- | Parse a positive number.
 pos :: (Num a, Ord a, Read a) =>
        String -> (Last a -> Config) -> String -> IO Config
 pos q f s =
@@ -88,6 +93,8 @@ defaultOptions = [
           "collect garbage between iterations"
  , Option ['I'] ["ci"] (ReqArg ci "CI")
           "bootstrap confidence interval"
+ , Option ['l'] ["--list"] (noArg mempty { cfgPrintExit = List })
+          "print a list of benchmarks"
  , Option ['k'] ["plot-kde"] (ReqArg (plot KernelDensity) "TYPE")
           "plot kernel density estimate of probabilities"
  , Option ['q'] ["quiet"] (noArg mempty { cfgVerbosity = ljust Quiet })
@@ -130,9 +137,10 @@ printUsage options exitCode = do
     ]
   exitWith exitCode
 
-parseCommandLine :: Config -> [OptDescr (IO Config)] -> [String]
-                 -> IO (Config, [String])
-parseCommandLine defCfg options args =
+-- | Parse command line options.
+parseArgs :: Config -> [OptDescr (IO Config)] -> [String]
+          -> IO (Config, [String])
+parseArgs defCfg options args =
   case getOpt Permute options args of
     (_, _, (err:_)) -> parseError err
     (opts, rest, _) -> do
@@ -142,9 +150,12 @@ parseCommandLine defCfg options args =
         Version -> printBanner cfg >> exitWith ExitSuccess
         _ ->       return (cfg, rest)
 
+-- | An entry point that can be used as a @main@ function.
 defaultMain :: [Benchmark] -> IO ()
 defaultMain = defaultMainWith defaultConfig
 
+-- | An entry point that can be used as a @main@ function, with
+-- configurable defaults.
 defaultMainWith :: Config -> [Benchmark] -> IO ()
 defaultMainWith defCfg bs = do
   (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
