@@ -1,5 +1,16 @@
 {-# LANGUAGE CPP, DeriveDataTypeable #-}
 
+-- |
+-- Module      : Criterion.Config
+-- Copyright   : (c) Bryan O'Sullivan 2009
+--
+-- License     : BSD-style
+-- Maintainer  : bos@serpentine.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- Benchmarking configuration.
+
 module Criterion.Config
     (
       Config(..)
@@ -17,35 +28,38 @@ import Data.Function (on)
 import Data.Monoid (Monoid(..), Last(..))
 import Data.Typeable (Typeable)
 
+-- | Control the amount of information displayed.
 data Verbosity = Quiet
                | Normal
                | Verbose
-                 deriving (Eq, Ord, Bounded, Enum, Read, Show)
+                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable)
 
-data PrintExit = Nada
-               | List
-               | Version
-               | Help
-                 deriving (Eq, Ord, Bounded, Enum, Read, Show)
+-- | Print some information and exit, without running any benchmarks.
+data PrintExit = Nada           -- ^ Do not actually print-and-exit. (Default.)
+               | List           -- ^ Print a list of known benchmarks.
+               | Version        -- ^ Print version information (if known).
+               | Help           -- ^ Print a help\/usaage message.
+                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable)
 
 instance Monoid PrintExit where
     mempty  = Nada
     mappend = max
 
 -- | Supported plot outputs.  Some outputs support width and height in
--- varying units.
+-- varying units.  A point is 1\/72 of an inch (0.353mm).
 data PlotOutput = CSV           -- ^ Textual CSV file.
                 | PDF Int Int   -- ^ PDF file, dimensions in points.
                 | PNG Int Int   -- ^ PNG file, dimensions in pixels.
                 | SVG Int Int   -- ^ SVG file, dimensions in points.
                 | Window Int Int-- ^ Display in a window, dimensions in pixels.
-                  deriving (Eq, Ord, Read, Show)
+                  deriving (Eq, Ord, Read, Show, Typeable)
 
 -- | What to plot.
-data Plot = KernelDensity
-          | Timing
-            deriving (Eq, Ord, Read, Show)
+data Plot = KernelDensity       -- ^ Kernel density estimate of probabilities.
+          | Timing              -- ^ Benchmark timings.
+            deriving (Eq, Ord, Read, Show, Typeable)
 
+-- | Top-level program configuration.
 data Config = Config {
       cfgBanner       :: Last String -- ^ The \"version\" banner to print.
     , cfgConfInterval :: Last Double -- ^ Confidence interval to use.
@@ -57,17 +71,9 @@ data Config = Config {
     , cfgVerbosity    :: Last Verbosity -- ^ Whether to run verbosely.
     } deriving (Eq, Read, Show, Typeable)
 
-emptyConfig :: Config
-emptyConfig = Config {
-                cfgBanner       = mempty
-              , cfgConfInterval = mempty
-              , cfgPerformGC    = mempty
-              , cfgPlot         = mempty
-              , cfgPrintExit    = mempty
-              , cfgResamples    = mempty
-              , cfgSamples      = mempty
-              , cfgVerbosity    = mempty
-              }
+instance Monoid Config where
+    mempty  = emptyConfig
+    mappend = appendConfig
 
 -- | A configuration with sensible defaults.
 defaultConfig :: Config
@@ -94,6 +100,18 @@ fromLJ f cfg = case f cfg of
                  Last Nothing  -> fromLJ f defaultConfig
                  Last (Just a) -> a
 
+emptyConfig :: Config
+emptyConfig = Config {
+                cfgBanner       = mempty
+              , cfgConfInterval = mempty
+              , cfgPerformGC    = mempty
+              , cfgPlot         = mempty
+              , cfgPrintExit    = mempty
+              , cfgResamples    = mempty
+              , cfgSamples      = mempty
+              , cfgVerbosity    = mempty
+              }
+
 appendConfig :: Config -> Config -> Config
 appendConfig a b =
     Config {
@@ -107,7 +125,3 @@ appendConfig a b =
     , cfgVerbosity    = app cfgVerbosity a b
     }
   where app f = mappend `on` f
-
-instance Monoid Config where
-    mempty  = emptyConfig
-    mappend = appendConfig

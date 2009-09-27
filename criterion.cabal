@@ -1,7 +1,6 @@
 name:           criterion
 version:        0.0.1
 synopsis:       Benchmarking
-description:    Benchmarking
 license:        BSD3
 license-file:   LICENSE
 author:         Bryan O'Sullivan <bos@serpentine.com>
@@ -11,6 +10,13 @@ category:       Development, Performance
 build-type:     Simple
 cabal-version:  >= 1.2
 extra-source-files: README
+description:
+  This library provides a powerful but simple way to measure the
+  performance of Haskell code.
+  .
+  It provides both a framework for executing and analysing benchmarks
+  and a set of simple driver code that makes it easy to build and run
+  them.
 
 library
   exposed-modules:

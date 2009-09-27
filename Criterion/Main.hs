@@ -1,3 +1,33 @@
+-- |
+-- Module      : Criterion.Main
+-- Copyright   : (c) Bryan O'Sullivan 2009
+--
+-- License     : BSD-style
+-- Maintainer  : bos@serpentine.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- Simple @main@ wrappers for benchmarking.
+--
+-- Example:
+--
+-- > {-# LANGUAGE ScopedTypeVariables #-}
+-- > {-# OPTIONS_GHC -fno-full-laziness #-}
+-- >
+-- > import Criterion.Main
+-- >
+-- > fib :: Int -> Int
+-- > fib 0 = 0
+-- > fib 1 = 1
+-- > fib n = fib (n-1) + fib (n-2)
+-- >
+-- > main = defaultMain [
+-- >        bgroup \"fib\" [ bench \"fib 10\" (\(_::Int) -> fib 10)
+-- >                       , bench \"fib 35\" (\(_::Int) -> fib 35)
+-- >                       , bench \"fib 37\" (\(_::Int) -> fib 37)
+-- >                       ]
+-- >                    ]
+
 module Criterion.Main
     (
       Benchmarkable(..)
@@ -73,12 +103,6 @@ pos q f s =
       [(n,"")] | n > 0     -> return . f $ ljust n
                | otherwise -> parseError $ q ++ " must be positive"
       _                    -> parseError $ "invalid " ++ q ++ " provided"
-
-parseError :: String -> IO a
-parseError msg = do
-  printError "Error: %s" msg
-  printError "Run \"%s --help\" for usage information\n" =<< getProgName
-  exitWith (ExitFailure 64)
 
 noArg :: Config -> ArgDescr (IO Config)
 noArg = NoArg . return
@@ -167,3 +191,11 @@ defaultMainWith defCfg bs = do
       env <- measureEnvironment cfg
       let shouldRun b = null args || any (`isPrefixOf` b) args
       mapM_ (runAndAnalyse shouldRun cfg env) bs
+
+-- | Display an error message from a command line parsing failure, and
+-- exit.
+parseError :: String -> IO a
+parseError msg = do
+  printError "Error: %s" msg
+  printError "Run \"%s --help\" for usage information\n" =<< getProgName
+  exitWith (ExitFailure 64)

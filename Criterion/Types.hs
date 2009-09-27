@@ -14,7 +14,12 @@
 --
 -- For a pure function of type @Int -> a@, the benchmarking harness
 -- calls this function repeatedly, each time with a different 'Int'
--- argument, and reduces the result the function returns to WHNF.
+-- argument, and reduces the result the function returns to weak head
+-- normal form.  If you need the result reduced to normal form, that
+-- is your responsibility.
+--
+-- For an action of type @IO a@, the benchmarking harness calls the
+-- action repeatedly, but does not reduce the result.
 
 {-# LANGUAGE FlexibleInstances, GADTs #-}
 module Criterion.Types
@@ -38,21 +43,28 @@ instance Benchmarkable (Int -> a) where
 instance Benchmarkable (IO a) where
     run a _ = a >> return ()
 
--- | A benchmark may be composed of either a single 'Benchmarkable'
--- item with a name, or a (possibly nested) group of 'Benchmark's.
+-- | A benchmark may consist of either a single 'Benchmarkable' item
+-- with a name, created with 'bench', or a (possibly nested) group of
+-- 'Benchmark's, created with 'bgroup'.
 data Benchmark where
     Benchmark  :: Benchmarkable b => String -> b -> Benchmark
     BenchGroup :: String -> [Benchmark] -> Benchmark
 
 -- | Create a single benchmark.
-bench :: Benchmarkable b => String -> b -> Benchmark
+bench :: Benchmarkable b =>
+         String                 -- ^ A name to identify the benchmark.
+      -> b
+      -> Benchmark
 bench = Benchmark
 
 -- | Group several benchmarks together under a common name.
-bgroup :: String -> [Benchmark] -> Benchmark
+bgroup :: String                -- ^ A name to identify the group of benchmarks.
+       -> [Benchmark]           -- ^ Benchmarks to group under this name.
+       -> Benchmark
 bgroup = BenchGroup
 
--- | Retrieve the names of all benchmarks.
+-- | Retrieve the names of all benchmarks.  Grouped benchmarks are
+-- prefixed with the name of the group they're in.
 benchNames :: Benchmark -> [String]
 benchNames (Benchmark d _)   = [d]
 benchNames (BenchGroup d bs) = map ((d ++ "/") ++) . concatMap benchNames $ bs

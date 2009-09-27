@@ -1,5 +1,16 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 
+-- |
+-- Module      : Criterion.Plot
+-- Copyright   : (c) Bryan O'Sullivan 2009
+--
+-- License     : BSD-style
+-- Maintainer  : bos@serpentine.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- Plotting functions.
+
 module Criterion.Plot
     (
       plotKDE
@@ -10,15 +21,15 @@ module Criterion.Plot
 import Criterion.Config
 import Data.Accessor ((^=))
 import Data.Array.Vector
-import Data.Char (isSpace)
+import Data.Char (isSpace, toLower)
 import Data.Foldable (forM_)
-import Data.List (group)
+import Data.List (group, intersperse)
 import Graphics.Rendering.Chart hiding (Plot,c)
 import Graphics.Rendering.Chart.Gtk (renderableToWindow)
 import Statistics.KernelDensity (Points, fromPoints)
 import Statistics.Types (Sample)
-import System.FilePath (addExtension, pathSeparator)
-import System.IO (IOMode(..), Handle, hPutStr, stdout, withBinaryFile)
+import System.FilePath (pathSeparator)
+import System.IO (IOMode(..), Handle, hPutStr, withBinaryFile)
 import Text.Printf (printf)
 import qualified Criterion.MultiMap as M
 
@@ -28,48 +39,57 @@ plotWith p cfg plot =
     Nothing -> return ()
     Just s -> forM_ s $ plot
 
-plotTiming :: PlotOutput -> String -> Sample -> IO ()
+-- | Plot timing data.
+plotTiming :: PlotOutput        -- ^ The kind of output desired.
+           -> String            -- ^ Benchmark name.
+           -> Sample            -- ^ Timing data.
+           -> IO ()
 
 plotTiming CSV desc times = do
-  writeTo (manglePath "csv" (desc ++ " timings")) $ \h -> do
-    putLn h (escapeCSV "sample" ++ ',' : escapeCSV "execution time")
+  writeTo (mangle $ printf "%s timings.csv" desc) $ \h -> do
+    putRow h ["sample", "execution time"]
     forM_ (fromU $ indexedU times) $ \(x :*: y) ->
-      putLn h (show x ++ ',' : show y)
+      putRow h [show x, show y]
 
 plotTiming (PDF x y) desc times =
   renderableToPDFFile (renderTiming desc times) x y
-                      (manglePath "pdf" $ printf "%s timings %dx%d" desc x y)
+                      (mangle $ printf "%s timings %dx%d.pdf" desc x y)
 
 plotTiming (PNG x y) desc times =
   renderableToPNGFile (renderTiming desc times) x y
-                      (manglePath "png" $ printf "%s timings %dx%d" desc x y)
+                      (mangle $ printf "%s timings %dx%d.png" desc x y)
 
 plotTiming (SVG x y) desc times =
   renderableToSVGFile (renderTiming desc times) x y
-                      (manglePath "svg" $ printf "%s timings %dx%d" desc x y)
+                      (mangle $ printf "%s timings %dx%d.svg" desc x y)
 
 plotTiming (Window x y) desc times =
   renderableToWindow (renderTiming desc times) x y
 
-plotKDE :: PlotOutput -> String -> Points -> UArr Double -> IO ()
+-- | Plot kernel density estimate.
+plotKDE :: PlotOutput           -- ^ The kind of output desired.
+        -> String               -- ^ Benchmark name.
+        -> Points               -- ^ Points at which KDE was computed.
+        -> UArr Double          -- ^ Kernel density estimates.
+        -> IO ()
 
 plotKDE CSV desc points pdf = do
-  writeTo (manglePath "csv" (desc ++ " densities")) $ \h -> do
-    putLn h (escapeCSV "execution time" ++ ',' : escapeCSV "probability")
+  writeTo (mangle $ printf "%s densities.csv" desc) $ \h -> do
+    putRow h ["execution time", "probability"]
     forM_ (zip (fromU pdf) (fromU (fromPoints points))) $ \(x, y) ->
-      putLn h (show x ++ ',' : show y)
+      putRow h [show x, show y]
 
 plotKDE (PDF x y) desc points pdf =
   renderableToPDFFile (renderKDE desc points pdf) x y
-                      (manglePath "pdf" $ printf "%s densities %dx%d" desc x y)
+                      (mangle $ printf "%s densities %dx%d.pdf" desc x y)
 
 plotKDE (PNG x y) desc points pdf =
   renderableToPNGFile (renderKDE desc points pdf) x y
-                      (manglePath "png" $ printf "%s densities %dx%d" desc x y)
+                      (mangle $ printf "%s densities %dx%d.png" desc x y)
 
 plotKDE (SVG x y) desc points pdf =
   renderableToSVGFile (renderKDE desc points pdf) x y
-                      (manglePath "svg" $ printf "%s densities %dx%d" desc x y)
+                      (mangle $ printf "%s densities %dx%d.svg" desc x y)
 
 plotKDE (Window x y) desc points pdf =
     renderableToWindow (renderKDE desc points pdf) x y
@@ -113,15 +133,16 @@ renderKDE desc points pdf = toRenderable layout
     info = plot_lines_values ^= [zip (fromU (fromPoints points)) (fromU spdf)]
          $ defaultPlotLines
 
+    -- Normalise the PDF estimates into a semi-sane range.
     spdf = mapU (/ sumU pdf) pdf
 
+-- | An axis whose labels display as seconds (or fractions thereof).
 secAxis :: LinearAxisParams
 secAxis = la_labelf ^= secs
         $ defaultLinearAxis
 
 writeTo :: FilePath -> (Handle -> IO a) -> IO a
-writeTo "-" act  = act stdout
-writeTo path act = withBinaryFile path WriteMode act
+writeTo path = withBinaryFile path WriteMode
 
 escapeCSV :: String -> String
 escapeCSV xs | any (`elem`xs) escapes = '"' : concatMap esc xs ++ "\""
@@ -130,20 +151,23 @@ escapeCSV xs | any (`elem`xs) escapes = '"' : concatMap esc xs ++ "\""
           esc c   = [c]
           escapes = "\"\r\n,"
 
-putLn :: Handle -> String -> IO ()
-putLn h s = hPutStr h (s ++ "\r\n")
+putRow :: Handle -> [String] -> IO ()
+putRow h s = hPutStr h (concat (intersperse "," (map escapeCSV s)) ++ "\r\n")
 
-manglePath :: String -> String -> FilePath
-manglePath _ "-"    = "-"
-manglePath sfx name = (`addExtension` sfx) .
-                      concatMap (replace ((==) '-' . head) "-") .
-                      group .
-                      map (replace isSpace '-') .
-                      map (replace (==pathSeparator) '-') $
-                      name
+-- | Get rid of spaces and other potentially troublesome characters
+-- from output.
+mangle :: String -> FilePath
+mangle = concatMap (replace ((==) '-' . head) "-")
+       . group
+       . map (replace isSpace '-' . replace (==pathSeparator) '-' . toLower)
     where replace p r c | p c       = r
                         | otherwise = c
 
+-- | Try to render meaningful time-axis labels.
+--
+-- /FIXME/: Trouble is, we need to know the range of times for this to
+-- work properly, so that we don't accidentally display consecutive
+-- values that appear identical (e.g. \"43 ms, 43 ms\").
 secs :: Double -> String
 secs k
     | k < 0      = '-' : secs (-k)

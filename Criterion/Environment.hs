@@ -1,4 +1,15 @@
-{-# LANGUAGE TypeOperators #-}
+{-# LANGUAGE DeriveDataTypeable, TypeOperators #-}
+
+-- |
+-- Module      : Criterion.Environment
+-- Copyright   : (c) Bryan O'Sullivan 2009
+--
+-- License     : BSD-style
+-- Maintainer  : bos@serpentine.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- Code for measuring and characterising the execution environment.
 
 module Criterion.Environment
     (
@@ -12,17 +23,22 @@ import Criterion.Config (Config)
 import Criterion.IO (note)
 import Criterion.Measurement (getTime, runForAtLeast, time_)
 import Data.Array.Vector
+import Data.Typeable (Typeable)
 import Statistics.Function (createIO)
 
+-- | Measured aspects of the execution environment.
 data Environment = Environment {
       envClockResolution :: {-# UNPACK #-} !Double
+    -- ^ Clock resolution (in seconds).
     , envClockCost       :: {-# UNPACK #-} !Double
-    } deriving (Eq, Read, Show)
+    -- ^ The cost of a single clock call (in seconds).
+    } deriving (Eq, Read, Show, Typeable)
 
+-- | Measure the execution environment.
 measureEnvironment :: Config -> IO Environment
 measureEnvironment cfg = do
   note cfg "warming up\n"
-  seed <- snd3 `fmap` runForAtLeast 0.1 10000 resolution
+  (_ :*: seed :*: _) <- runForAtLeast 0.1 10000 resolution
   note cfg "estimating clock resolution...\n"
   clockRes <- thd3 `fmap` runForAtLeast 0.5 seed resolution >>=
               uncurry (analyseMean cfg)
@@ -43,9 +59,4 @@ measureEnvironment cfg = do
       (_ :*: iters :*: elapsed) <- runForAtLeast 0.01 10000 timeClock
       times <- createIO (ceiling (timeLimit / elapsed)) $ \_ -> timeClock iters
       return (mapU (/ fromIntegral iters) times, lengthU times)
-
-snd3 :: (a :*: b :*: c) -> b
-snd3 (_ :*: b :*: _) = b
-
-thd3 :: (a :*: b :*: c) -> c
-thd3 (_ :*: _:*: c) = c
+    thd3 (_ :*: _:*: c) = c

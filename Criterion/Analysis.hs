@@ -1,3 +1,14 @@
+-- |
+-- Module      : Criterion.Analysis
+-- Copyright   : (c) Bryan O'Sullivan 2009
+--
+-- License     : BSD-style
+-- Maintainer  : bos@serpentine.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- Analysis code for benchmarks.
+
 module Criterion.Analysis
     (
       Outliers (..)
@@ -22,6 +33,8 @@ import Statistics.Resampling.Bootstrap (Estimate(..))
 import Statistics.Sample (mean)
 import Statistics.Types (Sample)
 
+-- | Outliers from sample data, calculated using the boxplot
+-- technique.
 data Outliers = Outliers {
       samplesSeen :: {-# UNPACK #-} !Int64
     , lowSevere   :: {-# UNPACK #-} !Int64
@@ -34,10 +47,13 @@ data Outliers = Outliers {
     -- ^ More than 3 times the IQR above the third quartile.
     } deriving (Eq, Read, Show)
 
-data OutlierVariance = Unaffected
-                     | Slight
-                     | Moderate
-                     | Severe
+-- | A description of the extent to which outliers in the sample data
+-- affect the sample mean and standard deviation.
+data OutlierVariance = Unaffected -- ^ Less than 1% effect.
+                     | Slight     -- ^ Between 1% and 10%.
+                     | Moderate   -- ^ Between 10% and 50%.
+                     | Severe     -- ^ Above 50% (i.e. measurements
+                                  -- are useless).
                        deriving (Eq, Ord, Show)
 
 instance Monoid Outliers where
@@ -69,6 +85,8 @@ classifyOutliers sa = foldlU ((. outlier) . mappend) mempty ssa
           iqr = q3 - q1
 {-# INLINE classifyOutliers #-}
 
+-- | Compute the extent to which outliers in the sample data affect
+-- the sample mean and standard deviation.
 outlierVariance :: Estimate     -- ^ Bootstrap estimate of sample mean.
                 -> Estimate     -- ^ Bootstrap estimate of sample
                                 --   standard deviation.
@@ -97,17 +115,25 @@ outlierVariance µ σ a = (effect, varOutMin)
         d     = k * 2 where k = µa - x
         det   = k1 * k1 - 4 * σg2 * k0
 
+-- | Count the total number of outliers in a sample.
 countOutliers :: Outliers -> Int64
 countOutliers (Outliers _ a b c d) = a + b + c + d
 {-# INLINE countOutliers #-}
 
-analyseMean :: Config -> Sample -> Int -> IO Double
+-- | Display the mean of a 'Sample', and characterise the outliers
+-- present in the sample.
+analyseMean :: Config
+            -> Sample
+            -> Int              -- ^ Number of iterations used to
+                                -- compute the sample.
+            -> IO Double
 analyseMean cfg a iters = do
   let µ = mean a
   note cfg "mean is %s (%d iterations)\n" (secs µ) iters
   noteOutliers cfg . classifyOutliers $ a
   return µ
 
+-- | Display a report of the 'Outliers' present in a 'Sample'.
 noteOutliers :: Config -> Outliers -> IO ()
 noteOutliers cfg o = do
   let frac n = (100::Double) * fromIntegral n / fromIntegral (samplesSeen o)

@@ -38,7 +38,8 @@ import Statistics.Sample (mean, stdDev)
 import Statistics.Types (Sample)
 import System.Mem (performGC)
 
--- | Run a single benchmark and return timings for executing it.
+-- | Run a single benchmark, and return timings measured when
+-- executing it.
 runBenchmark :: Benchmarkable b => Config -> Environment -> b -> IO Sample
 runBenchmark cfg env b = do
   runForAtLeast 0.1 10000 (`replicateM_` getTime)
@@ -93,8 +94,9 @@ runAndAnalyseOne cfg env desc b = do
                    (estConfidenceLevel e)
 
 -- | Run, and analyse, one or more benchmarks.
-runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses which
-                                  -- benchmarks to run by name.
+runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
+                                  -- whether to run a benchmark by its
+                                  -- name.
               -> Config
               -> Environment
               -> Benchmark
