@@ -80,12 +80,19 @@ runAndAnalyseOne cfg env desc b = do
                    (secs $ estLowerBound e) (secs $ estUpperBound e)
                    (estConfidenceLevel e)
 
-runAndAnalyse :: (String -> Bool) -> Config -> Environment -> Benchmark -> IO ()
-runAndAnalyse p cfg env (Benchmark desc b)
-    | p desc    = do note cfg "\nbenchmarking %s\n" desc
-                     runAndAnalyseOne cfg env desc b
-    | otherwise = return ()
-runAndAnalyse p cfg env (BenchGroup desc bs) =
-    mapM_ (runAndAnalyse p' cfg env) bs
-  where p' | p desc    = const True
-           | otherwise = p
+-- | Run, and analyse, one or more benchmarks.
+runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses which
+                                  -- benchmarks to run by name.
+              -> Config
+              -> Environment
+              -> Benchmark
+              -> IO ()
+runAndAnalyse p cfg env = go ""
+  where go pfx (Benchmark desc b)
+            | p desc'   = do note cfg "\nbenchmarking %s\n" desc'
+                             runAndAnalyseOne cfg env desc' b
+            | otherwise = return ()
+            where desc' = prefix pfx desc
+        go pfx (BenchGroup desc bs) = mapM_ (go (prefix pfx desc)) bs
+        prefix ""  desc = desc
+        prefix pfx desc = pfx ++ '/' : desc

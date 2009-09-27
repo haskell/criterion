@@ -23,6 +23,7 @@ data Verbosity = Quiet
                  deriving (Eq, Ord, Bounded, Enum, Read, Show)
 
 data PrintExit = Nada
+               | List
                | Version
                | Help
                  deriving (Eq, Ord, Bounded, Enum, Read, Show)

@@ -7,7 +7,7 @@ module Criterion.Main
     , defaultMain
     , defaultMainWith
     , defaultOptions
-    , parseCommandLine
+    , parseArgs
     ) where
 
 import Control.Monad (MonadPlus(..))
@@ -147,7 +147,12 @@ defaultMain = defaultMainWith defaultConfig
 
 defaultMainWith :: Config -> [Benchmark] -> IO ()
 defaultMainWith defCfg bs = do
-  (cfg, args) <- parseCommandLine defCfg defaultOptions =<< getArgs
-  env <- measureEnvironment cfg
-  let shouldRun b = null args || any (`isPrefixOf` b) args
-  mapM_ (runAndAnalyse shouldRun cfg env) bs
+  (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
+  if cfgPrintExit cfg == List
+    then do
+      note cfg "Benchmarks:\n"
+      mapM_ (note cfg "  %s\n") (sort $ concatMap benchNames bs)
+    else do
+      env <- measureEnvironment cfg
+      let shouldRun b = null args || any (`isPrefixOf` b) args
+      mapM_ (runAndAnalyse shouldRun cfg env) bs
