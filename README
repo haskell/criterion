@@ -1,0 +1,23 @@
+Criterion: robust, reliable performance measurement
+---------------------------------------------------
+
+This package provides the Criterion module, a Haskell library for
+measuring and analysing the performance of Haskell programs.
+
+To get started, read the documentation for the Criterion.Main module,
+and take a look at the programs in the examples directory.
+
+
+Get involved!
+-------------
+
+Please feel welcome to contribute new code or bug fixes.  You can
+fetch the source repository from here:
+
+darcs get http://darcs.serpentine.com/criterion
+
+
+Authors
+-------
+
+Bryan O'Sullivan <bos@serpentine.com>
