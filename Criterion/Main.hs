@@ -7,35 +7,30 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
--- Simple @main@ wrappers for benchmarking.
---
--- Example:
---
--- > {-# LANGUAGE ScopedTypeVariables #-}
--- > {-# OPTIONS_GHC -fno-full-laziness #-}
--- >
--- > import Criterion.Main
--- >
--- > fib :: Int -> Int
--- > fib 0 = 0
--- > fib 1 = 1
--- > fib n = fib (n-1) + fib (n-2)
--- >
--- > main = defaultMain [
--- >        bgroup \"fib\" [ bench \"fib 10\" (\(_::Int) -> fib 10)
--- >                       , bench \"fib 35\" (\(_::Int) -> fib 35)
--- >                       , bench \"fib 37\" (\(_::Int) -> fib 37)
--- >                       ]
--- >                    ]
+-- Wrappers for compiling and running benchmarks quickly and easily.
+-- See 'defaultMain' below for an example.
 
 module Criterion.Main
     (
+    -- * Benchmarking pure code
+    -- $eval
+
+    -- ** Let-floating
+    -- $letfloat
+
+    -- ** Worker-wrapper transformation
+    -- $worker
+
+    -- * Types
       Benchmarkable(..)
     , Benchmark
+    -- * Constructing benchmarks
     , bench
     , bgroup
+    -- * Running benchmarks
     , defaultMain
     , defaultMainWith
+    -- * Other useful code
     , defaultOptions
     , parseArgs
     ) where
@@ -107,6 +102,7 @@ pos q f s =
 noArg :: Config -> ArgDescr (IO Config)
 noArg = NoArg . return
 
+-- | The standard options accepted on the command line.
 defaultOptions :: [OptDescr (IO Config)]
 defaultOptions = [
    Option ['h','?'] ["help"] (noArg mempty { cfgPrintExit = Help })
@@ -118,7 +114,7 @@ defaultOptions = [
  , Option ['I'] ["ci"] (ReqArg ci "CI")
           "bootstrap confidence interval"
  , Option ['l'] ["--list"] (noArg mempty { cfgPrintExit = List })
-          "print a list of benchmarks"
+          "print a list of all benchmark names, then exit"
  , Option ['k'] ["plot-kde"] (ReqArg (plot KernelDensity) "TYPE")
           "plot kernel density estimate of probabilities"
  , Option ['q'] ["quiet"] (noArg mempty { cfgVerbosity = ljust Quiet })
@@ -146,9 +142,12 @@ printBanner cfg =
 printUsage :: [OptDescr (IO Config)] -> ExitCode -> IO a
 printUsage options exitCode = do
   p <- getProgName
-  putStr (usageInfo ("Usage: " ++ p ++ " [OPTIONS]") options)
+  putStr (usageInfo ("Usage: " ++ p ++ " [OPTIONS] [BENCHMARKS]") options)
   mapM_ putStrLn [
        ""
+    , "If no benchmark names are given, all are run"
+    , "Otherwise, benchmarks are run by prefix match"
+    , ""
     , "Plot types:"
     , "  window or win   display a window immediately"
     , "  csv             save a CSV file"
@@ -175,11 +174,47 @@ parseArgs defCfg options args =
         _ ->       return (cfg, rest)
 
 -- | An entry point that can be used as a @main@ function.
+--
+-- > import Criterion.Main
+-- >
+-- > fib :: Int -> Int
+-- > fib 0 = 0
+-- > fib 1 = 1
+-- > fib n = fib (n-1) + fib (n-2)
+-- >
+-- > main = defaultMain [
+-- >        bgroup "fib" [ bench "fib 10" $ \n -> fib (10+n-n))
+-- >                     , bench "fib 35" $ \n -> fib (35+n-n))
+-- >                     , bench "fib 37" $ \n -> fib (37+n-n))
+-- >                     ]
+-- >                    ]
 defaultMain :: [Benchmark] -> IO ()
 defaultMain = defaultMainWith defaultConfig
 
 -- | An entry point that can be used as a @main@ function, with
 -- configurable defaults.
+--
+-- Example:
+--
+-- > import Criterion.Config
+-- > import qualified Criterion.MultiMap as M
+-- >
+-- > myConfig = defaultConfig {
+-- >              -- Always display an 800x600 window with curves.
+-- >              cfgPlot = M.singleton KernelDensity (Window 800 600)
+-- >            }
+-- > 
+-- > main = defaultMainWith myConfig [
+-- >          bench "fib 30" $ \(n::Int) -> fib (30+n-n)
+-- >        ]
+--
+-- If you save the above example as @\"Fib.hs\"@, you should be able
+-- to compile it as follows:
+--
+-- > ghc -O --make Fib
+--
+-- Run @\"Fib --help\"@ on the command line to get a list of command
+-- line options.
 defaultMainWith :: Config -> [Benchmark] -> IO ()
 defaultMainWith defCfg bs = do
   (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
@@ -199,3 +234,84 @@ parseError msg = do
   printError "Error: %s" msg
   printError "Run \"%s --help\" for usage information\n" =<< getProgName
   exitWith (ExitFailure 64)
+
+-- $eval
+--
+-- Because GHC optimises aggressively when compiling with @-O@, it is
+-- easy to write innocent-looking benchmark code that will only be
+-- evaluated once, for which all but the first iteration of the timing
+-- loop will be timing the cost of doing nothing.
+--
+-- The 'Int' parameter that is passed into your benchmark function is
+-- important: you'll almost certainly need to use it somehow in order
+-- to ensure that your code will not get optimised away.
+
+-- $letfloat
+--
+-- The following is an example of innocent-looking code that will not
+-- benchmark correctly:
+--
+-- > b = bench "fib 10" $ \(_::Int) -> fib 10
+--
+-- GHC will notice that the body is constant, and use let-floating to
+-- transform the function into a form more like this:
+--
+-- > lvl = fib 10
+-- > b = bench "fib 10" $ \(::_Int) -> lvl
+--
+-- Here, it is obvious that the CAF @lvl@ only needs to be evaluated
+-- once, and this is indeed what happens.  The first iteration in the
+-- timing loop will measure a realistic time. All other iterations
+-- will take a few dozen nanoseconds, since the original thunk for
+-- @lvl@ has already been overwritten with the result of its first
+-- evaluation.
+--
+-- One somewhat unreliable way to defeat let-floating is to disable it:
+--
+-- > {-# OPTIONS_GHC -fno-full-laziness #-}
+--
+-- If you are trying to benchmark an inlined function, turning off the
+-- let-floating transformation may end up causing slower code to be
+-- generated.
+--
+-- A much more reliable way to defeat let-floating is to find a way to
+-- make use of the 'Int' that the benchmarking code passes in.
+--
+-- > bench "fib 10" $ \n -> fib (10+n-n)
+--
+-- GHC is not yet smart enough to see that adding and subtracting @n@
+-- amounts to a no-op. This trick is enough to convince it not to
+-- let-float the function's body out, since the body is no longer
+-- constant.
+
+-- $worker
+--
+-- Another GHC optimisation is worker-wrapper transformation.  Suppose
+-- you want to time insertion of key\/value pairs into a map.  You
+-- might perform the insertion via a (/strict/!) fold:
+--
+-- > import qualified Data.IntMap as I
+-- > import Data.List (foldl')
+-- >
+-- > intmap :: Int -> I.IntMap Int
+-- > intmap n = foldl' (\m k -> I.insert k k m) I.empty [0..n]
+-- >
+-- > b = bench "intmap 10k" $ \(_::Int) -> intmap 10000
+--
+-- Compile this /without/ @-fno-full-laziness@, and the body of the
+-- anonymous function we're benchmarking gets let-floated out to the
+-- top level.
+--
+-- > lvl = intmap 10000
+-- > b = bench "intmap 10k" $ \(_::Int) -> lvl
+--
+-- Compile it /with/ @-fno-full-laziness@, and let-floating occurs
+-- /anyway/, this time due to GHC's worker-wrapper transformation.
+--
+-- Once again, the response is to use the parameter that the
+-- benchmarking code passes in.
+--
+-- > intmap :: Int -> Int -> I.IntMap Int
+-- > intmap n i = foldl' (\m k -> I.insert k k m) I.empty [0..n+i-i]
+-- >
+-- > b = bench "intmap 10k" $ intmap 10000
