@@ -1,6 +1,6 @@
 name:           criterion
-version:        0.0.1
-synopsis:       Benchmarking
+version:        0.1
+synopsis:       Benchmarking, Performance, Testing
 license:        BSD3
 license-file:   LICENSE
 author:         Bryan O'Sullivan <bos@serpentine.com>
