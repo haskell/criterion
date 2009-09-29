@@ -1,5 +1,5 @@
 name:           criterion
-version:        0.1
+version:        0.1.1
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
@@ -9,7 +9,8 @@ copyright:      2009 Bryan O'Sullivan
 category:       Development, Performance, Testing
 build-type:     Simple
 cabal-version:  >= 1.2
-extra-source-files: README
+extra-source-files:
+  README examples/Fibber.hs examples/Judy.hs
 description:
   This library provides a powerful but simple way to measure the
   performance of Haskell code.  It provides both a framework for
