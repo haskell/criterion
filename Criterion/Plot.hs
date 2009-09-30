@@ -128,7 +128,9 @@ renderTiming desc times = toRenderable layout
     bottomAxis = laxis_title ^= "number of samples"
                $ defaultLayoutAxis
 
-    bars = plot_bars_values ^= (zip [0..] . map (:[]) . fromU $ times)
+    bars = plot_bars_values ^= (zip [0.5,1.5..] . map (:[]) . fromU $ times)
+         $ plot_bars_item_styles ^= [ (solidFillStyle c, Nothing) | c <- defaultColorSeq ]
+         $ plot_bars_spacing ^= BarsFixGap 0
          $ defaultPlotBars
 
 renderKDE :: String -> Points -> UArr Double -> Renderable ()
