@@ -21,6 +21,9 @@ description:
   The fastest way to get started is to read the documentation and
   examples in the Criterion.Main module.
 
+flag Chart
+  Description: enable use of the Chart package
+
 library
   exposed-modules:
     Criterion
@@ -35,11 +38,9 @@ library
     Criterion.Types
 
   build-depends:
-    Chart,
     base < 5,
     bytestring >= 0.9 && < 1.0,
     containers,
-    data-accessor,
     filepath,
     parallel,
     parsec,
@@ -47,6 +48,12 @@ library
     time,
     uvector,
     uvector-algorithms >= 0.2
+
+  if flag(chart)
+    build-depends:
+      Chart,
+      data-accessor
+    ghc-options: -DHAVE_CHART
 
   -- gather extensive profiling data for now
   ghc-prof-options: -auto-all

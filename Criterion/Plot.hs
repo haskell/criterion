@@ -1,4 +1,4 @@
-{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP, ScopedTypeVariables #-}
 
 -- |
 -- Module      : Criterion.Plot
@@ -19,19 +19,24 @@ module Criterion.Plot
     ) where
 
 import Criterion.Config
-import Data.Accessor ((^=))
 import Data.Array.Vector
 import Data.Char (isSpace, toLower)
 import Data.Foldable (forM_)
 import Data.List (group, intersperse)
-import Graphics.Rendering.Chart hiding (Plot,c)
-import Graphics.Rendering.Chart.Gtk (renderableToWindow)
 import Statistics.KernelDensity (Points, fromPoints)
 import Statistics.Types (Sample)
 import System.FilePath (pathSeparator)
 import System.IO (IOMode(..), Handle, hPutStr, withBinaryFile)
 import Text.Printf (printf)
 import qualified Criterion.MultiMap as M
+
+#ifdef HAVE_CHART
+import Data.Accessor ((^=))
+import Graphics.Rendering.Chart hiding (Plot,c)
+import Graphics.Rendering.Chart.Gtk (renderableToWindow)
+#else
+import Criterion.IO (printError)
+#endif
 
 plotWith :: Plot -> Config -> (PlotOutput -> IO ()) -> IO ()
 plotWith p cfg plot =
@@ -51,6 +56,7 @@ plotTiming CSV desc times = do
     forM_ (fromU $ indexedU times) $ \(x :*: y) ->
       putRow h [show x, show y]
 
+#ifdef HAVE_CHART
 plotTiming (PDF x y) desc times =
   renderableToPDFFile (renderTiming desc times) x y
                       (mangle $ printf "%s timings %dx%d.pdf" desc x y)
@@ -65,6 +71,11 @@ plotTiming (SVG x y) desc times =
 
 plotTiming (Window x y) desc times =
   renderableToWindow (renderTiming desc times) x y
+#else
+plotTiming output _desc _times =
+  printError "ERROR: output type %s not supported on this platform\n"
+             (show output)
+#endif
 
 -- | Plot kernel density estimate.
 plotKDE :: PlotOutput           -- ^ The kind of output desired.
@@ -79,6 +90,7 @@ plotKDE CSV desc points pdf = do
     forM_ (zip (fromU pdf) (fromU (fromPoints points))) $ \(x, y) ->
       putRow h [show x, show y]
 
+#ifdef HAVE_CHART
 plotKDE (PDF x y) desc points pdf =
   renderableToPDFFile (renderKDE desc points pdf) x y
                       (mangle $ printf "%s densities %dx%d.pdf" desc x y)
@@ -93,7 +105,13 @@ plotKDE (SVG x y) desc points pdf =
 
 plotKDE (Window x y) desc points pdf =
     renderableToWindow (renderKDE desc points pdf) x y
+#else
+plotKDE output _desc _points _pdf =
+  printError "ERROR: output type %s not supported on this platform\n"
+             (show output)
+#endif
 
+#ifdef HAVE_CHART
 renderTiming :: String -> Sample -> Renderable ()
 renderTiming desc times = toRenderable layout
   where
@@ -141,28 +159,6 @@ secAxis :: LinearAxisParams
 secAxis = la_labelf ^= secs
         $ defaultLinearAxis
 
-writeTo :: FilePath -> (Handle -> IO a) -> IO a
-writeTo path = withBinaryFile path WriteMode
-
-escapeCSV :: String -> String
-escapeCSV xs | any (`elem`xs) escapes = '"' : concatMap esc xs ++ "\""
-          | otherwise              = xs
-    where esc '"' = "\"\""
-          esc c   = [c]
-          escapes = "\"\r\n,"
-
-putRow :: Handle -> [String] -> IO ()
-putRow h s = hPutStr h (concat (intersperse "," (map escapeCSV s)) ++ "\r\n")
-
--- | Get rid of spaces and other potentially troublesome characters
--- from output.
-mangle :: String -> FilePath
-mangle = concatMap (replace ((==) '-' . head) "-")
-       . group
-       . map (replace isSpace '-' . replace (==pathSeparator) '-' . toLower)
-    where replace p r c | p c       = r
-                        | otherwise = c
-
 -- | Try to render meaningful time-axis labels.
 --
 -- /FIXME/: Trouble is, we need to know the range of times for this to
@@ -189,3 +185,26 @@ secs k
                | t >= 1e2  = printf "%.0f %s" t u
                | t >= 1e1  = printf "%.1f %s" t u
                | otherwise = printf "%.2f %s" t u
+#endif
+
+writeTo :: FilePath -> (Handle -> IO a) -> IO a
+writeTo path = withBinaryFile path WriteMode
+
+escapeCSV :: String -> String
+escapeCSV xs | any (`elem`xs) escapes = '"' : concatMap esc xs ++ "\""
+          | otherwise              = xs
+    where esc '"' = "\"\""
+          esc c   = [c]
+          escapes = "\"\r\n,"
+
+putRow :: Handle -> [String] -> IO ()
+putRow h s = hPutStr h (concat (intersperse "," (map escapeCSV s)) ++ "\r\n")
+
+-- | Get rid of spaces and other potentially troublesome characters
+-- from output.
+mangle :: String -> FilePath
+mangle = concatMap (replace ((==) '-' . head) "-")
+       . group
+       . map (replace isSpace '-' . replace (==pathSeparator) '-' . toLower)
+    where replace p r c | p c       = r
+                        | otherwise = c
