@@ -29,7 +29,7 @@ import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, bgroup)
 import Data.Array.Vector ((:*:)(..), lengthU, mapU, foldlU)
-import Data.Maybe (mapMaybe)
+import Data.Maybe (fromMaybe, mapMaybe)
 import Data.Monoid (getLast)
 import Statistics.Function (createIO)
 import Statistics.KernelDensity (epanechnikovPDF)
@@ -126,16 +126,21 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Benchmark
               -> IO ()
 runAndAnalyse p cfg env
-  = (case getLast $ cfgPlotSameAxis cfg of
-       Just True -> plotAll cfg
-       _ -> mapM_ (uncurry $ plotOne cfg)
+  = (if plotSame
+       then plotAll cfg
+       else const $ return ()
     ) <=< go ""
   where go pfx (Benchmark desc b)
             | p desc'   = do note cfg "\nbenchmarking %s\n" desc'
                              x <- runAndAnalyseOne cfg env desc' b
-                             return [(desc', x)]
+                             if plotSame
+                               then return [(desc', x)]
+                               else do plotOne cfg desc' x
+                                       return []
             | otherwise = return []
             where desc' = prefix pfx desc
         go pfx (BenchGroup desc bs) = liftM concat $ mapM (go (prefix pfx desc)) bs
         prefix ""  desc = desc
         prefix pfx desc = pfx ++ '/' : desc
+
+        plotSame = fromMaybe False $ getLast $ cfgPlotSameAxis cfg
