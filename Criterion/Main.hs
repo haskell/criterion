@@ -41,7 +41,7 @@ import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.MultiMap (singleton)
-import Criterion.Types (Benchmarkable(..), Benchmark, bench, benchNames, bgroup)
+import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, benchNames, bgroup)
 import Data.List (isPrefixOf, sort)
 import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt
@@ -117,6 +117,8 @@ defaultOptions = [
           "print a list of all benchmark names, then exit"
  , Option ['k'] ["plot-kde"] (ReqArg (plot KernelDensity) "TYPE")
           "plot kernel density estimate of probabilities"
+ , Option [] ["kde-same-axis"] (noArg mempty {cfgPlotSameAxis = ljust True })
+          "plot all KDE graphs with the same X axis range (useful for comparison)"
  , Option ['q'] ["quiet"] (noArg mempty { cfgVerbosity = ljust Quiet })
           "print less output"
  , Option [] ["resamples"]
@@ -225,7 +227,7 @@ defaultMainWith defCfg bs = do
     else do
       env <- measureEnvironment cfg
       let shouldRun b = null args || any (`isPrefixOf` b) args
-      mapM_ (runAndAnalyse shouldRun cfg env) bs
+      runAndAnalyse shouldRun cfg env $ BenchGroup "" bs
 
 -- | Display an error message from a command line parsing failure, and
 -- exit.

@@ -65,6 +65,7 @@ data Config = Config {
     , cfgConfInterval :: Last Double -- ^ Confidence interval to use.
     , cfgPerformGC    :: Last Bool   -- ^ Whether to run the GC between passes.
     , cfgPlot         :: MultiMap Plot PlotOutput -- ^ What to plot, and where.
+    , cfgPlotSameAxis :: Last Bool
     , cfgPrintExit    :: PrintExit   -- ^ Whether to print information and exit.
     , cfgResamples    :: Last Int    -- ^ Number of resamples to perform.
     , cfgSamples      :: Last Int    -- ^ Number of samples to collect.
@@ -82,6 +83,7 @@ defaultConfig = Config {
                 , cfgConfInterval = ljust 0.95
                 , cfgPerformGC    = ljust False
                 , cfgPlot         = mempty
+                , cfgPlotSameAxis = ljust False
                 , cfgPrintExit    = Nada
                 , cfgResamples    = ljust (100 * 1000)
                 , cfgSamples      = ljust 100
@@ -106,6 +108,7 @@ emptyConfig = Config {
               , cfgConfInterval = mempty
               , cfgPerformGC    = mempty
               , cfgPlot         = mempty
+              , cfgPlotSameAxis = mempty
               , cfgPrintExit    = mempty
               , cfgResamples    = mempty
               , cfgSamples      = mempty
@@ -119,6 +122,7 @@ appendConfig a b =
     , cfgConfInterval = app cfgConfInterval a b
     , cfgPerformGC    = app cfgPerformGC a b
     , cfgPlot         = app cfgPlot a b
+    , cfgPlotSameAxis = app cfgPlotSameAxis a b
     , cfgPrintExit    = app cfgPrintExit a b
     , cfgSamples      = app cfgSamples a b
     , cfgResamples    = app cfgResamples a b
