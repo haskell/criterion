@@ -80,33 +80,34 @@ plotTiming output _desc _times =
 -- | Plot kernel density estimate.
 plotKDE :: PlotOutput           -- ^ The kind of output desired.
         -> String               -- ^ Benchmark name.
+        -> Maybe (Double, Double) -- ^ Minimum extremities for x-axis
         -> Points               -- ^ Points at which KDE was computed.
         -> UArr Double          -- ^ Kernel density estimates.
         -> IO ()
 
-plotKDE CSV desc points pdf = do
+plotKDE CSV desc _exs points pdf = do
   writeTo (mangle $ printf "%s densities.csv" desc) $ \h -> do
     putRow h ["execution time", "probability"]
     forM_ (zip (fromU pdf) (fromU (fromPoints points))) $ \(x, y) ->
       putRow h [show x, show y]
 
 #ifdef HAVE_CHART
-plotKDE (PDF x y) desc points pdf =
-  renderableToPDFFile (renderKDE desc points pdf) x y
+plotKDE (PDF x y) desc exs points pdf =
+  renderableToPDFFile (renderKDE desc exs points pdf) x y
                       (mangle $ printf "%s densities %dx%d.pdf" desc x y)
 
-plotKDE (PNG x y) desc points pdf =
-  renderableToPNGFile (renderKDE desc points pdf) x y
+plotKDE (PNG x y) desc exs points pdf =
+  renderableToPNGFile (renderKDE desc exs points pdf) x y
                       (mangle $ printf "%s densities %dx%d.png" desc x y)
 
-plotKDE (SVG x y) desc points pdf =
-  renderableToSVGFile (renderKDE desc points pdf) x y
+plotKDE (SVG x y) desc exs points pdf =
+  renderableToSVGFile (renderKDE desc exs points pdf) x y
                       (mangle $ printf "%s densities %dx%d.svg" desc x y)
 
-plotKDE (Window x y) desc points pdf =
-    renderableToWindow (renderKDE desc points pdf) x y
+plotKDE (Window x y) desc exs points pdf =
+    renderableToWindow (renderKDE desc exs points pdf) x y
 #else
-plotKDE output _desc _points _pdf =
+plotKDE output _desc _exs _points _pdf =
   printError "ERROR: output type %s not supported on this platform\n"
              (show output)
 #endif
@@ -133,8 +134,8 @@ renderTiming desc times = toRenderable layout
          $ plot_bars_spacing ^= BarsFixGap 0
          $ defaultPlotBars
 
-renderKDE :: String -> Points -> UArr Double -> Renderable ()
-renderKDE desc points pdf = toRenderable layout
+renderKDE :: String -> Maybe (Double, Double) -> Points -> UArr Double -> Renderable ()
+renderKDE desc possibleOtherExtremities points pdf = toRenderable layout
   where
     layout = layout1_title ^= "Densities of execution times for \"" ++
                               desc ++ "\""
@@ -146,9 +147,12 @@ renderKDE desc points pdf = toRenderable layout
     leftAxis = laxis_title ^= "estimate of probability density"
              $ defaultLayoutAxis
 
-    bottomAxis = laxis_generate ^= autoScaledAxis secAxis
+    bottomAxis = laxis_generate ^= semiAutoScaledAxis secAxis
                $ laxis_title ^= "execution time"
                $ defaultLayoutAxis
+
+    semiAutoScaledAxis opts ps = autoScaledAxis opts (otherExtremities ++ ps)
+    otherExtremities = maybe [] (\(x, y) -> [x, y]) possibleOtherExtremities
 
     info = plot_lines_values ^= [zip (fromU (fromPoints points)) (fromU spdf)]
          $ defaultPlotLines

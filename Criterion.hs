@@ -19,7 +19,7 @@ module Criterion
     , runAndAnalyse
     ) where
 
-import Control.Monad (replicateM_, when)
+import Control.Monad (replicateM_, when, liftM, (<=<))
 import Criterion.Analysis (OutlierVariance(..), classifyOutliers,
                            outlierVariance, noteOutliers)
 import Criterion.Config (Config(..), Plot(..), fromLJ)
@@ -28,7 +28,9 @@ import Criterion.IO (note, prolix)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, bgroup)
-import Data.Array.Vector ((:*:)(..), lengthU, mapU)
+import Data.Array.Vector ((:*:)(..), lengthU, mapU, foldlU)
+import Data.Maybe (mapMaybe)
+import Data.Monoid (getLast)
 import Statistics.Function (createIO)
 import Statistics.KernelDensity (epanechnikovPDF)
 import Statistics.RandomVariate (withSystemRandom)
@@ -64,13 +66,10 @@ runBenchmark cfg env b = do
 
 -- | Run a single benchmark and analyse its performance.
 runAndAnalyseOne :: Benchmarkable b => Config -> Environment -> String -> b
-                 -> IO ()
-runAndAnalyseOne cfg env desc b = do
+                 -> IO Sample
+runAndAnalyseOne cfg env _desc b = do
   times <- runBenchmark cfg env b
   let numSamples = lengthU times
-  plotWith Timing cfg $ \o -> plotTiming o desc times
-  plotWith KernelDensity cfg $ \o -> uncurry (plotKDE o desc)
-                                     (epanechnikovPDF 100 times)
   let ests = [mean,stdDev]
       numResamples = fromLJ cfgResamples cfg
   note cfg "bootstrapping with %d resamples\n" numResamples
@@ -87,11 +86,36 @@ runAndAnalyseOne cfg env desc b = do
   noteOutliers cfg (classifyOutliers times)
   note cfg "variance introduced by outliers: %.3f%%\n" (v * 100)
   note cfg "variance is %s by outliers\n" wibble
+  return times
   where bs :: String -> Estimate -> IO ()
         bs d e = note cfg "%s: %s, lb %s, ub %s, ci %.3f\n" d
                    (secs $ estPoint e)
                    (secs $ estLowerBound e) (secs $ estUpperBound e)
                    (estConfidenceLevel e)
+
+plotOne :: Config -> String -> Sample -> IO ()
+plotOne cfg desc times = do
+  plotWith Timing cfg $ \o -> plotTiming o desc times
+  plotWith KernelDensity cfg $ \o -> uncurry (plotKDE o desc Nothing)
+                                     (epanechnikovPDF 100 times)
+
+plotAll :: Config -> [(String, Sample)] -> IO ()
+plotAll cfg descTimes = sequence_ [do
+  plotWith Timing cfg $ \o -> plotTiming o desc times
+  plotWith KernelDensity cfg $ \o -> uncurry (plotKDE o desc extremes)
+                                            (epanechnikovPDF 100 times)
+            | (desc, times) <- descTimes]
+  where
+    extremes :: Maybe (Double, Double)
+    extremes = foldl minMaxMaybe2 Nothing $ mapMaybe (foldlU minMaxMaybe Nothing . snd) descTimes
+
+    minMaxMaybe :: Maybe (Double, Double) -> Double -> Maybe (Double, Double)
+    minMaxMaybe a b = minMaxMaybe2 a (b, b)
+
+    minMaxMaybe2 :: Maybe (Double, Double) -> (Double, Double) -> Maybe (Double, Double)
+    minMaxMaybe2 Nothing (xMin, xMax) = Just (xMin, xMax)
+    minMaxMaybe2 (Just (curMin, curMax)) (xMin, xMax) = Just (min xMin curMin, max xMax curMax)
+
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
@@ -101,12 +125,17 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Environment
               -> Benchmark
               -> IO ()
-runAndAnalyse p cfg env = go ""
+runAndAnalyse p cfg env
+  = (case getLast $ cfgPlotSameAxis cfg of
+       Just True -> plotAll cfg
+       _ -> mapM_ (uncurry $ plotOne cfg)
+    ) <=< go ""
   where go pfx (Benchmark desc b)
             | p desc'   = do note cfg "\nbenchmarking %s\n" desc'
-                             runAndAnalyseOne cfg env desc' b
-            | otherwise = return ()
+                             x <- runAndAnalyseOne cfg env desc' b
+                             return [(desc', x)]
+            | otherwise = return []
             where desc' = prefix pfx desc
-        go pfx (BenchGroup desc bs) = mapM_ (go (prefix pfx desc)) bs
+        go pfx (BenchGroup desc bs) = liftM concat $ mapM (go (prefix pfx desc)) bs
         prefix ""  desc = desc
         prefix pfx desc = pfx ++ '/' : desc
