@@ -129,6 +129,8 @@ defaultOptions = [
           "number of samples to collect"
  , Option ['t'] ["plot-timing"] (ReqArg (plot Timing) "TYPE")
           "plot timings"
+ , Option ['u'] ["summary"] (ReqArg (\s -> return $ mempty { cfgSummaryFile = ljust s }) "FILENAME")
+          "produce a summary CSV file of all the benchmark means and standard deviations"
  , Option ['V'] ["version"] (noArg mempty { cfgPrintExit = Version })
           "display version, then exit"
  , Option ['v'] ["verbose"] (noArg mempty { cfgVerbosity = ljust Verbose })
@@ -225,6 +227,9 @@ defaultMainWith defCfg bs = do
       note cfg "Benchmarks:\n"
       mapM_ (note cfg "  %s\n") (sort $ concatMap benchNames bs)
     else do
+      case getLast $ cfgSummaryFile cfg of
+        Just fn -> writeFile fn "Name,Mean,MeanLB,MeanUB,Stddev,StddevLB,StddevUB\n"
+        Nothing -> return ()
       env <- measureEnvironment cfg
       let shouldRun b = null args || any (`isPrefixOf` b) args
       runAndAnalyse shouldRun cfg env $ BenchGroup "" bs

@@ -24,7 +24,7 @@ import Criterion.Analysis (OutlierVariance(..), classifyOutliers,
                            outlierVariance, noteOutliers)
 import Criterion.Config (Config(..), Plot(..), fromLJ)
 import Criterion.Environment (Environment(..))
-import Criterion.IO (note, prolix)
+import Criterion.IO (note, prolix, summary)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, bgroup)
@@ -37,6 +37,7 @@ import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
 import Statistics.Sample (mean, stdDev)
 import Statistics.Types (Sample)
 import System.Mem (performGC)
+import Text.Printf (printf)
 
 -- | Run a single benchmark, and return timings measured when
 -- executing it.
@@ -80,16 +81,21 @@ runAndAnalyseOne cfg env _desc b = do
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
   bs "mean" em
+  summary cfg ","
   bs "std dev" es
+  summary cfg "\n"
   noteOutliers cfg (classifyOutliers times)
   note cfg "variance introduced by outliers: %.3f%%\n" (v * 100)
   note cfg "variance is %s by outliers\n" wibble
   return times
   where bs :: String -> Estimate -> IO ()
-        bs d e = note cfg "%s: %s, lb %s, ub %s, ci %.3f\n" d
-                   (secs $ estPoint e)
-                   (secs $ estLowerBound e) (secs $ estUpperBound e)
-                   (estConfidenceLevel e)
+        bs d e = do note cfg "%s: %s, lb %s, ub %s, ci %.3f\n" d
+                      (secs $ estPoint e)
+                      (secs $ estLowerBound e) (secs $ estUpperBound e)
+                      (estConfidenceLevel e)
+                    summary cfg $ printf "%g,%g,%g" 
+                      (estPoint e)
+                      (estLowerBound e) (estUpperBound e)
 
 plotAll :: Config -> [(String, Sample)] -> IO ()
 plotAll cfg descTimes = forM_ descTimes $ \(desc,times) -> do
@@ -116,6 +122,7 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
 runAndAnalyse p cfg env = plotAll cfg <=< go ""
   where go pfx (Benchmark desc b)
             | p desc'   = do note cfg "\nbenchmarking %s\n" desc'
+                             summary cfg (show desc' ++ ",") -- String will be quoted
                              x <- runAndAnalyseOne cfg env desc' b
                              if cfgPlotSameAxis `fromLJ` cfg
                                then return      [(desc',x)]

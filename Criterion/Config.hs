@@ -69,6 +69,7 @@ data Config = Config {
     , cfgPrintExit    :: PrintExit   -- ^ Whether to print information and exit.
     , cfgResamples    :: Last Int    -- ^ Number of resamples to perform.
     , cfgSamples      :: Last Int    -- ^ Number of samples to collect.
+    , cfgSummaryFile  :: Last String -- ^ Filename of summary CSV
     , cfgVerbosity    :: Last Verbosity -- ^ Whether to run verbosely.
     } deriving (Eq, Read, Show, Typeable)
 
@@ -87,6 +88,7 @@ defaultConfig = Config {
                 , cfgPrintExit    = Nada
                 , cfgResamples    = ljust (100 * 1000)
                 , cfgSamples      = ljust 100
+                , cfgSummaryFile  = mempty
                 , cfgVerbosity    = ljust Normal
                 }
 
@@ -112,6 +114,7 @@ emptyConfig = Config {
               , cfgPrintExit    = mempty
               , cfgResamples    = mempty
               , cfgSamples      = mempty
+              , cfgSummaryFile  = mempty
               , cfgVerbosity    = mempty
               }
 
@@ -125,6 +128,7 @@ appendConfig a b =
     , cfgPlotSameAxis = app cfgPlotSameAxis a b
     , cfgPrintExit    = app cfgPrintExit a b
     , cfgSamples      = app cfgSamples a b
+    , cfgSummaryFile  = app cfgSummaryFile a b
     , cfgResamples    = app cfgResamples a b
     , cfgVerbosity    = app cfgVerbosity a b
     }

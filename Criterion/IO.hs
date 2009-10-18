@@ -15,9 +15,11 @@ module Criterion.IO
     , note
     , printError
     , prolix
+    , summary
     ) where
 
-import Criterion.Config (Config, Verbosity(..), cfgVerbosity, fromLJ)
+import Criterion.Config (Config, Verbosity(..), cfgSummaryFile, cfgVerbosity, fromLJ)
+import Data.Monoid (getLast)
 import System.IO (stderr, stdout)
 import Text.Printf (HPrintfType, hPrintf)
 
@@ -46,3 +48,9 @@ prolix cfg msg = if fromLJ cfgVerbosity cfg == Verbose
 -- | Print an error message.
 printError :: (HPrintfType r) => String -> r
 printError msg = hPrintf stderr msg
+
+-- | Add to summary CSV (if applicable)
+summary :: Config -> String -> IO ()
+summary cfg msg = case getLast $ cfgSummaryFile cfg of
+  Just fn -> appendFile fn msg
+  Nothing -> return ()
