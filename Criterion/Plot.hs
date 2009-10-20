@@ -1,4 +1,4 @@
-{-# LANGUAGE CPP, ScopedTypeVariables #-}
+{-# LANGUAGE CPP, ScopedTypeVariables, TypeOperators #-}
 
 -- |
 -- Module      : Criterion.Plot
@@ -80,7 +80,7 @@ plotTiming output _desc _times =
 -- | Plot kernel density estimate.
 plotKDE :: PlotOutput           -- ^ The kind of output desired.
         -> String               -- ^ Benchmark name.
-        -> Maybe (Double, Double) -- ^ Minimum extremities for x-axis
+        -> Maybe (Double :*: Double) -- ^ Range of x-axis
         -> Points               -- ^ Points at which KDE was computed.
         -> UArr Double          -- ^ Kernel density estimates.
         -> IO ()
@@ -134,8 +134,9 @@ renderTiming desc times = toRenderable layout
          $ plot_bars_spacing ^= BarsFixGap 0
          $ defaultPlotBars
 
-renderKDE :: String -> Maybe (Double, Double) -> Points -> UArr Double -> Renderable ()
-renderKDE desc possibleOtherExtremities points pdf = toRenderable layout
+renderKDE :: String -> Maybe (Double :*: Double) -> Points -> UArr Double
+          -> Renderable ()
+renderKDE desc exs points pdf = toRenderable layout
   where
     layout = layout1_title ^= "Densities of execution times for \"" ++
                               desc ++ "\""
@@ -151,8 +152,8 @@ renderKDE desc possibleOtherExtremities points pdf = toRenderable layout
                $ laxis_title ^= "execution time"
                $ defaultLayoutAxis
 
-    semiAutoScaledAxis opts ps = autoScaledAxis opts (otherExtremities ++ ps)
-    otherExtremities = maybe [] (\(x, y) -> [x, y]) possibleOtherExtremities
+    semiAutoScaledAxis opts ps = autoScaledAxis opts (extremities ++ ps)
+    extremities = maybe [] (\(lo :*: hi) -> [lo, hi]) exs
 
     info = plot_lines_values ^= [zip (fromU (fromPoints points)) (fromU spdf)]
          $ defaultPlotLines

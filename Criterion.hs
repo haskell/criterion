@@ -19,7 +19,7 @@ module Criterion
     , runAndAnalyse
     ) where
 
-import Control.Monad ((<=<), forM_, liftM, replicateM_, when)
+import Control.Monad ((<=<), forM_, replicateM_, when)
 import Criterion.Analysis (OutlierVariance(..), classifyOutliers,
                            outlierVariance, noteOutliers)
 import Criterion.Config (Config(..), Plot(..), fromLJ)
@@ -28,10 +28,10 @@ import Criterion.IO (note, prolix)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, bgroup)
-import Data.Array.Vector ((:*:)(..), lengthU, mapU, foldlU)
-import Data.Maybe (fromMaybe, mapMaybe)
+import Data.Array.Vector ((:*:)(..), concatU, lengthU, mapU)
+import Data.Maybe (fromMaybe)
 import Data.Monoid (getLast)
-import Statistics.Function (createIO)
+import Statistics.Function (createIO, minMax)
 import Statistics.KernelDensity (epanechnikovPDF)
 import Statistics.RandomVariate (withSystemRandom)
 import Statistics.Resampling (resample)
@@ -103,17 +103,13 @@ plotAll :: Config -> [(String, Sample)] -> IO ()
 plotAll cfg descTimes = forM_ descTimes $ \(desc,times) -> do
   plotWith Timing cfg $ \o -> plotTiming o desc times
   plotWith KernelDensity cfg $ \o -> uncurry (plotKDE o desc extremes)
-                                            (epanechnikovPDF 100 times)
+                                             (epanechnikovPDF 100 times)
   where
-    extremes :: Maybe (Double, Double)
-    extremes = foldl minMaxMaybe2 Nothing $ mapMaybe (foldlU minMaxMaybe Nothing . snd) descTimes
-
-    minMaxMaybe :: Maybe (Double, Double) -> Double -> Maybe (Double, Double)
-    minMaxMaybe a b = minMaxMaybe2 a (b, b)
-
-    minMaxMaybe2 :: Maybe (Double, Double) -> (Double, Double) -> Maybe (Double, Double)
-    minMaxMaybe2 Nothing (xMin, xMax) = Just (xMin, xMax)
-    minMaxMaybe2 (Just (curMin, curMax)) (xMin, xMax) = Just (min xMin curMin, max xMax curMax)
+    extremes = toJust . minMax . concatU . map snd $ descTimes
+    toJust r@(lo :*: hi)
+        | lo == infinity || hi == -infinity = Just r
+        | otherwise                         = Nothing
+        where infinity                      = 1/0
 
 
 -- | Run, and analyse, one or more benchmarks.
@@ -137,7 +133,7 @@ runAndAnalyse p cfg env
                                        return []
             | otherwise = return []
             where desc' = prefix pfx desc
-        go pfx (BenchGroup desc bs) = liftM concat $ mapM (go (prefix pfx desc)) bs
+        go pfx (BenchGroup desc bs) = concat `fmap` mapM (go (prefix pfx desc)) bs
         prefix ""  desc = desc
         prefix pfx desc = pfx ++ '/' : desc
 
