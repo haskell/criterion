@@ -29,8 +29,6 @@ import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, bgroup)
 import Data.Array.Vector ((:*:)(..), concatU, lengthU, mapU)
-import Data.Maybe (fromMaybe)
-import Data.Monoid (getLast)
 import Statistics.Function (createIO, minMax)
 import Statistics.KernelDensity (epanechnikovPDF)
 import Statistics.RandomVariate (withSystemRandom)
@@ -93,24 +91,19 @@ runAndAnalyseOne cfg env _desc b = do
                    (secs $ estLowerBound e) (secs $ estUpperBound e)
                    (estConfidenceLevel e)
 
-plotOne :: Config -> String -> Sample -> IO ()
-plotOne cfg desc times = do
-  plotWith Timing cfg $ \o -> plotTiming o desc times
-  plotWith KernelDensity cfg $ \o -> uncurry (plotKDE o desc Nothing)
-                                     (epanechnikovPDF 100 times)
-
 plotAll :: Config -> [(String, Sample)] -> IO ()
 plotAll cfg descTimes = forM_ descTimes $ \(desc,times) -> do
   plotWith Timing cfg $ \o -> plotTiming o desc times
   plotWith KernelDensity cfg $ \o -> uncurry (plotKDE o desc extremes)
-                                             (epanechnikovPDF 100 times)
+                                     (epanechnikovPDF 100 times)
   where
-    extremes = toJust . minMax . concatU . map snd $ descTimes
+    extremes = case descTimes of
+                 (_:_:_) -> toJust . minMax . concatU . map snd $ descTimes
+                 _       -> Nothing
     toJust r@(lo :*: hi)
-        | lo == infinity || hi == -infinity = Just r
-        | otherwise                         = Nothing
+        | lo == infinity || hi == -infinity = Nothing
+        | otherwise                         = Just r
         where infinity                      = 1/0
-
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
@@ -120,21 +113,16 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Environment
               -> Benchmark
               -> IO ()
-runAndAnalyse p cfg env
-  = (if plotSame
-     then plotAll cfg
-     else const $ return ()) <=< go ""
+runAndAnalyse p cfg env = plotAll cfg <=< go ""
   where go pfx (Benchmark desc b)
             | p desc'   = do note cfg "\nbenchmarking %s\n" desc'
                              x <- runAndAnalyseOne cfg env desc' b
-                             if plotSame
-                               then return [(desc', x)]
-                               else do plotOne cfg desc' x
-                                       return []
+                             if cfgPlotSameAxis `fromLJ` cfg
+                               then return      [(desc',x)]
+                               else plotAll cfg [(desc',x)] >> return []
             | otherwise = return []
             where desc' = prefix pfx desc
-        go pfx (BenchGroup desc bs) = concat `fmap` mapM (go (prefix pfx desc)) bs
+        go pfx (BenchGroup desc bs) =
+            concat `fmap` mapM (go (prefix pfx desc)) bs
         prefix ""  desc = desc
         prefix pfx desc = pfx ++ '/' : desc
-
-        plotSame = fromMaybe False . getLast . cfgPlotSameAxis $ cfg
