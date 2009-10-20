@@ -3,15 +3,18 @@
 import Criterion.Main
 
 fib :: Int -> Int
-fib 0 = 0
-fib 1 = 1
-fib n = fib (n-1) + fib (n-2)
+fib n | n < 0     = error "negative!"
+      | otherwise = go (fromIntegral n)
+  where
+    go 0 = 0
+    go 1 = 1
+    go n = go (n-1) + go (n-2)
 
 fact :: Int -> Integer
 fact n | n < 0     = error "negative!"
        | otherwise = go (fromIntegral n)
-    where go i | i == 0    = 1
-               | otherwise = i * go (i-1)
+    where go 0 = 1
+          go i = i * go (i-1)
 
 fio :: Int -> IO Integer
 fio n | n < 0     = error "negative!"
@@ -22,6 +25,11 @@ fio n | n < 0     = error "negative!"
             return $! i * j
 
 main = defaultMain [
+        bgroup "tiny" [ bench "fib 10" $ \n -> fib (10+n-n)
+                      , bench "fib 15" $ \n -> fib (15+n-n)
+                      , bench "fib 20" $ \n -> fib (20+n-n)
+                      , bench "fib 25" $ \n -> fib (25+n-n)
+                      ],
         bgroup "fib" [ bench "fib 10" $ \n -> fib (10+n-n)
                      , bench "fib 35" $ \n -> fib (35+n-n)
                      , bench "fib 37" $ \n -> fib (37+n-n)
