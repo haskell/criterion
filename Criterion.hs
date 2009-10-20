@@ -19,7 +19,7 @@ module Criterion
     , runAndAnalyse
     ) where
 
-import Control.Monad (replicateM_, when, liftM, (<=<))
+import Control.Monad ((<=<), forM_, liftM, replicateM_, when)
 import Criterion.Analysis (OutlierVariance(..), classifyOutliers,
                            outlierVariance, noteOutliers)
 import Criterion.Config (Config(..), Plot(..), fromLJ)
@@ -100,11 +100,10 @@ plotOne cfg desc times = do
                                      (epanechnikovPDF 100 times)
 
 plotAll :: Config -> [(String, Sample)] -> IO ()
-plotAll cfg descTimes = sequence_ [do
+plotAll cfg descTimes = forM_ descTimes $ \(desc,times) -> do
   plotWith Timing cfg $ \o -> plotTiming o desc times
   plotWith KernelDensity cfg $ \o -> uncurry (plotKDE o desc extremes)
                                             (epanechnikovPDF 100 times)
-            | (desc, times) <- descTimes]
   where
     extremes :: Maybe (Double, Double)
     extremes = foldl minMaxMaybe2 Nothing $ mapMaybe (foldlU minMaxMaybe Nothing . snd) descTimes
@@ -127,9 +126,8 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> IO ()
 runAndAnalyse p cfg env
   = (if plotSame
-       then plotAll cfg
-       else const $ return ()
-    ) <=< go ""
+     then plotAll cfg
+     else const $ return ()) <=< go ""
   where go pfx (Benchmark desc b)
             | p desc'   = do note cfg "\nbenchmarking %s\n" desc'
                              x <- runAndAnalyseOne cfg env desc' b
@@ -143,4 +141,4 @@ runAndAnalyse p cfg env
         prefix ""  desc = desc
         prefix pfx desc = pfx ++ '/' : desc
 
-        plotSame = fromMaybe False $ getLast $ cfgPlotSameAxis cfg
+        plotSame = fromMaybe False . getLast . cfgPlotSameAxis $ cfg
