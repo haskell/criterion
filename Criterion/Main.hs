@@ -113,7 +113,7 @@ defaultOptions = [
           "collect garbage between iterations"
  , Option ['I'] ["ci"] (ReqArg ci "CI")
           "bootstrap confidence interval"
- , Option ['l'] ["--list"] (noArg mempty { cfgPrintExit = List })
+ , Option ['l'] ["list"] (noArg mempty { cfgPrintExit = List })
           "print a list of all benchmark names, then exit"
  , Option ['k'] ["plot-kde"] (ReqArg (plot KernelDensity) "TYPE")
           "plot kernel density estimate of probabilities"
