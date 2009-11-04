@@ -19,6 +19,7 @@ module Criterion.Plot
     ) where
 
 import Criterion.Config
+import Criterion.Monad (ConfigM, doIO, getConfigItem)
 import Data.Array.Vector
 import Data.Char (isSpace, toLower)
 import Data.Foldable (forM_)
@@ -38,11 +39,9 @@ import Graphics.Rendering.Chart.Gtk (renderableToWindow)
 import Criterion.IO (printError)
 #endif
 
-plotWith :: Plot -> Config -> (PlotOutput -> IO ()) -> IO ()
-plotWith p cfg plot =
-  case M.lookup p (cfgPlot cfg) of
-    Nothing -> return ()
-    Just s -> forM_ s $ plot
+plotWith :: Plot -> (PlotOutput -> IO ()) -> ConfigM ()
+plotWith p plot = getConfigItem (M.lookup p . cfgPlot)
+                    >>= maybe (return ()) (flip forM_ (doIO . plot))
 
 -- | Plot timing data.
 plotTiming :: PlotOutput        -- ^ The kind of output desired.

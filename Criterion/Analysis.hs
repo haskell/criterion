@@ -21,9 +21,9 @@ module Criterion.Analysis
     ) where
 
 import Control.Monad (when)
-import Criterion.Config (Config)
 import Criterion.IO (note)
 import Criterion.Measurement (secs)
+import Criterion.Monad (ConfigM)
 import Data.Array.Vector (foldlU)
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
@@ -122,28 +122,27 @@ countOutliers (Outliers _ a b c d) = a + b + c + d
 
 -- | Display the mean of a 'Sample', and characterise the outliers
 -- present in the sample.
-analyseMean :: Config
-            -> Sample
+analyseMean :: Sample
             -> Int              -- ^ Number of iterations used to
                                 -- compute the sample.
-            -> IO Double
-analyseMean cfg a iters = do
+            -> ConfigM Double
+analyseMean a iters = do
   let µ = mean a
-  note cfg "mean is %s (%d iterations)\n" (secs µ) iters
-  noteOutliers cfg . classifyOutliers $ a
+  note "mean is %s (%d iterations)\n" (secs µ) iters
+  noteOutliers . classifyOutliers $ a
   return µ
 
 -- | Display a report of the 'Outliers' present in a 'Sample'.
-noteOutliers :: Config -> Outliers -> IO ()
-noteOutliers cfg o = do
+noteOutliers :: Outliers -> ConfigM ()
+noteOutliers o = do
   let frac n = (100::Double) * fromIntegral n / fromIntegral (samplesSeen o)
-      check :: Int64 -> Double -> String -> IO ()
+      check :: Int64 -> Double -> String -> ConfigM ()
       check k t d = when (frac k > t) $
-                    note cfg "  %d (%.1g%%) %s\n" k (frac k) d
+                    note "  %d (%.1g%%) %s\n" k (frac k) d
       outCount = countOutliers o
   when (outCount > 0) $ do
-    note cfg "found %d outliers among %d samples (%.1g%%)\n"
-             outCount (samplesSeen o) (frac outCount)
+    note "found %d outliers among %d samples (%.1g%%)\n"
+         outCount (samplesSeen o) (frac outCount)
     check (lowSevere o) 0 "low severe"
     check (lowMild o) 1 "low mild"
     check (highMild o) 1 "high mild"

@@ -33,6 +33,7 @@ library
     Criterion.IO
     Criterion.Main
     Criterion.Measurement
+    Criterion.Monad
     Criterion.MultiMap
     Criterion.Plot
     Criterion.Types
@@ -42,6 +43,7 @@ library
     bytestring >= 0.9 && < 1.0,
     containers,
     filepath,
+    mtl,
     parallel,
     parsec,
     statistics >= 0.3.4,

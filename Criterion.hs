@@ -26,6 +26,7 @@ import Criterion.Config (Config(..), Plot(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (note, prolix, summary)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
+import Criterion.Monad (ConfigM, getConfig, getConfigItem, doIO)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, bgroup)
 import Data.Array.Vector ((:*:)(..), concatU, lengthU, mapU)
@@ -41,20 +42,21 @@ import Text.Printf (printf)
 
 -- | Run a single benchmark, and return timings measured when
 -- executing it.
-runBenchmark :: Benchmarkable b => Config -> Environment -> b -> IO Sample
-runBenchmark cfg env b = do
-  runForAtLeast 0.1 10000 (`replicateM_` getTime)
+runBenchmark :: Benchmarkable b => Environment -> b -> ConfigM Sample
+runBenchmark env b = do
+  doIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
   let minTime = envClockResolution env * 1000
-  (testTime :*: testIters :*: _) <- runForAtLeast (min minTime 0.1) 1 timeLoop
-  prolix cfg "ran %d iterations in %s\n" testIters (secs testTime)
+  (testTime :*: testIters :*: _) <- doIO $ runForAtLeast (min minTime 0.1) 1 timeLoop
+  prolix "ran %d iterations in %s\n" testIters (secs testTime)
+  cfg <- getConfig
   let newIters    = ceiling $ minTime * testItersD / testTime
       sampleCount = fromLJ cfgSamples cfg
       newItersD   = fromIntegral newIters
       testItersD  = fromIntegral testIters
-  note cfg "collecting %d samples, %d iterations each, in estimated %s\n"
+  note "collecting %d samples, %d iterations each, in estimated %s\n"
        sampleCount newIters (secs (fromIntegral sampleCount * newItersD *
                                    testTime / testItersD))
-  times <- fmap (mapU ((/ newItersD) . subtract (envClockCost env))) .
+  times <- doIO $ fmap (mapU ((/ newItersD) . subtract (envClockCost env))) .
            createIO sampleCount . const $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
              time_ (timeLoop newIters)
@@ -64,16 +66,17 @@ runBenchmark cfg env b = do
                | otherwise = run b k >> timeLoop (k-1)
 
 -- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: Benchmarkable b => Config -> Environment -> String -> b
-                 -> IO Sample
-runAndAnalyseOne cfg env _desc b = do
-  times <- runBenchmark cfg env b
+runAndAnalyseOne :: Benchmarkable b => Environment -> String -> b
+                 -> ConfigM Sample
+runAndAnalyseOne env _desc b = do
+  times <- runBenchmark env b
   let numSamples = lengthU times
   let ests = [mean,stdDev]
-      numResamples = fromLJ cfgResamples cfg
-  note cfg "bootstrapping with %d resamples\n" numResamples
-  res <- withSystemRandom (\gen -> resample gen ests numResamples times)
-  let [em,es] = bootstrapBCA (fromLJ cfgConfInterval cfg) times ests res
+  numResamples <- getConfigItem $ fromLJ cfgResamples
+  note "bootstrapping with %d resamples\n" numResamples
+  res <- doIO $ withSystemRandom (\gen -> resample gen ests numResamples times)
+  ci <- getConfigItem $ fromLJ cfgConfInterval
+  let [em,es] = bootstrapBCA ci times ests res
       (effect, v) = outlierVariance em es (fromIntegral $ numSamples)
       wibble = case effect of
                  Unaffected -> "unaffected" :: String
@@ -81,26 +84,26 @@ runAndAnalyseOne cfg env _desc b = do
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
   bs "mean" em
-  summary cfg ","
+  summary ","
   bs "std dev" es
-  summary cfg "\n"
-  noteOutliers cfg (classifyOutliers times)
-  note cfg "variance introduced by outliers: %.3f%%\n" (v * 100)
-  note cfg "variance is %s by outliers\n" wibble
+  summary "\n"
+  noteOutliers (classifyOutliers times)
+  note "variance introduced by outliers: %.3f%%\n" (v * 100)
+  note "variance is %s by outliers\n" wibble
   return times
-  where bs :: String -> Estimate -> IO ()
-        bs d e = do note cfg "%s: %s, lb %s, ub %s, ci %.3f\n" d
+  where bs :: String -> Estimate -> ConfigM ()
+        bs d e = do note "%s: %s, lb %s, ub %s, ci %.3f\n" d
                       (secs $ estPoint e)
                       (secs $ estLowerBound e) (secs $ estUpperBound e)
                       (estConfidenceLevel e)
-                    summary cfg $ printf "%g,%g,%g" 
+                    summary $ printf "%g,%g,%g" 
                       (estPoint e)
                       (estLowerBound e) (estUpperBound e)
 
-plotAll :: Config -> [(String, Sample)] -> IO ()
-plotAll cfg descTimes = forM_ descTimes $ \(desc,times) -> do
-  plotWith Timing cfg $ \o -> plotTiming o desc times
-  plotWith KernelDensity cfg $ \o -> uncurry (plotKDE o desc extremes)
+plotAll :: [(String, Sample)] -> ConfigM ()
+plotAll descTimes = forM_ descTimes $ \(desc,times) -> do
+  plotWith Timing $ \o -> plotTiming o desc times
+  plotWith KernelDensity $ \o -> uncurry (plotKDE o desc extremes)
                                      (epanechnikovPDF 100 times)
   where
     extremes = case descTimes of
@@ -115,18 +118,18 @@ plotAll cfg descTimes = forM_ descTimes $ \(desc,times) -> do
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
                                   -- name.
-              -> Config
               -> Environment
               -> Benchmark
-              -> IO ()
-runAndAnalyse p cfg env = plotAll cfg <=< go ""
+              -> ConfigM ()
+runAndAnalyse p env = plotAll <=< go ""
   where go pfx (Benchmark desc b)
-            | p desc'   = do note cfg "\nbenchmarking %s\n" desc'
-                             summary cfg (show desc' ++ ",") -- String will be quoted
-                             x <- runAndAnalyseOne cfg env desc' b
-                             if cfgPlotSameAxis `fromLJ` cfg
-                               then return      [(desc',x)]
-                               else plotAll cfg [(desc',x)] >> return []
+            | p desc'   = do note "\nbenchmarking %s\n" desc'
+                             summary (show desc' ++ ",") -- String will be quoted
+                             x <- runAndAnalyseOne env desc' b
+                             sameAxis <- getConfigItem $ fromLJ cfgPlotSameAxis
+                             if sameAxis
+                               then return  [(desc',x)]
+                               else plotAll [(desc',x)] >> return []
             | otherwise = return []
             where desc' = prefix pfx desc
         go pfx (BenchGroup desc bs) =

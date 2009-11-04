@@ -9,48 +9,86 @@
 --
 -- Input and output actions.
 
+{-# LANGUAGE FlexibleInstances, Rank2Types, TypeSynonymInstances #-}
 module Criterion.IO
     (
-      NoOp
-    , note
+      note
     , printError
     , prolix
     , summary
     ) where
 
+import Control.Monad (when)
+import Control.Monad.Trans (liftIO)
 import Criterion.Config (Config, Verbosity(..), cfgSummaryFile, cfgVerbosity, fromLJ)
+import Criterion.Monad (ConfigM, getConfig, getConfigItem, doIO)
 import Data.Monoid (getLast)
-import System.IO (stderr, stdout)
-import Text.Printf (HPrintfType, hPrintf)
+import System.IO (Handle, stderr, stdout)
+import qualified Text.Printf (HPrintfType, hPrintf)
+import Text.Printf (PrintfArg)
 
--- | A typeclass hack to match that of the 'HPrintfType' class.
-class NoOp a where
-    noop :: a
+-- First item is the action to print now, given all the arguments gathered
+-- together so far.  The second item is the function that will take a further argument
+-- and give back a new PrintfCont.
+data PrintfCont = PrintfCont (IO ()) (PrintfArg a => a -> PrintfCont)
 
-instance NoOp (IO a) where
-    noop = return undefined
+-- An internal class that acts like Printf/HPrintf.
+--
+-- The implementation is visible to the rest of the program, but the class is
+class CritHPrintfType a where
+  chPrintfImpl :: (Config -> Bool) -> PrintfCont -> a
 
-instance (NoOp r) => NoOp (a -> r) where
-    noop _ = noop
+
+instance CritHPrintfType (ConfigM a) where
+  chPrintfImpl check (PrintfCont final _)
+    = do x <- getConfig
+         when (check x) (liftIO final)
+         return undefined
+
+instance CritHPrintfType (IO a) where
+  chPrintfImpl _ (PrintfCont final _)
+    = final >> return undefined
+
+instance (CritHPrintfType r, PrintfArg a) => CritHPrintfType (a -> r) where
+  chPrintfImpl check (PrintfCont _ anotherArg) x
+    = chPrintfImpl check (anotherArg x)
+
+chPrintf :: CritHPrintfType r => (Config -> Bool) -> Handle -> String -> r
+chPrintf shouldPrint h s
+  = chPrintfImpl shouldPrint (make (Text.Printf.hPrintf h s) (Text.Printf.hPrintf h s))
+  where
+    make :: IO () -> (forall a r. (PrintfArg a, Text.Printf.HPrintfType r) => a -> r) -> PrintfCont
+    make curCall curCall' = PrintfCont curCall (\x -> make (curCall' x) (curCall' x))
+
+{- A demonstration of how to write printf in this style, in case it is ever needed
+  in fututre:
+
+cPrintf :: CritHPrintfType r => (Config -> Bool) -> String -> r
+cPrintf shouldPrint s
+  = chPrintfImpl shouldPrint (make (Text.Printf.printf s)
+  (Text.Printf.printf s))
+  where
+    make :: IO () -> (forall a r. (PrintfArg a, Text.Printf.PrintfType r) => a -> r) -> PrintfCont
+    make curCall curCall' = PrintfCont curCall (\x -> make (curCall' x) (curCall' x))
+-}
 
 -- | Print a \"normal\" note.
-note :: (HPrintfType r, NoOp r) => Config -> String -> r
-note cfg msg = if fromLJ cfgVerbosity cfg > Quiet
-               then hPrintf stdout msg
-               else noop
+note :: (CritHPrintfType r) => String -> r
+note = chPrintf ((> Quiet) . fromLJ cfgVerbosity) stdout
 
 -- | Print verbose output.
-prolix :: (HPrintfType r, NoOp r) => Config -> String -> r
-prolix cfg msg = if fromLJ cfgVerbosity cfg == Verbose
-                 then hPrintf stdout msg
-                 else noop
+prolix :: (CritHPrintfType r) => String -> r
+prolix = chPrintf ((== Verbose) . fromLJ cfgVerbosity) stdout
 
 -- | Print an error message.
-printError :: (HPrintfType r) => String -> r
-printError msg = hPrintf stderr msg
+printError :: (CritHPrintfType r) => String -> r
+printError = chPrintf (const True) stderr
 
 -- | Add to summary CSV (if applicable)
-summary :: Config -> String -> IO ()
-summary cfg msg = case getLast $ cfgSummaryFile cfg of
-  Just fn -> appendFile fn msg
-  Nothing -> return ()
+summary :: String -> ConfigM ()
+summary msg
+  = do sumOpt <- getConfigItem (getLast . cfgSummaryFile)
+       case sumOpt of
+         Just fn -> doIO $ appendFile fn msg
+         Nothing -> return ()
+

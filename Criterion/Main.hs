@@ -41,6 +41,7 @@ import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.MultiMap (singleton)
+import Criterion.Monad (doIO, withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, benchNames, bgroup)
 import Data.List (isPrefixOf, sort)
 import Data.Monoid (Monoid(..), Last(..))
@@ -138,10 +139,10 @@ defaultOptions = [
  ]
 
 printBanner :: Config -> IO ()
-printBanner cfg =
+printBanner cfg = withConfig cfg $ 
     case cfgBanner cfg of
-      Last (Just b) -> note cfg "%s\n" b
-      _             -> note cfg "Hey, nobody told me what version I am!\n"
+      Last (Just b) -> note "%s\n" b
+      _             -> note "Hey, nobody told me what version I am!\n"
 
 printUsage :: [OptDescr (IO Config)] -> ExitCode -> IO a
 printUsage options exitCode = do
@@ -222,17 +223,18 @@ defaultMain = defaultMainWith defaultConfig
 defaultMainWith :: Config -> [Benchmark] -> IO ()
 defaultMainWith defCfg bs = do
   (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
-  if cfgPrintExit cfg == List
+  withConfig cfg $
+   if cfgPrintExit cfg == List
     then do
-      note cfg "Benchmarks:\n"
-      mapM_ (note cfg "  %s\n") (sort $ concatMap benchNames bs)
+      note "Benchmarks:\n"
+      mapM_ (note "  %s\n") (sort $ concatMap benchNames bs)
     else do
       case getLast $ cfgSummaryFile cfg of
-        Just fn -> writeFile fn "Name,Mean,MeanLB,MeanUB,Stddev,StddevLB,StddevUB\n"
+        Just fn -> doIO $ writeFile fn "Name,Mean,MeanLB,MeanUB,Stddev,StddevLB,StddevUB\n"
         Nothing -> return ()
-      env <- measureEnvironment cfg
+      env <- measureEnvironment
       let shouldRun b = null args || any (`isPrefixOf` b) args
-      runAndAnalyse shouldRun cfg env $ BenchGroup "" bs
+      runAndAnalyse shouldRun env $ BenchGroup "" bs
 
 -- | Display an error message from a command line parsing failure, and
 -- exit.
