@@ -21,7 +21,7 @@ module Criterion.IO
 import Control.Monad (when)
 import Control.Monad.Trans (liftIO)
 import Criterion.Config (Config, Verbosity(..), cfgSummaryFile, cfgVerbosity, fromLJ)
-import Criterion.Monad (ConfigM, getConfig, getConfigItem, doIO)
+import Criterion.Monad (ConfigM, getConfig, getConfigItem)
 import Data.Monoid (getLast)
 import System.IO (Handle, stderr, stdout)
 import qualified Text.Printf (HPrintfType, hPrintf)
@@ -89,6 +89,6 @@ summary :: String -> ConfigM ()
 summary msg
   = do sumOpt <- getConfigItem (getLast . cfgSummaryFile)
        case sumOpt of
-         Just fn -> doIO $ appendFile fn msg
+         Just fn -> liftIO $ appendFile fn msg
          Nothing -> return ()
 

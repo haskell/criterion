@@ -21,13 +21,14 @@ module Criterion
     ) where
 
 import Control.Monad ((<=<), forM_, replicateM_, when)
+import Control.Monad.Trans (liftIO)
 import Criterion.Analysis (OutlierVariance(..), classifyOutliers,
                            outlierVariance, noteOutliers)
 import Criterion.Config (Config(..), Plot(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (note, prolix, summary)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
-import Criterion.Monad (ConfigM, getConfig, getConfigItem, doIO)
+import Criterion.Monad (ConfigM, getConfig, getConfigItem)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), B(..), bench, bgroup)
 import Data.Array.Vector ((:*:)(..), concatU, lengthU, mapU)
@@ -45,9 +46,10 @@ import Text.Printf (printf)
 -- executing it.
 runBenchmark :: Benchmarkable b => Environment -> b -> ConfigM Sample
 runBenchmark env b = do
-  doIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
+  liftIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
   let minTime = envClockResolution env * 1000
-  (testTime :*: testIters :*: _) <- doIO $ runForAtLeast (min minTime 0.1) 1 (run b)
+  (testTime :*: testIters :*: _) <-
+      liftIO $ runForAtLeast (min minTime 0.1) 1 (run b)
   prolix "ran %d iterations in %s\n" testIters (secs testTime)
   cfg <- getConfig
   let newIters    = ceiling $ minTime * testItersD / testTime
@@ -57,7 +59,7 @@ runBenchmark env b = do
   note "collecting %d samples, %d iterations each, in estimated %s\n"
        sampleCount newIters (secs (fromIntegral sampleCount * newItersD *
                                    testTime / testItersD))
-  times <- doIO $ fmap (mapU ((/ newItersD) . subtract (envClockCost env))) .
+  times <- liftIO . fmap (mapU ((/ newItersD) . subtract (envClockCost env))) .
            createIO sampleCount . const $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
              time_ (run b newIters)
@@ -72,7 +74,7 @@ runAndAnalyseOne env _desc b = do
   let ests = [mean,stdDev]
   numResamples <- getConfigItem $ fromLJ cfgResamples
   note "bootstrapping with %d resamples\n" numResamples
-  res <- doIO $ withSystemRandom (\gen -> resample gen ests numResamples times)
+  res <- liftIO $ withSystemRandom (\gen -> resample gen ests numResamples times)
   ci <- getConfigItem $ fromLJ cfgConfInterval
   let [em,es] = bootstrapBCA ci times ests res
       (effect, v) = outlierVariance em es (fromIntegral $ numSamples)

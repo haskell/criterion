@@ -1,3 +1,4 @@
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- |
 -- Module      : Criterion.Monad
 -- Copyright   : (c) Neil Brown 2009
@@ -7,13 +8,23 @@
 -- Stability   : experimental
 -- Portability : GHC
 --
-module Criterion.Monad (ConfigM, getConfig, getConfigItem, doIO, withConfig) where
+-- The environment in which most criterion code executes.
+module Criterion.Monad
+    (
+      ConfigM
+    , getConfig
+    , getConfigItem
+    , withConfig
+    ) where
 
-import Control.Monad.Reader (ReaderT, ask, runReaderT)
-import Control.Monad.Trans (lift)
+import Control.Monad.Reader (MonadReader, ReaderT, ask, runReaderT)
+import Control.Monad.Trans (MonadIO)
 import Criterion.Config (Config)
 
-type ConfigM = ReaderT Config IO
+-- | The monad in which most criterion code executes.
+newtype ConfigM a = ConfigM {
+      runConfigM :: ReaderT Config IO a
+    } deriving (Functor, Monad, MonadReader Config, MonadIO)
 
 getConfig :: ConfigM Config
 getConfig = ask
@@ -21,8 +32,5 @@ getConfig = ask
 getConfigItem :: (Config -> a) -> ConfigM a
 getConfigItem f = f `fmap` getConfig
 
-doIO :: IO a -> ConfigM a
-doIO = lift
-
 withConfig :: Config -> ConfigM a -> IO a
-withConfig = flip runReaderT
+withConfig = flip (runReaderT . runConfigM)

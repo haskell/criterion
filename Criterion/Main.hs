@@ -37,12 +37,13 @@ module Criterion.Main
     ) where
 
 import Control.Monad (MonadPlus(..))
+import Control.Monad.Trans (liftIO)
 import Criterion (runAndAnalyse)
 import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.MultiMap (singleton)
-import Criterion.Monad (doIO, withConfig)
+import Criterion.Monad (withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), B(..), bench,
                         benchNames, bgroup)
 import Data.List (isPrefixOf, sort)
@@ -232,7 +233,7 @@ defaultMainWith defCfg bs = do
       mapM_ (note "  %s\n") (sort $ concatMap benchNames bs)
     else do
       case getLast $ cfgSummaryFile cfg of
-        Just fn -> doIO $ writeFile fn "Name,Mean,MeanLB,MeanUB,Stddev,StddevLB,StddevUB\n"
+        Just fn -> liftIO $ writeFile fn "Name,Mean,MeanLB,MeanUB,Stddev,StddevLB,StddevUB\n"
         Nothing -> return ()
       env <- measureEnvironment
       let shouldRun b = null args || any (`isPrefixOf` b) args

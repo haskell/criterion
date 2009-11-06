@@ -18,8 +18,9 @@ module Criterion.Plot
     , plotWith
     ) where
 
+import Control.Monad.Trans (liftIO)
 import Criterion.Config
-import Criterion.Monad (ConfigM, doIO, getConfigItem)
+import Criterion.Monad (ConfigM, getConfigItem)
 import Data.Array.Vector
 import Data.Char (isSpace, toLower)
 import Data.Foldable (forM_)
@@ -41,7 +42,7 @@ import Criterion.IO (printError)
 
 plotWith :: Plot -> (PlotOutput -> IO ()) -> ConfigM ()
 plotWith p plot = getConfigItem (M.lookup p . cfgPlot)
-                    >>= maybe (return ()) (flip forM_ (doIO . plot))
+                    >>= maybe (return ()) (liftIO . flip forM_ plot)
 
 -- | Plot timing data.
 plotTiming :: PlotOutput        -- ^ The kind of output desired.
