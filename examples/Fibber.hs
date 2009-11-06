@@ -25,18 +25,18 @@ fio n | n < 0     = error "negative!"
             return $! i * j
 
 main = defaultMain [
-        bgroup "tiny" [ bench "fib 10" $ \n -> fib (10+n-n)
-                      , bench "fib 15" $ \n -> fib (15+n-n)
-                      , bench "fib 20" $ \n -> fib (20+n-n)
-                      , bench "fib 25" $ \n -> fib (25+n-n)
+        bgroup "tiny" [ bench "fib 10" $ B fib 10
+                      , bench "fib 15" $ B fib 15
+                      , bench "fib 20" $ B fib 20
+                      , bench "fib 25" $ B fib 25
                       ],
-        bgroup "fib" [ bench "fib 10" $ \n -> fib (10+n-n)
-                     , bench "fib 35" $ \n -> fib (35+n-n)
-                     , bench "fib 37" $ \n -> fib (37+n-n)
+        bgroup "fib" [ bench "fib 10" $ B fib 10
+                     , bench "fib 35" $ B fib 35
+                     , bench "fib 37" $ B fib 37
                      ],
-        bgroup "fact" [ bench "fact 100"  $ \n -> fact (100+n-n)
-                      , bench "fact 1000" $ \n -> fact (1000+n-n)
-                      , bench "fact 3000" $ \n -> fact (3000+n-n)
+        bgroup "fact" [ bench "fact 100"  $ B fact 100
+                      , bench "fact 1000" $ B fact 1000
+                      , bench "fact 3000" $ B fact 3000
                       ],
         bgroup "fio" [ bench "fio 100"  (fio 100)
                      , bench "fio 1000" (fio 1000)
