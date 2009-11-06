@@ -46,7 +46,7 @@ runBenchmark :: Benchmarkable b => Environment -> b -> ConfigM Sample
 runBenchmark env b = do
   doIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
   let minTime = envClockResolution env * 1000
-  (testTime :*: testIters :*: _) <- doIO $ runForAtLeast (min minTime 0.1) 1 timeLoop
+  (testTime :*: testIters :*: _) <- doIO $ runForAtLeast (min minTime 0.1) 1 (run b)
   prolix "ran %d iterations in %s\n" testIters (secs testTime)
   cfg <- getConfig
   let newIters    = ceiling $ minTime * testItersD / testTime
@@ -59,11 +59,8 @@ runBenchmark env b = do
   times <- doIO $ fmap (mapU ((/ newItersD) . subtract (envClockCost env))) .
            createIO sampleCount . const $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
-             time_ (timeLoop newIters)
+             time_ (run b newIters)
   return times
-  where
-    timeLoop k | k <= 0    = return ()
-               | otherwise = run b k >> timeLoop (k-1)
 
 -- | Run a single benchmark and analyse its performance.
 runAndAnalyseOne :: Benchmarkable b => Environment -> String -> b

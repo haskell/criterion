@@ -34,14 +34,33 @@ module Criterion.Types
 import Control.Exception (evaluate)
 
 -- | A benchmarkable function or action.
-class Benchmarkable b where
-    run :: b -> Int -> IO ()
+class Benchmarkable a where
+    -- | Run a function or action the specified number of times.
+    run :: a                    -- ^ The function or action to benchmark.
+        -> Int                  -- ^ The number of times to run or evaluate it.
+        -> IO ()
 
-instance Benchmarkable (Int -> a) where
-    run f u = evaluate (f u) >> return ()
+-- | A container for a pure function to benchmark, and an argument to
+-- supply to it each time it is evaluated.
+data B a b = B (a -> b) a
+
+instance Benchmarkable (a -> b, a) where
+    run fx@(f,x) n
+        | n <= 0    = return ()
+        | otherwise = evaluate (f x) >> run fx (n-1)
+    {-# INLINE run #-}
+
+instance Benchmarkable (B a b) where
+    run fx@(B f x) n
+        | n <= 0    = return ()
+        | otherwise = evaluate (f x) >> run fx (n-1)
+    {-# INLINE run #-}
 
 instance Benchmarkable (IO a) where
-    run a _ = a >> return ()
+    run a n
+        | n <= 0    = return ()
+        | otherwise = a >> run a (n-1)
+    {-# INLINE run #-}
 
 -- | A benchmark may consist of either a single 'Benchmarkable' item
 -- with a name, created with 'bench', or a (possibly nested) group of
