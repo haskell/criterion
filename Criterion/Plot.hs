@@ -161,7 +161,7 @@ renderKDE desc exs points pdf = toRenderable layout
     spdf = mapU (/ sumU pdf) pdf
 
 -- | An axis whose labels display as seconds (or fractions thereof).
-secAxis :: LinearAxisParams
+secAxis :: LinearAxisParams Double
 secAxis = la_labelf ^= secs
         $ defaultLinearAxis
 
