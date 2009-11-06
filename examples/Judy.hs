@@ -19,17 +19,17 @@ myConfig = defaultConfig { cfgPerformGC = ljust True }
 
 main = defaultMainWith myConfig [
         bgroup "judy" [
-                     bench "insert 1M"   (testit 1000000)
-                   , bench "insert 10M"  (testit 10000000)
-                   , bench "insert 100M" (testit 100000000)
+                     bench "insert 1M"   $ B testit 1000000
+                   , bench "insert 10M"  $ B testit 10000000
+                   , bench "insert 100M" $ B testit 100000000
                    ],
         bgroup "map" [
-                      bench "insert 100k" (testmap 100000)
-                   , bench "insert 1M"    (testmap 1000000)
+                     bench "insert 100k" $ B testmap 100000
+                   , bench "insert 1M"   $ B testmap 1000000
                    ],
         bgroup "intmap" [
-                     bench "insert 100k" (testintmap 100000)
-                   , bench "insert 1M"   (testintmap 1000000)
+                     bench "insert 100k" $ B testintmap 100000
+                   , bench "insert 1M"   $ B testintmap 1000000
                    ]
     ]
 
@@ -39,10 +39,10 @@ testit n = do
    v <- J.lookup 100 j
    v `seq` return ()
 
-testmap :: Int -> Int -> M.Map Int Int
-testmap n i =
-    foldl' (\m k -> M.insert k 1 m) M.empty [0..(n+i-i)]
+testmap :: Int -> M.Map Int Int
+testmap n =
+    foldl' (\m k -> M.insert k 1 m) M.empty [0..n]
 
-testintmap :: Int -> Int -> I.IntMap Int
-testintmap n i =
-    foldl' (\m k -> I.insert k 1 m) I.empty [0..(n+i-i)]
+testintmap :: Int -> I.IntMap Int
+testintmap n =
+    foldl' (\m k -> I.insert k 1 m) I.empty [0..n]

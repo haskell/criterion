@@ -1,4 +1,4 @@
-all := Fibber Tiny
+all := Fibber Judy Tiny
 
 all: $(all)
 

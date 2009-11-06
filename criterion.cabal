@@ -10,7 +10,11 @@ category:       Development, Performance, Testing
 build-type:     Simple
 cabal-version:  >= 1.2
 extra-source-files:
-  README examples/Fibber.hs examples/Judy.hs
+  README
+  examples/Fibber.hs
+  examples/Judy.hs
+  examples/Makefile
+  examples/Tiny.hs
 description:
   This library provides a powerful but simple way to measure the
   performance of Haskell code.  It provides both a framework for
