@@ -24,6 +24,7 @@ module Criterion.Main
     -- * Types
       Benchmarkable(..)
     , Benchmark
+    , B(..)
     -- * Constructing benchmarks
     , bench
     , bgroup
@@ -42,7 +43,8 @@ import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.MultiMap (singleton)
 import Criterion.Monad (doIO, withConfig)
-import Criterion.Types (Benchmarkable(..), Benchmark(..), bench, benchNames, bgroup)
+import Criterion.Types (Benchmarkable(..), Benchmark(..), B(..), bench,
+                        benchNames, bgroup)
 import Data.List (isPrefixOf, sort)
 import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt

@@ -26,6 +26,7 @@ module Criterion.Types
     (
       Benchmarkable(..)
     , Benchmark(..)
+    , B(..)
     , bench
     , bgroup
     , benchNames
