@@ -1,5 +1,5 @@
 name:           criterion
-version:        0.1.3
+version:        0.1.4
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
@@ -48,7 +48,7 @@ library
     parsec,
     statistics >= 0.3.5,
     time,
-    uvector,
+    uvector >= 0.1.0.5,
     uvector-algorithms >= 0.2
 
   if flag(chart)
