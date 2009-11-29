@@ -1,3 +1,5 @@
+{-# LANGUAGE ExistentialQuantification, FlexibleInstances, GADTs #-}
+
 -- |
 -- Module      : Criterion.Types
 -- Copyright   : (c) Bryan O'Sullivan 2009
@@ -21,7 +23,6 @@
 -- For an action of type @IO a@, the benchmarking harness calls the
 -- action repeatedly, but does not reduce the result.
 
-{-# LANGUAGE FlexibleInstances, GADTs #-}
 module Criterion.Types
     (
       Benchmarkable(..)
@@ -43,7 +44,7 @@ class Benchmarkable a where
 
 -- | A container for a pure function to benchmark, and an argument to
 -- supply to it each time it is evaluated.
-data B a b = B (a -> b) a
+data B a = forall b. B (a -> b) a
 
 instance Benchmarkable (a -> b, a) where
     run fx@(f,x) n
@@ -51,7 +52,7 @@ instance Benchmarkable (a -> b, a) where
         | otherwise = evaluate (f x) >> run fx (n-1)
     {-# INLINE run #-}
 
-instance Benchmarkable (B a b) where
+instance Benchmarkable (B a) where
     run fx@(B f x) n
         | n <= 0    = return ()
         | otherwise = evaluate (f x) >> run fx (n-1)
