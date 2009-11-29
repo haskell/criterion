@@ -13,10 +13,10 @@ myConfig = defaultConfig {
            }
 
 main = defaultMainWith myConfig [
-         bench "fib 10" $ B fib 10
-       , bench "fib 30" $ B fib 30
-       , bench "intmap 50k" $ B intmap 50000
-       , bench "intmap 75k" $ B intmap 75000
+         bench "fib 10" $ whnf fib 10
+       , bench "fib 30" $ whnf fib 30
+       , bench "intmap 50k" $ whnf intmap 50000
+       , bench "intmap 75k" $ whnf intmap 75000
        ]
         
 fib :: Int -> Int

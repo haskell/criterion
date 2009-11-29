@@ -1,4 +1,5 @@
 {-# LANGUAGE ExistentialQuantification, FlexibleInstances, GADTs #-}
+{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 
 -- |
 -- Module      : Criterion.Types
@@ -14,7 +15,7 @@
 -- The core class is 'Benchmarkable', which admits both pure functions
 -- and 'IO' actions.
 --
--- For a pure function of type @Int -> a@, the benchmarking harness
+-- For a pure function of type @a -> b@, the benchmarking harness
 -- calls this function repeatedly, each time with a different 'Int'
 -- argument, and reduces the result the function returns to weak head
 -- normal form.  If you need the result reduced to normal form, that
@@ -27,12 +28,15 @@ module Criterion.Types
     (
       Benchmarkable(..)
     , Benchmark(..)
-    , B(..)
+    , Pure
+    , whnf
+    , nf
     , bench
     , bgroup
     , benchNames
     ) where
 
+import Control.DeepSeq (NFData, rnf)
 import Control.Exception (evaluate)
 
 -- | A benchmarkable function or action.
@@ -44,18 +48,29 @@ class Benchmarkable a where
 
 -- | A container for a pure function to benchmark, and an argument to
 -- supply to it each time it is evaluated.
-data B a = forall b. B (a -> b) a
+data Pure where
+    WHNF :: (a -> b) -> a -> Pure
+    NF :: NFData b => (a -> b) -> a -> Pure
 
-instance Benchmarkable (a -> b, a) where
-    run fx@(f,x) n
-        | n <= 0    = return ()
-        | otherwise = evaluate (f x) >> run fx (n-1)
-    {-# INLINE run #-}
+whnf :: (a -> b) -> a -> Pure
+whnf = WHNF
+{-# INLINE whnf #-}
 
-instance Benchmarkable (B a) where
-    run fx@(B f x) n
-        | n <= 0    = return ()
-        | otherwise = evaluate (f x) >> run fx (n-1)
+nf :: NFData b => (a -> b) -> a -> Pure
+nf = NF
+{-# INLINE nf #-}
+
+instance Benchmarkable Pure where
+    run p@(WHNF _ _) = go p
+      where
+        go fx@(WHNF f x) n
+            | n <= 0    = return ()
+            | otherwise = evaluate (f x) >> go fx (n-1)
+    run p@(NF _ _) = go p
+      where
+        go fx@(NF f x) n
+            | n <= 0    = return ()
+            | otherwise = evaluate (rnf (f x)) >> go fx (n-1)
     {-# INLINE run #-}
 
 instance Benchmarkable (IO a) where

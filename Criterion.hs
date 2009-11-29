@@ -13,7 +13,9 @@ module Criterion
     (
       Benchmarkable(..)
     , Benchmark
-    , B(..)
+    , Pure
+    , nf
+    , whnf
     , bench
     , bgroup
     , runBenchmark
@@ -30,7 +32,8 @@ import Criterion.IO (note, prolix, summary)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Monad (ConfigM, getConfig, getConfigItem)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
-import Criterion.Types (Benchmarkable(..), Benchmark(..), B(..), bench, bgroup)
+import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
+                        bench, bgroup, nf, whnf)
 import Data.Array.Vector ((:*:)(..), concatU, lengthU, mapU)
 import Statistics.Function (createIO, minMax)
 import Statistics.KernelDensity (epanechnikovPDF)

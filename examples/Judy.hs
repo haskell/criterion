@@ -19,17 +19,17 @@ myConfig = defaultConfig { cfgPerformGC = ljust True }
 
 main = defaultMainWith myConfig [
         bgroup "judy" [
-                     bench "insert 1M"   $ B testit 1000000
-                   , bench "insert 10M"  $ B testit 10000000
-                   , bench "insert 100M" $ B testit 100000000
+                     bench "insert 1M"   $ whnf testit 1000000
+                   , bench "insert 10M"  $ whnf testit 10000000
+                   , bench "insert 100M" $ whnf testit 100000000
                    ],
         bgroup "map" [
-                     bench "insert 100k" $ B testmap 100000
-                   , bench "insert 1M"   $ B testmap 1000000
+                     bench "insert 100k" $ whnf testmap 100000
+                   , bench "insert 1M"   $ whnf testmap 1000000
                    ],
         bgroup "intmap" [
-                     bench "insert 100k" $ B testintmap 100000
-                   , bench "insert 1M"   $ B testintmap 1000000
+                     bench "insert 100k" $ whnf testintmap 100000
+                   , bench "insert 1M"   $ whnf testintmap 1000000
                    ]
     ]
 

@@ -27,10 +27,12 @@ module Criterion.Main
     -- * Types
       Benchmarkable(..)
     , Benchmark
-    , B(..)
+    , Pure
     -- * Constructing benchmarks
     , bench
     , bgroup
+    , nf
+    , whnf
     -- * Running benchmarks
     , defaultMain
     , defaultMainWith
@@ -47,8 +49,8 @@ import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.MultiMap (singleton)
 import Criterion.Monad (withConfig)
-import Criterion.Types (Benchmarkable(..), Benchmark(..), B(..), bench,
-                        benchNames, bgroup)
+import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure, bench,
+                        benchNames, bgroup, nf, whnf)
 import Data.List (isPrefixOf, sort)
 import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt
@@ -280,17 +282,22 @@ parseError msg = do
 -- only be evaluated once, for which all but the first iteration of
 -- the timing loop will be timing the cost of doing nothing.
 --
--- To work around this, we provide two types for benchmarking pure
--- code.  The first is a specialised tuple:
+-- To work around this, we provide a special type, 'Pure', for
+-- benchmarking pure code.  Values of this type are constructed using
+-- one of two functions.
+--
+-- The first is a function which will cause results to be evaluated to
+-- head normal form (NF):
 --
 -- @
--- data 'B' a = forall b. 'B' (a -> b) a
+-- 'nf' :: 'NFData' b => (a -> b) -> a -> 'Pure'
 -- @
 --
--- The second is a specialised tuple named 'B':
+-- The second will cause results to be evaluated to weak head normal
+-- form (the Haskell default):
 --
 -- @
--- (a -> b, a)
+-- 'whnf' :: (a -> b) -> a -> 'Pure'
 -- @
 --
 -- As both of these types suggest, when you want to benchmark a
@@ -299,15 +306,10 @@ parseError msg = do
 -- * The first element is the function, saturated with all but its
 --   last argument.
 --
--- * The second is the last argument to the function.
+-- * The second element is the last argument to the function.
 --
--- In practice, it is much easier to use the 'B' tuple than a normal
--- tuple.  Using 'B', the type checker can see when the function type
--- @a -> b@ and its argument type @a@ are the same, whereas code may
--- require an explicit type annotation to make this connection
--- explicit for a regular tuple.  Here is an example that makes the
--- distinction clearer.  Suppose we want to benchmark the following
--- function:
+-- Here is an example that makes the use of these functions clearer.
+-- Suppose we want to benchmark the following function:
 --
 -- @
 -- firstN :: Int -> [Int]
@@ -317,58 +319,27 @@ parseError msg = do
 -- So in the easy case, we construct a benchmark as follows:
 --
 -- @
--- 'B' firstN 1000
+-- 'nf' firstN 1000
 -- @
 --
 -- The compiler will correctly infer that the number 1000 must have
--- the type 'Int', and the type of the expression is
---
--- @
--- 'B' ['Int'] 'Int'
--- @
---
--- However, say we try to construct a benchmark using a tuple, as
--- follows:
---
--- @
--- (firstN, 1000)
--- @
---
--- Since we have written a numeric literal with no explicit type, the
--- compiler will correctly infer a rather general type for this
--- expression:
---
--- @
--- ('Num' a) => ('Int' -> ['Int'], a)
--- @
---
--- This does not match the type @(a -> b, a)@, so we would have to
--- explicitly annotate the number @1000@ as having the type @'Int'@
--- for the typechecker to accept this as a valid benchmarkable
--- expression.
+-- the type 'Int', and the type of the expression is 'Pure'.
 
 -- $rnf
 --
--- The harness for evaluating a pure function only evaluates the
--- result to weak head normal form (WHNF).  If you need the result
--- evaluated all the way to normal form, use the @rnf@ function from
--- the Control.Parallel.Strategies module to force its complete
--- evaluation.
+-- The 'whnf' harness for evaluating a pure function only evaluates
+-- the result to weak head normal form (WHNF).  If you need the result
+-- evaluated all the way to normal form, use the 'nf' function to
+-- force its complete evaluation.
 --
--- Using the @firstN@ example from earlier, to naive eyes it /appears/
--- that the following code ought to benchmark the production of the
--- first 1000 list elements:
---
--- @
--- B firstN 1000
--- @
---
--- Because the result is only forced until WHNF is reached, what this
--- /actually/ benchmarks is merely the production of the first list
--- element!  Here is a corrected version:
+-- Using the @firstN@ example from earlier, to naive eyes it might
+-- /appear/ that the following code ought to benchmark the production
+-- of the first 1000 list elements:
 --
 -- @
--- B (rnf . firstN) 1000
+-- 'whnf' firstN 1000
 -- @
-
-
+--
+-- Because in this case the result will only be forced until it
+-- reaches WHNF, what this would /actually/ benchmark is merely the
+-- production of the first list element!
