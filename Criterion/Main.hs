@@ -12,14 +12,17 @@
 
 module Criterion.Main
     (
-    -- * Benchmarking pure code
-    -- $eval
+    -- * How to write benchmarks
+    -- $bench
 
-    -- ** Let-floating
-    -- $letfloat
+    -- ** Benchmarking IO actions
+    -- $io
 
-    -- ** Worker-wrapper transformation
-    -- $worker
+    -- ** Benchmarking pure code
+    -- $pure
+
+    -- ** Fully evaluating a result
+    -- $rnf
 
     -- * Types
       Benchmarkable(..)
@@ -191,9 +194,9 @@ parseArgs defCfg options args =
 -- > fib n = fib (n-1) + fib (n-2)
 -- >
 -- > main = defaultMain [
--- >        bgroup "fib" [ bench "fib 10" $ \n -> fib (10+n-n))
--- >                     , bench "fib 35" $ \n -> fib (35+n-n))
--- >                     , bench "fib 37" $ \n -> fib (37+n-n))
+-- >        bgroup "fib" [ bench "fib 10" $ B fib 10
+-- >                     , bench "fib 35" $ B fib 35
+-- >                     , bench "fib 37" $ B fib 37
 -- >                     ]
 -- >                    ]
 defaultMain :: [Benchmark] -> IO ()
@@ -213,7 +216,7 @@ defaultMain = defaultMainWith defaultConfig
 -- >            }
 -- > 
 -- > main = defaultMainWith myConfig [
--- >          bench "fib 30" $ \(n::Int) -> fib (30+n-n)
+-- >          bench "fib 30" $ B fib 30
 -- >        ]
 --
 -- If you save the above example as @\"Fib.hs\"@, you should be able
@@ -247,83 +250,125 @@ parseError msg = do
   printError "Run \"%s --help\" for usage information\n" =<< getProgName
   exitWith (ExitFailure 64)
 
--- $eval
+-- $bench
+--
+-- The 'Benchmarkable' typeclass represents the class of all code that
+-- can be benchmarked.  Every instance must run a benchmark a given
+-- number of times.  We are most interested in benchmarking two things:
+--
+-- * 'IO' actions.  Any 'IO' action can be benchmarked directly.
+--
+-- * Pure functions.  GHC optimises aggressively when compiling with
+--   @-O@, so it is easy to write innocent-looking benchmark code that
+--   doesn't measure the performance of a pure function at all.  We
+--   work around this by benchmarking both a function and its final
+--   argument together.
+
+-- $io
+--
+-- Any 'IO' action can be benchmarked easily if its type resembles
+-- this:
+--
+-- @
+-- 'IO' a
+-- @
+
+-- $pure
 --
 -- Because GHC optimises aggressively when compiling with @-O@, it is
--- easy to write innocent-looking benchmark code that will only be
--- evaluated once, for which all but the first iteration of the timing
--- loop will be timing the cost of doing nothing.
+-- potentially easy to write innocent-looking benchmark code that will
+-- only be evaluated once, for which all but the first iteration of
+-- the timing loop will be timing the cost of doing nothing.
 --
--- The 'Int' parameter that is passed into your benchmark function is
--- important: you'll almost certainly need to use it somehow in order
--- to ensure that your code will not get optimised away.
+-- To work around this, we provide two types for benchmarking pure
+-- code.  The first is a specialised tuple:
+--
+-- @
+-- data 'B' a = forall b. 'B' (a -> b) a
+-- @
+--
+-- The second is a specialised tuple named 'B':
+--
+-- @
+-- (a -> b, a)
+-- @
+--
+-- As both of these types suggest, when you want to benchmark a
+-- function, you must supply two values:
+--
+-- * The first element is the function, saturated with all but its
+--   last argument.
+--
+-- * The second is the last argument to the function.
+--
+-- In practice, it is much easier to use the 'B' tuple than a normal
+-- tuple.  Using 'B', the type checker can see when the function type
+-- @a -> b@ and its argument type @a@ are the same, whereas code may
+-- require an explicit type annotation to make this connection
+-- explicit for a regular tuple.  Here is an example that makes the
+-- distinction clearer.  Suppose we want to benchmark the following
+-- function:
+--
+-- @
+-- firstN :: Int -> [Int]
+-- firstN k = take k [(0::Int)..]
+-- @
+--
+-- So in the easy case, we construct a benchmark as follows:
+--
+-- @
+-- 'B' firstN 1000
+-- @
+--
+-- The compiler will correctly infer that the number 1000 must have
+-- the type 'Int', and the type of the expression is
+--
+-- @
+-- 'B' ['Int'] 'Int'
+-- @
+--
+-- However, say we try to construct a benchmark using a tuple, as
+-- follows:
+--
+-- @
+-- (firstN, 1000)
+-- @
+--
+-- Since we have written a numeric literal with no explicit type, the
+-- compiler will correctly infer a rather general type for this
+-- expression:
+--
+-- @
+-- ('Num' a) => ('Int' -> ['Int'], a)
+-- @
+--
+-- This does not match the type @(a -> b, a)@, so we would have to
+-- explicitly annotate the number @1000@ as having the type @'Int'@
+-- for the typechecker to accept this as a valid benchmarkable
+-- expression.
 
--- $letfloat
+-- $rnf
 --
--- The following is an example of innocent-looking code that will not
--- benchmark correctly:
---
--- > b = bench "fib 10" $ \(_::Int) -> fib 10
---
--- GHC will notice that the body is constant, and use let-floating to
--- transform the function into a form more like this:
---
--- > lvl = fib 10
--- > b = bench "fib 10" $ \(::_Int) -> lvl
---
--- Here, it is obvious that the CAF @lvl@ only needs to be evaluated
--- once, and this is indeed what happens.  The first iteration in the
--- timing loop will measure a realistic time. All other iterations
--- will take a few dozen nanoseconds, since the original thunk for
--- @lvl@ has already been overwritten with the result of its first
+-- The harness for evaluating a pure function only evaluates the
+-- result to weak head normal form (WHNF).  If you need the result
+-- evaluated all the way to normal form, use the @rnf@ function from
+-- the Control.Parallel.Strategies module to force its complete
 -- evaluation.
 --
--- One somewhat unreliable way to defeat let-floating is to disable it:
+-- Using the @firstN@ example from earlier, to naive eyes it /appears/
+-- that the following code ought to benchmark the production of the
+-- first 1000 list elements:
 --
--- > {-# OPTIONS_GHC -fno-full-laziness #-}
+-- @
+-- B firstN 1000
+-- @
 --
--- If you are trying to benchmark an inlined function, turning off the
--- let-floating transformation may end up causing slower code to be
--- generated.
+-- Because the result is only forced until WHNF is reached, what this
+-- /actually/ benchmarks is merely the production of the first list
+-- element!  Here is a corrected version:
 --
--- A much more reliable way to defeat let-floating is to find a way to
--- make use of the 'Int' that the benchmarking code passes in.
---
--- > bench "fib 10" $ \n -> fib (10+n-n)
---
--- GHC is not yet smart enough to see that adding and subtracting @n@
--- amounts to a no-op. This trick is enough to convince it not to
--- let-float the function's body out, since the body is no longer
--- constant.
+-- @
+-- B (rnf . firstN) 1000
+-- @
 
--- $worker
---
--- Another GHC optimisation is worker-wrapper transformation.  Suppose
--- you want to time insertion of key\/value pairs into a map.  You
--- might perform the insertion via a (/strict/!) fold:
---
--- > import qualified Data.IntMap as I
--- > import Data.List (foldl')
--- >
--- > intmap :: Int -> I.IntMap Int
--- > intmap n = foldl' (\m k -> I.insert k k m) I.empty [0..n]
--- >
--- > b = bench "intmap 10k" $ \(_::Int) -> intmap 10000
---
--- Compile this /without/ @-fno-full-laziness@, and the body of the
--- anonymous function we're benchmarking gets let-floated out to the
--- top level.
---
--- > lvl = intmap 10000
--- > b = bench "intmap 10k" $ \(_::Int) -> lvl
---
--- Compile it /with/ @-fno-full-laziness@, and let-floating occurs
--- /anyway/, this time due to GHC's worker-wrapper transformation.
---
--- Once again, the response is to use the parameter that the
--- benchmarking code passes in.
---
--- > intmap :: Int -> Int -> I.IntMap Int
--- > intmap n i = foldl' (\m k -> I.insert k k m) I.empty [0..n+i-i]
--- >
--- > b = bench "intmap 10k" $ intmap 10000
+
