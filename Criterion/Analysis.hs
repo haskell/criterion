@@ -23,7 +23,7 @@ module Criterion.Analysis
 import Control.Monad (when)
 import Criterion.IO (note)
 import Criterion.Measurement (secs)
-import Criterion.Monad (ConfigM)
+import Criterion.Monad (Criterion)
 import Data.Array.Vector (foldlU)
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
@@ -125,7 +125,7 @@ countOutliers (Outliers _ a b c d) = a + b + c + d
 analyseMean :: Sample
             -> Int              -- ^ Number of iterations used to
                                 -- compute the sample.
-            -> ConfigM Double
+            -> Criterion Double
 analyseMean a iters = do
   let µ = mean a
   note "mean is %s (%d iterations)\n" (secs µ) iters
@@ -133,10 +133,10 @@ analyseMean a iters = do
   return µ
 
 -- | Display a report of the 'Outliers' present in a 'Sample'.
-noteOutliers :: Outliers -> ConfigM ()
+noteOutliers :: Outliers -> Criterion ()
 noteOutliers o = do
   let frac n = (100::Double) * fromIntegral n / fromIntegral (samplesSeen o)
-      check :: Int64 -> Double -> String -> ConfigM ()
+      check :: Int64 -> Double -> String -> Criterion ()
       check k t d = when (frac k > t) $
                     note "  %d (%.1g%%) %s\n" k (frac k) d
       outCount = countOutliers o

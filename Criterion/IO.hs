@@ -21,7 +21,7 @@ module Criterion.IO
 import Control.Monad (when)
 import Control.Monad.Trans (liftIO)
 import Criterion.Config (Config, Verbosity(..), cfgSummaryFile, cfgVerbosity, fromLJ)
-import Criterion.Monad (ConfigM, getConfig, getConfigItem)
+import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Data.Monoid (getLast)
 import System.IO (Handle, stderr, stdout)
 import qualified Text.Printf (HPrintfType, hPrintf)
@@ -39,7 +39,7 @@ class CritHPrintfType a where
   chPrintfImpl :: (Config -> Bool) -> PrintfCont -> a
 
 
-instance CritHPrintfType (ConfigM a) where
+instance CritHPrintfType (Criterion a) where
   chPrintfImpl check (PrintfCont final _)
     = do x <- getConfig
          when (check x) (liftIO final)
@@ -85,7 +85,7 @@ printError :: (CritHPrintfType r) => String -> r
 printError = chPrintf (const True) stderr
 
 -- | Add to summary CSV (if applicable)
-summary :: String -> ConfigM ()
+summary :: String -> Criterion ()
 summary msg
   = do sumOpt <- getConfigItem (getLast . cfgSummaryFile)
        case sumOpt of

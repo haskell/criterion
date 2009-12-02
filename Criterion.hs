@@ -30,7 +30,7 @@ import Criterion.Config (Config(..), Plot(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (note, prolix, summary)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
-import Criterion.Monad (ConfigM, getConfig, getConfigItem)
+import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
                         bench, bgroup, nf, whnf)
@@ -47,7 +47,7 @@ import Text.Printf (printf)
 
 -- | Run a single benchmark, and return timings measured when
 -- executing it.
-runBenchmark :: Benchmarkable b => Environment -> b -> ConfigM Sample
+runBenchmark :: Benchmarkable b => Environment -> b -> Criterion Sample
 runBenchmark env b = do
   liftIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
   let minTime = envClockResolution env * 1000
@@ -70,7 +70,7 @@ runBenchmark env b = do
 
 -- | Run a single benchmark and analyse its performance.
 runAndAnalyseOne :: Benchmarkable b => Environment -> String -> b
-                 -> ConfigM Sample
+                 -> Criterion Sample
 runAndAnalyseOne env _desc b = do
   times <- runBenchmark env b
   let numSamples = lengthU times
@@ -94,7 +94,7 @@ runAndAnalyseOne env _desc b = do
   note "variance introduced by outliers: %.3f%%\n" (v * 100)
   note "variance is %s by outliers\n" wibble
   return times
-  where bs :: String -> Estimate -> ConfigM ()
+  where bs :: String -> Estimate -> Criterion ()
         bs d e = do note "%s: %s, lb %s, ub %s, ci %.3f\n" d
                       (secs $ estPoint e)
                       (secs $ estLowerBound e) (secs $ estUpperBound e)
@@ -103,7 +103,7 @@ runAndAnalyseOne env _desc b = do
                       (estPoint e)
                       (estLowerBound e) (estUpperBound e)
 
-plotAll :: [(String, Sample)] -> ConfigM ()
+plotAll :: [(String, Sample)] -> Criterion ()
 plotAll descTimes = forM_ descTimes $ \(desc,times) -> do
   plotWith Timing $ \o -> plotTiming o desc times
   plotWith KernelDensity $ \o -> uncurry (plotKDE o desc extremes)
@@ -123,7 +123,7 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- name.
               -> Environment
               -> Benchmark
-              -> ConfigM ()
+              -> Criterion ()
 runAndAnalyse p env = plotAll <=< go ""
   where go pfx (Benchmark desc b)
             | p desc'   = do note "\nbenchmarking %s\n" desc'

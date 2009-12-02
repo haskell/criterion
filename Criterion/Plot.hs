@@ -20,7 +20,7 @@ module Criterion.Plot
 
 import Control.Monad.Trans (liftIO)
 import Criterion.Config
-import Criterion.Monad (ConfigM, getConfigItem)
+import Criterion.Monad (Criterion, getConfigItem)
 import Data.Array.Vector
 import Data.Char (isSpace, toLower)
 import Data.Foldable (forM_)
@@ -40,7 +40,7 @@ import Graphics.Rendering.Chart.Gtk (renderableToWindow)
 import Criterion.IO (printError)
 #endif
 
-plotWith :: Plot -> (PlotOutput -> IO ()) -> ConfigM ()
+plotWith :: Plot -> (PlotOutput -> IO ()) -> Criterion ()
 plotWith p plot = getConfigItem (M.lookup p . cfgPlot)
                     >>= maybe (return ()) (liftIO . flip forM_ plot)
 

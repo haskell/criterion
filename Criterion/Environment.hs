@@ -22,7 +22,7 @@ import Control.Monad.Trans (liftIO)
 import Criterion.Analysis (analyseMean)
 import Criterion.IO (note)
 import Criterion.Measurement (getTime, runForAtLeast, time_)
-import Criterion.Monad (ConfigM)
+import Criterion.Monad (Criterion)
 import Data.Array.Vector
 import Data.Typeable (Typeable)
 import Statistics.Function (createIO)
@@ -36,7 +36,7 @@ data Environment = Environment {
     } deriving (Eq, Read, Show, Typeable)
 
 -- | Measure the execution environment.
-measureEnvironment :: ConfigM Environment
+measureEnvironment :: Criterion Environment
 measureEnvironment = do
   note "warming up\n"
   (_ :*: seed :*: _) <- liftIO $ runForAtLeast 0.1 10000 resolution
