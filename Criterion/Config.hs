@@ -69,7 +69,7 @@ data Config = Config {
     , cfgPrintExit    :: PrintExit   -- ^ Whether to print information and exit.
     , cfgResamples    :: Last Int    -- ^ Number of resamples to perform.
     , cfgSamples      :: Last Int    -- ^ Number of samples to collect.
-    , cfgSummaryFile  :: Last String -- ^ Filename of summary CSV
+    , cfgSummaryFile  :: Last FilePath -- ^ Filename of summary CSV
     , cfgVerbosity    :: Last Verbosity -- ^ Whether to run verbosely.
     } deriving (Eq, Read, Show, Typeable)
 
