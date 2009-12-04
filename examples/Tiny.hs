@@ -12,7 +12,7 @@ myConfig = defaultConfig {
              cfgPlot = M.singleton KernelDensity (Window 800 600)
            }
 
-main = defaultMainWith myConfig [
+main = defaultMainWith myConfig (return ()) [
          bench "fib 10" $ whnf fib 10
        , bench "fib 30" $ whnf fib 30
        , bench "intmap 50k" $ whnf intmap 50000

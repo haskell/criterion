@@ -17,7 +17,7 @@ import Data.List (foldl')
 -- enough for us.
 myConfig = defaultConfig { cfgPerformGC = ljust True }
 
-main = defaultMainWith myConfig [
+main = defaultMainWith myConfig (return ()) [
         bgroup "judy" [
                      bench "insert 1M"   $ whnf testit 1000000
                    , bench "insert 10M"  $ whnf testit 10000000

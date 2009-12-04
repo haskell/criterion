@@ -48,7 +48,7 @@ import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.MultiMap (singleton)
-import Criterion.Monad (withConfig)
+import Criterion.Monad (Criterion, withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure, bench,
                         benchNames, bgroup, nf, whnf)
 import Data.List (isPrefixOf, sort)
@@ -202,7 +202,7 @@ parseArgs defCfg options args =
 -- >                     ]
 -- >                    ]
 defaultMain :: [Benchmark] -> IO ()
-defaultMain = defaultMainWith defaultConfig
+defaultMain = defaultMainWith defaultConfig (return ())
 
 -- | An entry point that can be used as a @main@ function, with
 -- configurable defaults.
@@ -217,7 +217,7 @@ defaultMain = defaultMainWith defaultConfig
 -- >              cfgPlot = M.singleton KernelDensity (Window 800 600)
 -- >            }
 -- > 
--- > main = defaultMainWith myConfig [
+-- > main = defaultMainWith myConfig (return ()) [
 -- >          bench "fib 30" $ B fib 30
 -- >        ]
 --
@@ -228,8 +228,11 @@ defaultMain = defaultMainWith defaultConfig
 --
 -- Run @\"Fib --help\"@ on the command line to get a list of command
 -- line options.
-defaultMainWith :: Config -> [Benchmark] -> IO ()
-defaultMainWith defCfg bs = do
+defaultMainWith :: Config
+                -> Criterion () -- ^ Prepare data prior to executing the first benchmark.
+                -> [Benchmark]
+                -> IO ()
+defaultMainWith defCfg prep bs = do
   (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
   withConfig cfg $
    if cfgPrintExit cfg == List
@@ -242,6 +245,7 @@ defaultMainWith defCfg bs = do
         Nothing -> return ()
       env <- measureEnvironment
       let shouldRun b = null args || any (`isPrefixOf` b) args
+      prep
       runAndAnalyse shouldRun env $ BenchGroup "" bs
 
 -- | Display an error message from a command line parsing failure, and
