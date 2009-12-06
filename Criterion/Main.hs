@@ -123,11 +123,11 @@ defaultOptions = [
  , Option ['I'] ["ci"] (ReqArg ci "CI")
           "bootstrap confidence interval"
  , Option ['l'] ["list"] (noArg mempty { cfgPrintExit = List })
-          "print a list of all benchmark names, then exit"
+          "print only a list of benchmark names"
  , Option ['k'] ["plot-kde"] (ReqArg (plot KernelDensity) "TYPE")
           "plot kernel density estimate of probabilities"
  , Option [] ["kde-same-axis"] (noArg mempty {cfgPlotSameAxis = ljust True })
-          "plot all KDE graphs with the same X axis range (useful for comparison)"
+          "plot all KDE graphs with identical X axes"
  , Option ['q'] ["quiet"] (noArg mempty { cfgVerbosity = ljust Quiet })
           "print less output"
  , Option [] ["resamples"]
@@ -139,7 +139,7 @@ defaultOptions = [
  , Option ['t'] ["plot-timing"] (ReqArg (plot Timing) "TYPE")
           "plot timings"
  , Option ['u'] ["summary"] (ReqArg (\s -> return $ mempty { cfgSummaryFile = ljust s }) "FILENAME")
-          "produce a summary CSV file of all the benchmark means and standard deviations"
+          "produce a summary CSV file of all results"
  , Option ['V'] ["version"] (noArg mempty { cfgPrintExit = Version })
           "display version, then exit"
  , Option ['v'] ["verbose"] (noArg mempty { cfgVerbosity = ljust Verbose })
