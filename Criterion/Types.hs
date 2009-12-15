@@ -32,6 +32,7 @@ module Criterion.Types
     , whnf
     , nf
     , nfIO
+    , whnfIO
     , bench
     , bgroup
     , benchNames
@@ -69,8 +70,15 @@ nf = NF
 -- This is particularly useful for forcing a lazy IO action to be
 -- completely performed.
 nfIO :: NFData a => IO a -> IO ()
-nfIO a = a >>= \k -> return $! rnf k
+nfIO a = evaluate . rnf =<< a
 {-# INLINE nfIO #-}
+
+-- | Perform an action, then evaluate its result to weak head normal
+-- form (WHNF).  This is useful for forcing an IO action whose result
+-- is an expression to be evaluated down to a more useful value.
+whnfIO :: NFData a => IO a -> IO ()
+whnfIO a = a >>= evaluate >> return ()
+{-# INLINE whnfIO #-}
 
 instance Benchmarkable Pure where
     run p@(WHNF _ _) = go p

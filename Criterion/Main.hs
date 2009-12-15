@@ -32,8 +32,9 @@ module Criterion.Main
     , bench
     , bgroup
     , nf
-    , nfIO
     , whnf
+    , nfIO
+    , whnfIO
     -- * Running benchmarks
     , defaultMain
     , defaultMainWith

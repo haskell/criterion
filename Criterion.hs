@@ -15,8 +15,9 @@ module Criterion
     , Benchmark
     , Pure
     , nf
-    , nfIO
     , whnf
+    , nfIO
+    , whnfIO
     , bench
     , bgroup
     , runBenchmark
