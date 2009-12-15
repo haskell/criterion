@@ -31,6 +31,7 @@ module Criterion.Types
     , Pure
     , whnf
     , nf
+    , nfIO
     , bench
     , bgroup
     , benchNames
@@ -52,13 +53,24 @@ data Pure where
     WHNF :: (a -> b) -> a -> Pure
     NF :: NFData b => (a -> b) -> a -> Pure
 
+-- | Apply an argument to a function, and evaluate the result to weak
+-- head normal form (WHNF).
 whnf :: (a -> b) -> a -> Pure
 whnf = WHNF
 {-# INLINE whnf #-}
 
+-- | Apply an argument to a function, and evaluate the result to head
+-- normal form (NF).
 nf :: NFData b => (a -> b) -> a -> Pure
 nf = NF
 {-# INLINE nf #-}
+
+-- | Perform an action, then evaluate its result to head normal form.
+-- This is particularly useful for forcing a lazy IO action to be
+-- completely performed.
+nfIO :: NFData a => IO a -> IO ()
+nfIO a = a >>= \k -> return $! rnf k
+{-# INLINE nfIO #-}
 
 instance Benchmarkable Pure where
     run p@(WHNF _ _) = go p
