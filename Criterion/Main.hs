@@ -198,9 +198,9 @@ parseArgs defCfg options args =
 -- > fib n = fib (n-1) + fib (n-2)
 -- >
 -- > main = defaultMain [
--- >        bgroup "fib" [ bench "fib 10" $ B fib 10
--- >                     , bench "fib 35" $ B fib 35
--- >                     , bench "fib 37" $ B fib 37
+-- >        bgroup "fib" [ bench "10" $ whnf fib 10
+-- >                     , bench "35" $ whnf fib 35
+-- >                     , bench "37" $ whnf fib 37
 -- >                     ]
 -- >                    ]
 defaultMain :: [Benchmark] -> IO ()
@@ -220,7 +220,7 @@ defaultMain = defaultMainWith defaultConfig (return ())
 -- >            }
 -- > 
 -- > main = defaultMainWith myConfig (return ()) [
--- >          bench "fib 30" $ B fib 30
+-- >          bench "fib 30" $ whnf fib 30
 -- >        ]
 --
 -- If you save the above example as @\"Fib.hs\"@, you should be able
