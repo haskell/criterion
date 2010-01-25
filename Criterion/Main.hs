@@ -52,7 +52,7 @@ import Criterion.IO (note, printError)
 import Criterion.MultiMap (singleton)
 import Criterion.Monad (Criterion, withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure, bench,
-                        benchNames, bgroup, nf, nfIO, whnf)
+                        benchNames, bgroup, nf, nfIO, whnf, whnfIO)
 import Data.List (isPrefixOf, sort)
 import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt

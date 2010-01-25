@@ -35,7 +35,7 @@ import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
-                        bench, bgroup, nf, nfIO, whnf)
+                        bench, bgroup, nf, nfIO, whnf, whnfIO)
 import Data.Array.Vector ((:*:)(..), concatU, lengthU, mapU)
 import Statistics.Function (createIO, minMax)
 import Statistics.KernelDensity (epanechnikovPDF)
