@@ -58,7 +58,8 @@ import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
 import System.Exit (ExitCode(..), exitWith)
-import Text.ParserCombinators.Parsec
+import Text.Parsec
+import Text.Parsec.String
 
 -- | Parse a plot output.
 parsePlot :: Parser PlotOutput
