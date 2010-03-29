@@ -2,7 +2,7 @@
 
 -- |
 -- Module      : Criterion.Config
--- Copyright   : (c) Bryan O'Sullivan 2009
+-- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com

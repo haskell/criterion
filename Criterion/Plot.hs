@@ -2,7 +2,7 @@
 
 -- |
 -- Module      : Criterion.Plot
--- Copyright   : (c) Bryan O'Sullivan 2009
+-- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
@@ -21,11 +21,12 @@ module Criterion.Plot
 import Control.Monad.Trans (liftIO)
 import Criterion.Config
 import Criterion.Monad (Criterion, getConfigItem)
-import Data.Array.Vector
+import qualified Data.Vector.Unboxed as U
 import Data.Char (isSpace, toLower)
 import Data.Foldable (forM_)
 import Data.List (group, intersperse)
 import Statistics.KernelDensity (Points, fromPoints)
+import Statistics.Function (indexed)
 import Statistics.Types (Sample)
 import System.FilePath (pathSeparator)
 import System.IO (IOMode(..), Handle, hPutStr, withBinaryFile)
@@ -53,7 +54,7 @@ plotTiming :: PlotOutput        -- ^ The kind of output desired.
 plotTiming CSV desc times = do
   writeTo (mangle $ printf "%s timings.csv" desc) $ \h -> do
     putRow h ["sample", "execution time"]
-    forM_ (fromU $ indexedU times) $ \(x :*: y) ->
+    forM_ (U.toList $ indexed times) $ \(x,y) ->
       putRow h [show x, show y]
 
 #ifdef HAVE_CHART
@@ -80,15 +81,15 @@ plotTiming output _desc _times =
 -- | Plot kernel density estimate.
 plotKDE :: PlotOutput           -- ^ The kind of output desired.
         -> String               -- ^ Benchmark name.
-        -> Maybe (Double :*: Double) -- ^ Range of x-axis
+        -> Maybe (Double, Double) -- ^ Range of x-axis
         -> Points               -- ^ Points at which KDE was computed.
-        -> UArr Double          -- ^ Kernel density estimates.
+        -> U.Vector Double      -- ^ Kernel density estimates.
         -> IO ()
 
 plotKDE CSV desc _exs points pdf = do
   writeTo (mangle $ printf "%s densities.csv" desc) $ \h -> do
     putRow h ["execution time", "probability"]
-    forM_ (zip (fromU pdf) (fromU (fromPoints points))) $ \(x, y) ->
+    forM_ (zip (U.toList pdf) (U.toList (fromPoints points))) $ \(x, y) ->
       putRow h [show x, show y]
 
 #ifdef HAVE_CHART

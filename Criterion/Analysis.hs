@@ -1,6 +1,6 @@
 -- |
 -- Module      : Criterion.Analysis
--- Copyright   : (c) Bryan O'Sullivan 2009
+-- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
@@ -24,7 +24,7 @@ import Control.Monad (when)
 import Criterion.IO (note)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion)
-import Data.Array.Vector (foldlU)
+import qualified Data.Vector.Unboxed as U
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
@@ -67,7 +67,7 @@ addOutliers (Outliers s a b c d) (Outliers t w x y z) =
 
 -- | Classify outliers in a data set, using the boxplot technique.
 classifyOutliers :: Sample -> Outliers
-classifyOutliers sa = foldlU ((. outlier) . mappend) mempty ssa
+classifyOutliers sa = U.foldl ((. outlier) . mappend) mempty ssa
     where outlier e = Outliers {
                         samplesSeen = 1
                       , lowSevere = if e <= loS then 1 else 0

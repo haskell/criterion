@@ -1,5 +1,16 @@
 {-# LANGUAGE BangPatterns, ScopedTypeVariables, TypeOperators #-}
 
+-- |
+-- Module      : Criterion.Measurement
+-- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
+--
+-- License     : BSD-style
+-- Maintainer  : bos@serpentine.com
+-- Stability   : experimental
+-- Portability : GHC
+--
+-- Benchmark measurement code.
+
 module Criterion.Measurement
     (
       getTime
@@ -10,16 +21,16 @@ module Criterion.Measurement
     ) where
     
 import Control.Monad (when)
-import Data.Array.Vector ((:*:)(..))
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Text.Printf (printf)
         
-time :: IO a -> IO (Double :*: a)
+time :: IO a -> IO (Double, a)
 time act = do
   start <- getTime
   result <- act
   end <- getTime
-  return (end - start :*: result)
+  let !delta = end - start
+  return (delta, result)
 
 time_ :: IO a -> IO Double
 time_ act = do
@@ -31,17 +42,17 @@ time_ act = do
 getTime :: IO Double
 getTime = (fromRational . toRational) `fmap` getPOSIXTime
 
-runForAtLeast :: Double -> Int -> (Int -> IO a) -> IO (Double :*: Int :*: a)
+runForAtLeast :: Double -> Int -> (Int -> IO a) -> IO (Double, Int, a)
 runForAtLeast howLong initSeed act = loop initSeed (0::Int) =<< getTime
   where
     loop !seed !iters initTime = do
       now <- getTime
       when (now - initTime > howLong * 10) $
         fail (printf "took too long to run: seed %d, iters %d" seed iters)
-      elapsed :*: result <- time (act seed)
+      (elapsed,result) <- time (act seed)
       if elapsed < howLong
         then loop (seed * 2) (iters+1) initTime
-        else return (elapsed :*: seed :*: result)
+        else return (elapsed, seed, result)
 
 secs :: Double -> String
 secs k

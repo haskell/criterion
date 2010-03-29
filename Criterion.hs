@@ -1,6 +1,6 @@
 -- |
 -- Module      : Criterion
--- Copyright   : (c) Bryan O'Sullivan 2009
+-- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
@@ -36,14 +36,14 @@ import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
                         bench, bgroup, nf, nfIO, whnf, whnfIO)
-import Data.Array.Vector ((:*:)(..), concatU, lengthU, mapU)
-import Statistics.Function (createIO, minMax)
+import qualified Data.Vector.Unboxed as U
+import Statistics.Function (create, minMax)
 import Statistics.KernelDensity (epanechnikovPDF)
-import Statistics.RandomVariate (withSystemRandom)
-import Statistics.Resampling (resample)
+import Statistics.Resampling (Resample, resample)
 import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
 import Statistics.Sample (mean, stdDev)
 import Statistics.Types (Sample)
+import System.Random.MWC (withSystemRandom)
 import System.Mem (performGC)
 import Text.Printf (printf)
 
@@ -53,8 +53,7 @@ runBenchmark :: Benchmarkable b => Environment -> b -> Criterion Sample
 runBenchmark env b = do
   liftIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
   let minTime = envClockResolution env * 1000
-  (testTime :*: testIters :*: _) <-
-      liftIO $ runForAtLeast (min minTime 0.1) 1 (run b)
+  (testTime, testIters, _) <- liftIO $ runForAtLeast (min minTime 0.1) 1 (run b)
   prolix "ran %d iterations in %s\n" testIters (secs testTime)
   cfg <- getConfig
   let newIters    = ceiling $ minTime * testItersD / testTime
@@ -64,8 +63,8 @@ runBenchmark env b = do
   note "collecting %d samples, %d iterations each, in estimated %s\n"
        sampleCount newIters (secs (fromIntegral sampleCount * newItersD *
                                    testTime / testItersD))
-  times <- liftIO . fmap (mapU ((/ newItersD) . subtract (envClockCost env))) .
-           createIO sampleCount . const $ do
+  times <- liftIO . fmap (U.map ((/ newItersD) . subtract (envClockCost env))) .
+           create sampleCount . const $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
              time_ (run b newIters)
   return times
@@ -75,11 +74,12 @@ runAndAnalyseOne :: Benchmarkable b => Environment -> String -> b
                  -> Criterion Sample
 runAndAnalyseOne env _desc b = do
   times <- runBenchmark env b
-  let numSamples = lengthU times
+  let numSamples = U.length times
   let ests = [mean,stdDev]
   numResamples <- getConfigItem $ fromLJ cfgResamples
   note "bootstrapping with %d resamples\n" numResamples
-  res <- liftIO $ withSystemRandom (\gen -> resample gen ests numResamples times)
+  res <- liftIO . withSystemRandom $ \gen ->
+         resample gen ests numResamples times :: IO [Resample]
   ci <- getConfigItem $ fromLJ cfgConfInterval
   let [em,es] = bootstrapBCA ci times ests res
       (effect, v) = outlierVariance em es (fromIntegral $ numSamples)
@@ -114,7 +114,8 @@ plotAll descTimes = forM_ descTimes $ \(desc,times) -> do
     extremes = case descTimes of
                  (_:_:_) -> toJust . minMax . concatU . map snd $ descTimes
                  _       -> Nothing
-    toJust r@(lo :*: hi)
+    concatU = foldr (U.++) U.empty
+    toJust r@(lo, hi)
         | lo == infinity || hi == -infinity = Nothing
         | otherwise                         = Just r
         where infinity                      = 1/0

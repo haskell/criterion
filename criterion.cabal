@@ -1,11 +1,11 @@
 name:           criterion
-version:        0.4.1.0
+version:        0.5.0.0
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
 author:         Bryan O'Sullivan <bos@serpentine.com>
 maintainer:     Bryan O'Sullivan <bos@serpentine.com>
-copyright:      2009 Bryan O'Sullivan
+copyright:      2009-2010 Bryan O'Sullivan
 category:       Development, Performance, Testing
 build-type:     Simple
 cabal-version:  >= 1.2
@@ -26,7 +26,9 @@ description:
   examples in the Criterion.Main module.
 
 flag Chart
-  Description: enable use of the Chart package
+  description: enable use of the Chart package
+  -- Broken under GHC 6.12 so far.
+  default: False
 
 library
   exposed-modules:
@@ -49,16 +51,17 @@ library
     deepseq >= 1.1.0.0,
     filepath,
     mtl,
+    mwc-random >= 0.5.0.0,
     parallel,
     parsec,
-    statistics >= 0.3.5,
+    statistics >= 0.5.1.0,
     time,
-    uvector >= 0.1.0.5,
-    uvector-algorithms >= 0.2
+    vector >= 0.5,
+    vector-algorithms >= 0.3
 
   if flag(chart)
     build-depends:
-      Chart>=0.12,
+      Chart >= 0.12,
       data-accessor
     cpp-options: -DHAVE_CHART
 
@@ -68,3 +71,5 @@ library
   ghc-options: -Wall -funbox-strict-fields -O2
   if impl(ghc >= 6.8)
     ghc-options: -fwarn-tabs
+  if impl(ghc >= 6.12)
+    ghc-options: -fno-warn-unused-do-bind

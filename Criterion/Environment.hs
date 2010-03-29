@@ -2,7 +2,7 @@
 
 -- |
 -- Module      : Criterion.Environment
--- Copyright   : (c) Bryan O'Sullivan 2009
+-- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
@@ -23,9 +23,9 @@ import Criterion.Analysis (analyseMean)
 import Criterion.IO (note)
 import Criterion.Measurement (getTime, runForAtLeast, time_)
 import Criterion.Monad (Criterion)
-import Data.Array.Vector
+import qualified Data.Vector.Unboxed as U
 import Data.Typeable (Typeable)
-import Statistics.Function (createIO)
+import Statistics.Function (create)
 
 -- | Measured aspects of the execution environment.
 data Environment = Environment {
@@ -39,7 +39,7 @@ data Environment = Environment {
 measureEnvironment :: Criterion Environment
 measureEnvironment = do
   note "warming up\n"
-  (_ :*: seed :*: _) <- liftIO $ runForAtLeast 0.1 10000 resolution
+  (_, seed, _) <- liftIO $ runForAtLeast 0.1 10000 resolution
   note "estimating clock resolution...\n"
   clockRes <- thd3 `fmap` liftIO (runForAtLeast 0.5 seed resolution) >>=
               uncurry analyseMean
@@ -51,13 +51,13 @@ measureEnvironment = do
              }
   where
     resolution k = do
-      times <- createIO (k+1) (const getTime)
-      return (tailU . filterU (>=0) . zipWithU (-) (tailU times) $ times,
-              lengthU times)
+      times <- create (k+1) (const getTime)
+      return (U.tail . U.filter (>=0) . U.zipWith (-) (U.tail times) $ times,
+              U.length times)
     cost timeLimit = liftIO $ do
       let timeClock k = time_ (replicateM_ k getTime)
       timeClock 1
-      (_ :*: iters :*: elapsed) <- runForAtLeast 0.01 10000 timeClock
-      times <- createIO (ceiling (timeLimit / elapsed)) $ \_ -> timeClock iters
-      return (mapU (/ fromIntegral iters) times, lengthU times)
-    thd3 (_ :*: _:*: c) = c
+      (_, iters, elapsed) <- runForAtLeast 0.01 10000 timeClock
+      times <- create (ceiling (timeLimit / elapsed)) $ \_ -> timeClock iters
+      return (U.map (/ fromIntegral iters) times, U.length times)
+    thd3 (_, _, c) = c

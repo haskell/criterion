@@ -1,7 +1,7 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 -- |
 -- Module      : Criterion.Monad
--- Copyright   : (c) Neil Brown 2009
+-- Copyright   : (c) 2009 Neil Brown
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
