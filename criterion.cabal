@@ -61,7 +61,7 @@ library
 
   if flag(chart)
     build-depends:
-      Chart >= 0.12,
+      Chart >= 0.13 && < 0.14,
       data-accessor
     cpp-options: -DHAVE_CHART
 

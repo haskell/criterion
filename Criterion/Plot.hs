@@ -130,12 +130,12 @@ renderTiming desc times = toRenderable layout
     bottomAxis = laxis_title ^= "number of samples"
                $ defaultLayoutAxis
 
-    bars = plot_bars_values ^= (zip [0.5,1.5..] . map (:[]) . fromU $ times)
+    bars = plot_bars_values ^= (zip [0.5,1.5..] . map (:[]) . U.toList $ times)
          $ plot_bars_item_styles ^= [ (solidFillStyle c, Nothing) | c <- defaultColorSeq ]
-         $ plot_bars_spacing ^= BarsFixGap 0
+         $ plot_bars_spacing ^= BarsFixGap 0 2
          $ defaultPlotBars
 
-renderKDE :: String -> Maybe (Double :*: Double) -> Points -> UArr Double
+renderKDE :: String -> Maybe (Double, Double) -> Points -> U.Vector Double
           -> Renderable ()
 renderKDE desc exs points pdf = toRenderable layout
   where
@@ -154,13 +154,13 @@ renderKDE desc exs points pdf = toRenderable layout
                $ defaultLayoutAxis
 
     semiAutoScaledAxis opts ps = autoScaledAxis opts (extremities ++ ps)
-    extremities = maybe [] (\(lo :*: hi) -> [lo, hi]) exs
+    extremities = maybe [] (\(lo, hi) -> [lo, hi]) exs
 
-    info = plot_lines_values ^= [zip (fromU (fromPoints points)) (fromU spdf)]
+    info = plot_lines_values ^= [zip (U.toList (fromPoints points)) (U.toList spdf)]
          $ defaultPlotLines
 
     -- Normalise the PDF estimates into a semi-sane range.
-    spdf = mapU (/ sumU pdf) pdf
+    spdf = U.map (/ U.sum pdf) pdf
 
 -- | An axis whose labels display as seconds (or fractions thereof).
 secAxis :: LinearAxisParams Double
