@@ -68,7 +68,7 @@ library
   -- gather extensive profiling data for now
   ghc-prof-options: -auto-all
 
-  ghc-options: -Wall -funbox-strict-fields -O2
+  ghc-options: -Wall -funbox-strict-fields
   if impl(ghc >= 6.8)
     ghc-options: -fwarn-tabs
   if impl(ghc >= 6.12)
