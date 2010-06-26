@@ -38,12 +38,12 @@ data Environment = Environment {
 -- | Measure the execution environment.
 measureEnvironment :: Criterion Environment
 measureEnvironment = do
-  note "warming up\n"
+  _ <- note "warming up\n"
   (_, seed, _) <- liftIO $ runForAtLeast 0.1 10000 resolution
-  note "estimating clock resolution...\n"
+  _ <- note "estimating clock resolution...\n"
   clockRes <- thd3 `fmap` liftIO (runForAtLeast 0.5 seed resolution) >>=
               uncurry analyseMean
-  note "estimating cost of a clock call...\n"
+  _ <- note "estimating cost of a clock call...\n"
   clockCost <- cost (min (100000 * clockRes) 1) >>= uncurry analyseMean
   return $ Environment {
                envClockResolution = clockRes
@@ -56,7 +56,7 @@ measureEnvironment = do
               U.length times)
     cost timeLimit = liftIO $ do
       let timeClock k = time_ (replicateM_ k getTime)
-      timeClock 1
+      _ <- timeClock 1
       (_, iters, elapsed) <- runForAtLeast 0.01 10000 timeClock
       times <- create (ceiling (timeLimit / elapsed)) $ \_ -> timeClock iters
       return (U.map (/ fromIntegral iters) times, U.length times)

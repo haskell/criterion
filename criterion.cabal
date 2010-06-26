@@ -71,5 +71,3 @@ library
   ghc-options: -Wall -funbox-strict-fields
   if impl(ghc >= 6.8)
     ghc-options: -fwarn-tabs
-  if impl(ghc >= 6.12)
-    ghc-options: -fno-warn-unused-do-bind

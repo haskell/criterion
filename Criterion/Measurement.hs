@@ -35,7 +35,7 @@ time act = do
 time_ :: IO a -> IO Double
 time_ act = do
   start <- getTime
-  act
+  _ <- act
   end <- getTime
   return $! end - start
 

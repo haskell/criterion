@@ -70,13 +70,13 @@ parsePlot = try (dim "window" Window 800 600)
     `mplus` try (dim "svg" SVG 432 324)
     `mplus` (string "csv" >> return CSV)
   where dim s c dx dy = do
-          string s
+          _ <- string s
           try (uncurry c `fmap` dimensions) `mplus`
               (eof >> return (c dx dy))
         dimensions = do
-            char ':'
+            _ <- char ':'
             a <- many1 digit
-            char 'x'
+            _ <- char 'x'
             b <- many1 digit
             case (reads a, reads b) of
               ([(x,[])],[(y,[])]) -> return (x, y)
@@ -240,7 +240,7 @@ defaultMainWith defCfg prep bs = do
   withConfig cfg $
    if cfgPrintExit cfg == List
     then do
-      note "Benchmarks:\n"
+      _ <- note "Benchmarks:\n"
       mapM_ (note "  %s\n") (sort $ concatMap benchNames bs)
     else do
       case getLast $ cfgSummaryFile cfg of
@@ -255,8 +255,8 @@ defaultMainWith defCfg prep bs = do
 -- exit.
 parseError :: String -> IO a
 parseError msg = do
-  printError "Error: %s" msg
-  printError "Run \"%s --help\" for usage information\n" =<< getProgName
+  _ <- printError "Error: %s" msg
+  _ <- printError "Run \"%s --help\" for usage information\n" =<< getProgName
   exitWith (ExitFailure 64)
 
 -- $bench

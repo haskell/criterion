@@ -51,16 +51,16 @@ import Text.Printf (printf)
 -- executing it.
 runBenchmark :: Benchmarkable b => Environment -> b -> Criterion Sample
 runBenchmark env b = do
-  liftIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
+  _ <- liftIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
   let minTime = envClockResolution env * 1000
   (testTime, testIters, _) <- liftIO $ runForAtLeast (min minTime 0.1) 1 (run b)
-  prolix "ran %d iterations in %s\n" testIters (secs testTime)
+  _ <- prolix "ran %d iterations in %s\n" testIters (secs testTime)
   cfg <- getConfig
   let newIters    = ceiling $ minTime * testItersD / testTime
       sampleCount = fromLJ cfgSamples cfg
       newItersD   = fromIntegral newIters
       testItersD  = fromIntegral testIters
-  note "collecting %d samples, %d iterations each, in estimated %s\n"
+  _ <- note "collecting %d samples, %d iterations each, in estimated %s\n"
        sampleCount newIters (secs (fromIntegral sampleCount * newItersD *
                                    testTime / testItersD))
   times <- liftIO . fmap (U.map ((/ newItersD) . subtract (envClockCost env))) .
@@ -77,7 +77,7 @@ runAndAnalyseOne env _desc b = do
   let numSamples = U.length times
   let ests = [mean,stdDev]
   numResamples <- getConfigItem $ fromLJ cfgResamples
-  note "bootstrapping with %d resamples\n" numResamples
+  _ <- note "bootstrapping with %d resamples\n" numResamples
   res <- liftIO . withSystemRandom $ \gen ->
          resample gen ests numResamples times :: IO [Resample]
   ci <- getConfigItem $ fromLJ cfgConfInterval
@@ -93,11 +93,11 @@ runAndAnalyseOne env _desc b = do
   bs "std dev" es
   summary "\n"
   noteOutliers (classifyOutliers times)
-  note "variance introduced by outliers: %.3f%%\n" (v * 100)
-  note "variance is %s by outliers\n" wibble
+  _ <- note "variance introduced by outliers: %.3f%%\n" (v * 100)
+  _ <- note "variance is %s by outliers\n" wibble
   return times
   where bs :: String -> Estimate -> Criterion ()
-        bs d e = do note "%s: %s, lb %s, ub %s, ci %.3f\n" d
+        bs d e = do _ <- note "%s: %s, lb %s, ub %s, ci %.3f\n" d
                       (secs $ estPoint e)
                       (secs $ estLowerBound e) (secs $ estUpperBound e)
                       (estConfidenceLevel e)
@@ -129,7 +129,7 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Criterion ()
 runAndAnalyse p env = plotAll <=< go ""
   where go pfx (Benchmark desc b)
-            | p desc'   = do note "\nbenchmarking %s\n" desc'
+            | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
                              summary (show desc' ++ ",") -- String will be quoted
                              x <- runAndAnalyseOne env desc' b
                              sameAxis <- getConfigItem $ fromLJ cfgPlotSameAxis

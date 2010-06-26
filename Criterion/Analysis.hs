@@ -128,7 +128,7 @@ analyseMean :: Sample
             -> Criterion Double
 analyseMean a iters = do
   let µ = mean a
-  note "mean is %s (%d iterations)\n" (secs µ) iters
+  _ <- note "mean is %s (%d iterations)\n" (secs µ) iters
   noteOutliers . classifyOutliers $ a
   return µ
 
@@ -141,7 +141,7 @@ noteOutliers o = do
                     note "  %d (%.1g%%) %s\n" k (frac k) d
       outCount = countOutliers o
   when (outCount > 0) $ do
-    note "found %d outliers among %d samples (%.1g%%)\n"
+    _ <- note "found %d outliers among %d samples (%.1g%%)\n"
          outCount (samplesSeen o) (frac outCount)
     check (lowSevere o) 0 "low severe"
     check (lowMild o) 1 "low mild"
