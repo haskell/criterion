@@ -214,6 +214,7 @@ defaultMain = defaultMainWith defaultConfig (return ())
 --
 -- > import Criterion.Config
 -- > import qualified Criterion.MultiMap as M
+-- > import Criterion.Main
 -- >
 -- > myConfig = defaultConfig {
 -- >              -- Always display an 800x600 window with curves.
