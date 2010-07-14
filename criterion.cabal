@@ -1,5 +1,5 @@
 name:           criterion
-version:        0.5.0.2
+version:        0.5.0.3
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
@@ -51,10 +51,10 @@ library
     deepseq >= 1.1.0.0,
     filepath,
     mtl,
-    mwc-random >= 0.5.1.4,
+    mwc-random >= 0.7.0.0,
     parallel,
     parsec >= 3.1.0,
-    statistics >= 0.6.0.1,
+    statistics >= 0.6.0.0,
     time,
     vector >= 0.6.0.2,
     vector-algorithms >= 0.3.2
