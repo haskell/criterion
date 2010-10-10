@@ -12,7 +12,7 @@ bug-reports:    http://bitbucket.org/bos/criterion/issues
 build-type:     Simple
 cabal-version:  >= 1.6
 extra-source-files:
-  README
+  README.markdown
   examples/Fibber.hs
   examples/Judy.hs
   examples/Makefile
