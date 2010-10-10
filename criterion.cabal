@@ -1,5 +1,5 @@
 name:           criterion
-version:        0.5.0.4
+version:        0.5.0.5
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
@@ -7,6 +7,8 @@ author:         Bryan O'Sullivan <bos@serpentine.com>
 maintainer:     Bryan O'Sullivan <bos@serpentine.com>
 copyright:      2009-2010 Bryan O'Sullivan
 category:       Development, Performance, Testing
+homepage:       http://bitbucket.org/bos/criterion
+bug-reports:    http://bitbucket.org/bos/criterion/issues
 build-type:     Simple
 cabal-version:  >= 1.6
 extra-source-files:
