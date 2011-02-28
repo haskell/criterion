@@ -32,13 +32,14 @@ import System.FilePath (pathSeparator)
 import System.IO (IOMode(..), Handle, hPutStr, withBinaryFile)
 import Text.Printf (printf)
 import qualified Criterion.MultiMap as M
+import Criterion.IO (printError)
 
 #ifdef HAVE_CHART
 import Data.Accessor ((^=))
 import Graphics.Rendering.Chart hiding (Plot,c)
+#ifdef HAVE_GTK
 import Graphics.Rendering.Chart.Gtk (renderableToWindow)
-#else
-import Criterion.IO (printError)
+#endif
 #endif
 
 plotWith :: Plot -> (PlotOutput -> IO ()) -> Criterion ()
@@ -70,13 +71,15 @@ plotTiming (SVG x y) desc times =
   renderableToSVGFile (renderTiming desc times) x y
                       (mangle $ printf "%s timings %dx%d.svg" desc x y)
 
+#ifdef HAVE_GTK
 plotTiming (Window x y) desc times =
   renderableToWindow (renderTiming desc times) x y
-#else
+#endif
+#endif
+
 plotTiming output _desc _times =
   printError "ERROR: output type %s not supported on this platform\n"
              (show output)
-#endif
 
 -- | Plot kernel density estimate.
 plotKDE :: PlotOutput           -- ^ The kind of output desired.
@@ -105,13 +108,15 @@ plotKDE (SVG x y) desc exs points pdf =
   renderableToSVGFile (renderKDE desc exs points pdf) x y
                       (mangle $ printf "%s densities %dx%d.svg" desc x y)
 
+#ifdef HAVE_GTK
 plotKDE (Window x y) desc exs points pdf =
     renderableToWindow (renderKDE desc exs points pdf) x y
-#else
+#endif
+#endif
+
 plotKDE output _desc _exs _points _pdf =
   printError "ERROR: output type %s not supported on this platform\n"
              (show output)
-#endif
 
 #ifdef HAVE_CHART
 renderTiming :: String -> Sample -> Renderable ()

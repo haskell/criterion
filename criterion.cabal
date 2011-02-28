@@ -32,6 +32,10 @@ flag Chart
   -- Broken under GHC 6.12 so far.
   default: False
 
+flag gtk
+  description: enable displaying charts in GTK+ windows
+  default: False
+
 library
   exposed-modules:
     Criterion
@@ -63,9 +67,12 @@ library
 
   if flag(chart)
     build-depends:
-      Chart >= 0.13 && < 0.14,
+      Chart >= 0.13 && < 0.15,
       data-accessor
     cpp-options: -DHAVE_CHART
+
+  if flag(gtk)
+    cpp-options: -DHAVE_GTK
 
   -- gather extensive profiling data for now
   ghc-prof-options: -auto-all
