@@ -18,6 +18,7 @@ module Criterion.Plot
     , plotWith
     ) where
 
+import Control.Monad (void)
 import Control.Monad.Trans (liftIO)
 import Criterion.Config
 import Criterion.Monad (Criterion, getConfigItem)
@@ -59,22 +60,22 @@ plotTiming CSV desc times = do
       putRow h [show x, show y]
 
 #ifdef HAVE_CHART
-plotTiming (PDF x y) desc times =
+plotTiming (PDF x y) desc times = void $
   renderableToPDFFile (renderTiming desc times) x y
                       (mangle $ printf "%s timings %dx%d.pdf" desc x y)
 
-plotTiming (PNG x y) desc times =
+plotTiming (PNG x y) desc times = void $
   renderableToPNGFile (renderTiming desc times) x y
                       (mangle $ printf "%s timings %dx%d.png" desc x y)
 
-plotTiming (SVG x y) desc times =
+plotTiming (SVG x y) desc times = void $
   renderableToSVGFile (renderTiming desc times) x y
                       (mangle $ printf "%s timings %dx%d.svg" desc x y)
 
-#ifdef HAVE_GTK
-plotTiming (Window x y) desc times =
+# ifdef HAVE_GTK
+plotTiming (Window x y) desc times = void $
   renderableToWindow (renderTiming desc times) x y
-#endif
+# endif
 #endif
 
 plotTiming output _desc _times =
@@ -96,22 +97,22 @@ plotKDE CSV desc _exs points pdf = do
       putRow h [show x, show y]
 
 #ifdef HAVE_CHART
-plotKDE (PDF x y) desc exs points pdf =
+plotKDE (PDF x y) desc exs points pdf = void $
   renderableToPDFFile (renderKDE desc exs points pdf) x y
                       (mangle $ printf "%s densities %dx%d.pdf" desc x y)
 
-plotKDE (PNG x y) desc exs points pdf =
+plotKDE (PNG x y) desc exs points pdf = void $
   renderableToPNGFile (renderKDE desc exs points pdf) x y
                       (mangle $ printf "%s densities %dx%d.png" desc x y)
 
-plotKDE (SVG x y) desc exs points pdf =
+plotKDE (SVG x y) desc exs points pdf = void $
   renderableToSVGFile (renderKDE desc exs points pdf) x y
                       (mangle $ printf "%s densities %dx%d.svg" desc x y)
 
-#ifdef HAVE_GTK
-plotKDE (Window x y) desc exs points pdf =
+# ifdef HAVE_GTK
+plotKDE (Window x y) desc exs points pdf = void $
     renderableToWindow (renderKDE desc exs points pdf) x y
-#endif
+# endif
 #endif
 
 plotKDE output _desc _exs _points _pdf =
