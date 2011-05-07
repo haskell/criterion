@@ -1,11 +1,11 @@
 name:           criterion
-version:        0.5.0.8
+version:        0.5.0.9
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
 author:         Bryan O'Sullivan <bos@serpentine.com>
 maintainer:     Bryan O'Sullivan <bos@serpentine.com>
-copyright:      2009-2010 Bryan O'Sullivan
+copyright:      2009, 2010, 2011 Bryan O'Sullivan
 category:       Development, Performance, Testing
 homepage:       http://bitbucket.org/bos/criterion
 bug-reports:    http://bitbucket.org/bos/criterion/issues
@@ -73,9 +73,6 @@ library
 
   if flag(gtk)
     cpp-options: -DHAVE_GTK
-
-  -- gather extensive profiling data for now
-  ghc-prof-options: -auto-all
 
   ghc-options: -Wall -funbox-strict-fields
   if impl(ghc >= 6.8)
