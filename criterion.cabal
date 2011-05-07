@@ -58,7 +58,6 @@ library
     filepath,
     mtl,
     mwc-random >= 0.8.0.3,
-    parallel,
     parsec >= 3.1.0,
     statistics >= 0.8.0.5,
     time,
