@@ -2,7 +2,7 @@
 
 -- |
 -- Module      : Criterion.Plot
--- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
+-- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
@@ -18,29 +18,32 @@ module Criterion.Plot
     , plotWith
     ) where
 
-import Control.Monad (void)
 import Control.Monad.Trans (liftIO)
 import Criterion.Config
+import Criterion.IO (printError)
 import Criterion.Monad (Criterion, getConfigItem)
-import qualified Data.Vector.Unboxed as U
 import Data.Char (isSpace, toLower)
 import Data.Foldable (forM_)
 import Data.List (group, intersperse)
-import Statistics.KernelDensity (Points, fromPoints)
 import Statistics.Function (indexed)
+import Statistics.KernelDensity (Points, fromPoints)
 import Statistics.Types (Sample)
 import System.FilePath (pathSeparator)
 import System.IO (IOMode(..), Handle, hPutStr, withBinaryFile)
 import Text.Printf (printf)
 import qualified Criterion.MultiMap as M
-import Criterion.IO (printError)
+import qualified Data.Vector.Unboxed as U
 
 #ifdef HAVE_CHART
+# if MIN_VERSION_base(4,3,0)
+import Control.Monad (void)
+# endif
+
 import Data.Accessor ((^=))
 import Graphics.Rendering.Chart hiding (Plot,c)
-#ifdef HAVE_GTK
+# ifdef HAVE_GTK
 import Graphics.Rendering.Chart.Gtk (renderableToWindow)
-#endif
+# endif
 #endif
 
 plotWith :: Plot -> (PlotOutput -> IO ()) -> Criterion ()
@@ -222,3 +225,8 @@ mangle = concatMap (replace ((==) '-' . head) "-")
        . map (replace isSpace '-' . replace (==pathSeparator) '-' . toLower)
     where replace p r c | p c       = r
                         | otherwise = c
+
+#if defined(HAVE_CHART) && !MIN_VERSION_base(4,3,0)
+void :: (Monad m) => m a -> m ()
+void f = f >> return ()
+#endif
