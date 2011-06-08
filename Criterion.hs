@@ -28,7 +28,7 @@ import Control.Monad ((<=<), forM_, replicateM_, when)
 import Control.Monad.Trans (liftIO)
 import Criterion.Analysis (OutlierVariance(..), classifyOutliers,
                            outlierVariance, noteOutliers)
-import Criterion.Config (Config(..), Plot(..), fromLJ)
+import Criterion.Config (Config(..), Plot(..), Verbosity(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (note, prolix, summary)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
@@ -60,9 +60,11 @@ runBenchmark env b = do
       sampleCount = fromLJ cfgSamples cfg
       newItersD   = fromIntegral newIters
       testItersD  = fromIntegral testIters
-  _ <- note "collecting %d samples, %d iterations each, in estimated %s\n"
-       sampleCount newIters (secs (fromIntegral sampleCount * newItersD *
-                                   testTime / testItersD))
+      estTime     = (fromIntegral sampleCount * newItersD *
+                     testTime / testItersD)
+  when (fromLJ cfgVerbosity cfg > Normal || estTime > 5) $
+    note "collecting %d samples, %d iterations each, in estimated %s\n"
+       sampleCount newIters (secs estTime)
   times <- liftIO . fmap (U.map ((/ newItersD) . subtract (envClockCost env))) .
            create sampleCount . const $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
@@ -77,7 +79,7 @@ runAndAnalyseOne env _desc b = do
   let numSamples = U.length times
   let ests = [mean,stdDev]
   numResamples <- getConfigItem $ fromLJ cfgResamples
-  _ <- note "bootstrapping with %d resamples\n" numResamples
+  _ <- prolix "bootstrapping with %d resamples\n" numResamples
   res <- liftIO . withSystemRandom $ \gen ->
          resample gen ests numResamples times :: IO [Resample]
   ci <- getConfigItem $ fromLJ cfgConfInterval
@@ -92,9 +94,12 @@ runAndAnalyseOne env _desc b = do
   summary ","
   bs "std dev" es
   summary "\n"
-  noteOutliers (classifyOutliers times)
-  _ <- note "variance introduced by outliers: %.3f%%\n" (v * 100)
-  _ <- note "variance is %s by outliers\n" wibble
+  vrb <- getConfigItem $ fromLJ cfgVerbosity
+  when (vrb == Verbose || (effect > Unaffected && vrb > Quiet)) $ do
+    noteOutliers (classifyOutliers times)
+    _ <- note "variance introduced by outliers: %.3f%%\n" (v * 100)
+    _ <- note "variance is %s by outliers\n" wibble
+    return ()
   return times
   where bs :: String -> Estimate -> Criterion ()
         bs d e = do _ <- note "%s: %s, lb %s, ub %s, ci %.3f\n" d
