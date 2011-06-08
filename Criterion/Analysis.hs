@@ -67,7 +67,7 @@ addOutliers (Outliers s a b c d) (Outliers t w x y z) =
 
 -- | Classify outliers in a data set, using the boxplot technique.
 classifyOutliers :: Sample -> Outliers
-classifyOutliers sa = U.foldl ((. outlier) . mappend) mempty ssa
+classifyOutliers sa = U.foldl' ((. outlier) . mappend) mempty ssa
     where outlier e = Outliers {
                         samplesSeen = 1
                       , lowSevere = if e <= loS then 1 else 0
