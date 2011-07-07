@@ -40,7 +40,7 @@ time_ act = do
   return $! end - start
 
 getTime :: IO Double
-getTime = (fromRational . toRational) `fmap` getPOSIXTime
+getTime = realToFrac `fmap` getPOSIXTime
 
 runForAtLeast :: Double -> Int -> (Int -> IO a) -> IO (Double, Int, a)
 runForAtLeast howLong initSeed act = loop initSeed (0::Int) =<< getTime
