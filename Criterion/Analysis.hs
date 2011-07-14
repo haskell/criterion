@@ -1,6 +1,6 @@
 -- |
 -- Module      : Criterion.Analysis
--- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
+-- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
@@ -12,7 +12,10 @@
 module Criterion.Analysis
     (
       Outliers (..)
+    , OutlierEffect(..)
     , OutlierVariance(..)
+    , SampleAnalysis(..)
+    , analyseSample
     , analyseMean
     , countOutliers
     , classifyOutliers
@@ -20,6 +23,9 @@ module Criterion.Analysis
     , outlierVariance
     ) where
 
+import System.Random.MWC (withSystemRandom)
+import Statistics.Resampling (Resample, resample)
+import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
 import Control.Monad (when)
 import Criterion.IO (note)
 import Criterion.Measurement (secs)
@@ -29,8 +35,7 @@ import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
-import Statistics.Resampling.Bootstrap (Estimate(..))
-import Statistics.Sample (mean)
+import Statistics.Sample (mean, stdDev)
 import Statistics.Types (Sample)
 
 -- | Outliers from sample data, calculated using the boxplot
@@ -49,12 +54,12 @@ data Outliers = Outliers {
 
 -- | A description of the extent to which outliers in the sample data
 -- affect the sample mean and standard deviation.
-data OutlierVariance = Unaffected -- ^ Less than 1% effect.
-                     | Slight     -- ^ Between 1% and 10%.
-                     | Moderate   -- ^ Between 10% and 50%.
-                     | Severe     -- ^ Above 50% (i.e. measurements
-                                  -- are useless).
-                       deriving (Eq, Ord, Show)
+data OutlierEffect = Unaffected -- ^ Less than 1% effect.
+                   | Slight     -- ^ Between 1% and 10%.
+                   | Moderate   -- ^ Between 10% and 50%.
+                   | Severe     -- ^ Above 50% (i.e. measurements
+                                -- are useless).
+                     deriving (Eq, Ord, Read, Show)
 
 instance Monoid Outliers where
     mempty  = Outliers 0 0 0 0 0
@@ -85,14 +90,23 @@ classifyOutliers sa = U.foldl' ((. outlier) . mappend) mempty ssa
           iqr = q3 - q1
 {-# INLINE classifyOutliers #-}
 
+-- | Analysis of the extent to which outliers in a sample affect its
+-- mean and standard deviation.
+data OutlierVariance = OutlierVariance {
+      ovEffect   :: OutlierEffect
+    -- ^ Qualitative description of effect.
+    , ovFraction :: Double
+    -- ^ Quantitative description of effect (a fraction between 0 and 1).
+    } deriving (Eq, Read, Show)
+
 -- | Compute the extent to which outliers in the sample data affect
 -- the sample mean and standard deviation.
 outlierVariance :: Estimate     -- ^ Bootstrap estimate of sample mean.
                 -> Estimate     -- ^ Bootstrap estimate of sample
                                 --   standard deviation.
                 -> Double       -- ^ Number of original iterations.
-                -> (OutlierVariance, Double)
-outlierVariance µ σ a = (effect, varOutMin)
+                -> OutlierVariance
+outlierVariance µ σ a = OutlierVariance effect varOutMin
   where
     effect | varOutMin < 0.01 = Unaffected
            | varOutMin < 0.1  = Slight
@@ -131,6 +145,25 @@ analyseMean a iters = do
   _ <- note "mean is %s (%d iterations)\n" (secs µ) iters
   noteOutliers . classifyOutliers $ a
   return µ
+
+data SampleAnalysis = SampleAnalysis {
+      anMean :: Estimate
+    , anStdDev :: Estimate
+    , anOutliers :: OutlierVariance
+    } deriving (Eq, Show)
+
+analyseSample :: Double -> Sample -> Int -> IO SampleAnalysis
+analyseSample ci samples numResamples = do
+  let ests = [mean,stdDev]
+  resamples <- withSystemRandom $ \gen ->
+               resample gen ests numResamples samples :: IO [Resample]
+  let [estMean,estStdDev] = bootstrapBCA ci samples ests resamples
+      ov = outlierVariance estMean estStdDev (fromIntegral $ U.length samples)
+  return SampleAnalysis {
+               anMean = estMean
+             , anStdDev = estStdDev
+             , anOutliers = ov
+             }
 
 -- | Display a report of the 'Outliers' present in a 'Sample'.
 noteOutliers :: Outliers -> Criterion ()

@@ -1,6 +1,7 @@
+{-# LANGUAGE RecordWildCards #-}
 -- |
 -- Module      : Criterion
--- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
+-- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
@@ -26,8 +27,9 @@ module Criterion
 
 import Control.Monad ((<=<), forM_, replicateM_, when)
 import Control.Monad.Trans (liftIO)
-import Criterion.Analysis (OutlierVariance(..), classifyOutliers,
-                           outlierVariance, noteOutliers)
+import Criterion.Analysis (OutlierEffect(..), OutlierVariance(..),
+                           SampleAnalysis(..), analyseSample,
+                           classifyOutliers, noteOutliers)
 import Criterion.Config (Config(..), Plot(..), Verbosity(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (note, prolix, summary)
@@ -39,11 +41,8 @@ import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
 import qualified Data.Vector.Unboxed as U
 import Statistics.Function (create, minMax)
 import Statistics.KernelDensity (epanechnikovPDF)
-import Statistics.Resampling (Resample, resample)
-import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
-import Statistics.Sample (mean, stdDev)
+import Statistics.Resampling.Bootstrap (Estimate(..))
 import Statistics.Types (Sample)
-import System.Random.MWC (withSystemRandom)
 import System.Mem (performGC)
 import Text.Printf (printf)
 
@@ -76,28 +75,24 @@ runAndAnalyseOne :: Benchmarkable b => Environment -> String -> b
                  -> Criterion Sample
 runAndAnalyseOne env _desc b = do
   times <- runBenchmark env b
-  let numSamples = U.length times
-  let ests = [mean,stdDev]
-  numResamples <- getConfigItem $ fromLJ cfgResamples
-  _ <- prolix "bootstrapping with %d resamples\n" numResamples
-  res <- liftIO . withSystemRandom $ \gen ->
-         resample gen ests numResamples times :: IO [Resample]
   ci <- getConfigItem $ fromLJ cfgConfInterval
-  let [em,es] = bootstrapBCA ci times ests res
-      (effect, v) = outlierVariance em es (fromIntegral $ numSamples)
-      wibble = case effect of
+  numResamples <- getConfigItem $ fromLJ cfgResamples
+  _ <- prolix "analysing with %d resamples\n" numResamples
+  SampleAnalysis{..} <- liftIO $ analyseSample ci times numResamples
+  let OutlierVariance{..} = anOutliers
+  let wibble = case ovEffect of
                  Unaffected -> "unaffected" :: String
                  Slight -> "slightly inflated"
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
-  bs "mean" em
+  bs "mean" anMean
   summary ","
-  bs "std dev" es
+  bs "std dev" anStdDev
   summary "\n"
   vrb <- getConfigItem $ fromLJ cfgVerbosity
-  when (vrb == Verbose || (effect > Unaffected && vrb > Quiet)) $ do
+  when (vrb == Verbose || (ovEffect > Unaffected && vrb > Quiet)) $ do
     noteOutliers (classifyOutliers times)
-    _ <- note "variance introduced by outliers: %.3f%%\n" (v * 100)
+    _ <- note "variance introduced by outliers: %.3f%%\n" (ovFraction * 100)
     _ <- note "variance is %s by outliers\n" wibble
     return ()
   return times
