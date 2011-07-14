@@ -1,3 +1,4 @@
+{-# LANGUAGE RecordWildCards #-}
 -- |
 -- Module      : Criterion.Analysis
 -- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
@@ -16,6 +17,7 @@ module Criterion.Analysis
     , OutlierVariance(..)
     , SampleAnalysis(..)
     , analyseSample
+    , scale
     , analyseMean
     , countOutliers
     , classifyOutliers
@@ -23,20 +25,20 @@ module Criterion.Analysis
     , outlierVariance
     ) where
 
-import System.Random.MWC (withSystemRandom)
-import Statistics.Resampling (Resample, resample)
-import Statistics.Resampling.Bootstrap (Estimate(..), bootstrapBCA)
 import Control.Monad (when)
 import Criterion.IO (note)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion)
-import qualified Data.Vector.Unboxed as U
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
+import Statistics.Resampling (Resample, resample)
 import Statistics.Sample (mean, stdDev)
 import Statistics.Types (Sample)
+import System.Random.MWC (withSystemRandom)
+import qualified Data.Vector.Unboxed as U
+import qualified Statistics.Resampling.Bootstrap as B
 
 -- | Outliers from sample data, calculated using the boxplot
 -- technique.
@@ -101,10 +103,10 @@ data OutlierVariance = OutlierVariance {
 
 -- | Compute the extent to which outliers in the sample data affect
 -- the sample mean and standard deviation.
-outlierVariance :: Estimate     -- ^ Bootstrap estimate of sample mean.
-                -> Estimate     -- ^ Bootstrap estimate of sample
-                                --   standard deviation.
-                -> Double       -- ^ Number of original iterations.
+outlierVariance :: B.Estimate  -- ^ Bootstrap estimate of sample mean.
+                -> B.Estimate  -- ^ Bootstrap estimate of sample
+                               --   standard deviation.
+                -> Double      -- ^ Number of original iterations.
                 -> OutlierVariance
 outlierVariance µ σ a = OutlierVariance effect varOutMin
   where
@@ -114,8 +116,8 @@ outlierVariance µ σ a = OutlierVariance effect varOutMin
            | otherwise        = Severe
     varOutMin = (minBy varOut 1 (minBy cMax 0 µgMin)) / σb2
     varOut c  = (ac / a) * (σb2 - ac * σg2) where ac = a - c
-    σb        = estPoint σ
-    µa        = estPoint µ / a
+    σb        = B.estPoint σ
+    µa        = B.estPoint µ / a
     µgMin     = µa / 2
     σg        = min (µgMin / 4) (σb / sqrt a)
     σg2       = σg * σg
@@ -148,10 +150,19 @@ analyseMean a iters = do
 
 -- | Result of a bootstrap analysis of a non-parametric sample.
 data SampleAnalysis = SampleAnalysis {
-      anMean :: Estimate
-    , anStdDev :: Estimate
+      anMean :: B.Estimate
+    , anStdDev :: B.Estimate
     , anOutliers :: OutlierVariance
     } deriving (Eq, Show)
+
+-- | Multiply the 'Estimate's in an analysis by the given value, using
+-- 'B.scale'.
+scale :: Double                 -- ^ Value to multiply by.
+      -> SampleAnalysis -> SampleAnalysis
+scale f s@SampleAnalysis{..} = s {
+                                 anMean = B.scale f anMean
+                               , anStdDev = B.scale f anStdDev
+                               }
 
 -- | Perform a bootstrap analysis of a non-parametric sample.
 analyseSample :: Double         -- ^ Confidence interval (between 0 and 1).
@@ -163,7 +174,7 @@ analyseSample ci samples numResamples = do
   let ests = [mean,stdDev]
   resamples <- withSystemRandom $ \gen ->
                resample gen ests numResamples samples :: IO [Resample]
-  let [estMean,estStdDev] = bootstrapBCA ci samples ests resamples
+  let [estMean,estStdDev] = B.bootstrapBCA ci samples ests resamples
       ov = outlierVariance estMean estStdDev (fromIntegral $ U.length samples)
   return SampleAnalysis {
                anMean = estMean
