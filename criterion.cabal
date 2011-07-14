@@ -1,5 +1,5 @@
 name:           criterion
-version:        0.5.0.10
+version:        0.5.1.0
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
