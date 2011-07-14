@@ -146,13 +146,19 @@ analyseMean a iters = do
   noteOutliers . classifyOutliers $ a
   return µ
 
+-- | Result of a bootstrap analysis of a non-parametric sample.
 data SampleAnalysis = SampleAnalysis {
       anMean :: Estimate
     , anStdDev :: Estimate
     , anOutliers :: OutlierVariance
     } deriving (Eq, Show)
 
-analyseSample :: Double -> Sample -> Int -> IO SampleAnalysis
+-- | Perform a bootstrap analysis of a non-parametric sample.
+analyseSample :: Double         -- ^ Confidence interval (between 0 and 1).
+              -> Sample         -- ^ Sample data.
+              -> Int            -- ^ Number of resamples to perform
+                                -- when bootstrapping.
+              -> IO SampleAnalysis
 analyseSample ci samples numResamples = do
   let ests = [mean,stdDev]
   resamples <- withSystemRandom $ \gen ->
