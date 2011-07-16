@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveDataTypeable, RecordWildCards #-}
 -- |
 -- Module      : Criterion.Analysis
 -- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
@@ -29,8 +29,10 @@ import Control.Monad (when)
 import Criterion.IO (note)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion)
+import Data.Data (Data)
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
+import Data.Typeable (Typeable)
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
 import Statistics.Resampling (Resample, resample)
@@ -52,7 +54,7 @@ data Outliers = Outliers {
     -- ^ Between 1.5 and 3 times the IQR above the third quartile.
     , highSevere  :: {-# UNPACK #-} !Int64
     -- ^ More than 3 times the IQR above the third quartile.
-    } deriving (Eq, Read, Show)
+    } deriving (Eq, Read, Show, Typeable, Data)
 
 -- | A description of the extent to which outliers in the sample data
 -- affect the sample mean and standard deviation.
@@ -61,7 +63,7 @@ data OutlierEffect = Unaffected -- ^ Less than 1% effect.
                    | Moderate   -- ^ Between 10% and 50%.
                    | Severe     -- ^ Above 50% (i.e. measurements
                                 -- are useless).
-                     deriving (Eq, Ord, Read, Show)
+                     deriving (Eq, Ord, Read, Show, Typeable, Data)
 
 instance Monoid Outliers where
     mempty  = Outliers 0 0 0 0 0
@@ -99,7 +101,7 @@ data OutlierVariance = OutlierVariance {
     -- ^ Qualitative description of effect.
     , ovFraction :: Double
     -- ^ Quantitative description of effect (a fraction between 0 and 1).
-    } deriving (Eq, Read, Show)
+    } deriving (Eq, Read, Show, Typeable, Data)
 
 -- | Compute the extent to which outliers in the sample data affect
 -- the sample mean and standard deviation.
@@ -153,7 +155,7 @@ data SampleAnalysis = SampleAnalysis {
       anMean :: B.Estimate
     , anStdDev :: B.Estimate
     , anOutliers :: OutlierVariance
-    } deriving (Eq, Show)
+    } deriving (Eq, Show, Typeable, Data)
 
 -- | Multiply the 'Estimate's in an analysis by the given value, using
 -- 'B.scale'.
