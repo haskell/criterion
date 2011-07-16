@@ -24,6 +24,7 @@ module Criterion.Config
     ) where
 
 import Criterion.MultiMap (MultiMap)
+import Data.Data (Data)
 import Data.Function (on)
 import Data.Monoid (Monoid(..), Last(..))
 import Data.Typeable (Typeable)
@@ -39,7 +40,7 @@ data PrintExit = Nada           -- ^ Do not actually print-and-exit. (Default.)
                | List           -- ^ Print a list of known benchmarks.
                | Version        -- ^ Print version information (if known).
                | Help           -- ^ Print a help\/usaage message.
-                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable)
+                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data)
 
 instance Monoid PrintExit where
     mempty  = Nada
@@ -52,12 +53,12 @@ data PlotOutput = CSV           -- ^ Textual CSV file.
                 | PNG Int Int   -- ^ PNG file, dimensions in pixels.
                 | SVG Int Int   -- ^ SVG file, dimensions in points.
                 | Window Int Int-- ^ Display in a window, dimensions in pixels.
-                  deriving (Eq, Ord, Read, Show, Typeable)
+                  deriving (Eq, Ord, Read, Show, Typeable, Data)
 
 -- | What to plot.
 data Plot = KernelDensity       -- ^ Kernel density estimate of probabilities.
           | Timing              -- ^ Benchmark timings.
-            deriving (Eq, Ord, Read, Show, Typeable)
+            deriving (Eq, Ord, Read, Show, Typeable, Data)
 
 -- | Top-level program configuration.
 data Config = Config {

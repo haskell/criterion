@@ -1,3 +1,5 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+
 module Criterion.MultiMap
     (
       MultiMap
@@ -7,7 +9,9 @@ module Criterion.MultiMap
     , lookup
     ) where
 
+import Data.Data (Data)
 import Data.Monoid (Monoid(..))
+import Data.Typeable (Typeable)
 import Prelude hiding (lookup)
 import qualified Data.Map as M
 import qualified Data.Set as S
@@ -15,7 +19,7 @@ import qualified Data.Set as S
 newtype MultiMap k v = MultiMap {
       toMap :: M.Map k (S.Set v)
     }
-    deriving (Eq, Ord, Read, Show)
+    deriving (Eq, Ord, Read, Show, Typeable, Data)
 
 instance (Ord k, Ord v) => Monoid (MultiMap k v) where
     mempty = MultiMap M.empty
