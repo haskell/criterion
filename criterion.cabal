@@ -13,10 +13,8 @@ build-type:     Simple
 cabal-version:  >= 1.6
 extra-source-files:
   README.markdown
-  examples/Fibber.hs
-  examples/Judy.hs
-  examples/Makefile
-  examples/Tiny.hs
+  examples/*.hs
+
 description:
   This library provides a powerful but simple way to measure the
   performance of Haskell code.  It provides both a framework for
