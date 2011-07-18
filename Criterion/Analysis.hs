@@ -26,13 +26,12 @@ module Criterion.Analysis
     ) where
 
 import Control.Monad (when)
+import Criterion.Analysis.Types
 import Criterion.IO (note)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion)
-import Data.Data (Data)
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
-import Data.Typeable (Typeable)
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
 import Statistics.Resampling (Resample, resample)
@@ -41,38 +40,6 @@ import Statistics.Types (Sample)
 import System.Random.MWC (withSystemRandom)
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Resampling.Bootstrap as B
-
--- | Outliers from sample data, calculated using the boxplot
--- technique.
-data Outliers = Outliers {
-      samplesSeen :: {-# UNPACK #-} !Int64
-    , lowSevere   :: {-# UNPACK #-} !Int64
-    -- ^ More than 3 times the IQR below the first quartile.
-    , lowMild     :: {-# UNPACK #-} !Int64
-    -- ^ Between 1.5 and 3 times the IQR below the first quartile.
-    , highMild    :: {-# UNPACK #-} !Int64
-    -- ^ Between 1.5 and 3 times the IQR above the third quartile.
-    , highSevere  :: {-# UNPACK #-} !Int64
-    -- ^ More than 3 times the IQR above the third quartile.
-    } deriving (Eq, Read, Show, Typeable, Data)
-
--- | A description of the extent to which outliers in the sample data
--- affect the sample mean and standard deviation.
-data OutlierEffect = Unaffected -- ^ Less than 1% effect.
-                   | Slight     -- ^ Between 1% and 10%.
-                   | Moderate   -- ^ Between 10% and 50%.
-                   | Severe     -- ^ Above 50% (i.e. measurements
-                                -- are useless).
-                     deriving (Eq, Ord, Read, Show, Typeable, Data)
-
-instance Monoid Outliers where
-    mempty  = Outliers 0 0 0 0 0
-    mappend = addOutliers
-
-addOutliers :: Outliers -> Outliers -> Outliers
-addOutliers (Outliers s a b c d) (Outliers t w x y z) =
-    Outliers (s+t) (a+w) (b+x) (c+y) (d+z)
-{-# INLINE addOutliers #-}
 
 -- | Classify outliers in a data set, using the boxplot technique.
 classifyOutliers :: Sample -> Outliers
@@ -93,15 +60,6 @@ classifyOutliers sa = U.foldl' ((. outlier) . mappend) mempty ssa
           ssa = sort sa
           iqr = q3 - q1
 {-# INLINE classifyOutliers #-}
-
--- | Analysis of the extent to which outliers in a sample affect its
--- mean and standard deviation.
-data OutlierVariance = OutlierVariance {
-      ovEffect   :: OutlierEffect
-    -- ^ Qualitative description of effect.
-    , ovFraction :: Double
-    -- ^ Quantitative description of effect (a fraction between 0 and 1).
-    } deriving (Eq, Read, Show, Typeable, Data)
 
 -- | Compute the extent to which outliers in the sample data affect
 -- the sample mean and standard deviation.
@@ -149,13 +107,6 @@ analyseMean a iters = do
   _ <- note "mean is %s (%d iterations)\n" (secs µ) iters
   noteOutliers . classifyOutliers $ a
   return µ
-
--- | Result of a bootstrap analysis of a non-parametric sample.
-data SampleAnalysis = SampleAnalysis {
-      anMean :: B.Estimate
-    , anStdDev :: B.Estimate
-    , anOutliers :: OutlierVariance
-    } deriving (Eq, Show, Typeable, Data)
 
 -- | Multiply the 'Estimate's in an analysis by the given value, using
 -- 'B.scale'.

@@ -38,6 +38,7 @@ library
   exposed-modules:
     Criterion
     Criterion.Analysis
+    Criterion.Analysis.Types
     Criterion.Config
     Criterion.Environment
     Criterion.IO
@@ -49,6 +50,7 @@ library
     Criterion.Types
 
   build-depends:
+    aeson,
     base < 5,
     bytestring >= 0.9 && < 1.0,
     containers,
