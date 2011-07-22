@@ -19,6 +19,7 @@ module Criterion.Analysis.Types
     ) where
 
 import Control.Applicative ((<$>), (<*>), empty, pure)
+import Control.DeepSeq (NFData(rnf))
 import Data.Aeson.Types
 import Data.Data (Data)
 import Data.Int (Int64)
@@ -40,6 +41,8 @@ data Outliers = Outliers {
     , highSevere  :: {-# UNPACK #-} !Int64
     -- ^ More than 3 times the IQR above the third quartile.
     } deriving (Eq, Read, Show, Typeable, Data)
+
+instance NFData Outliers
 
 instance ToJSON Outliers where
     toJSON Outliers{..} = object [
@@ -67,6 +70,8 @@ data OutlierEffect = Unaffected -- ^ Less than 1% effect.
                    | Severe     -- ^ Above 50% (i.e. measurements
                                 -- are useless).
                      deriving (Eq, Ord, Read, Show, Typeable, Data)
+
+instance NFData OutlierEffect
 
 instance ToJSON OutlierEffect where
     toJSON Unaffected = "unaffected"
@@ -101,6 +106,9 @@ data OutlierVariance = OutlierVariance {
     -- ^ Quantitative description of effect (a fraction between 0 and 1).
     } deriving (Eq, Read, Show, Typeable, Data)
 
+instance NFData OutlierVariance where
+    rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovFraction `seq` ()
+
 instance ToJSON OutlierVariance where
     toJSON OutlierVariance{..} = object [
                                    "effect" .= ovEffect
@@ -119,6 +127,10 @@ data SampleAnalysis = SampleAnalysis {
     , anStdDev :: B.Estimate
     , anOutliers :: OutlierVariance
     } deriving (Eq, Show, Typeable, Data)
+
+instance NFData SampleAnalysis where
+    rnf SampleAnalysis{..} =
+        rnf anMean `seq` rnf anStdDev `seq` rnf anOutliers `seq` ()
 
 instance ToJSON SampleAnalysis where
     toJSON SampleAnalysis{..} = object [
