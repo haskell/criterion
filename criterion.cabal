@@ -6,7 +6,7 @@ license-file:   LICENSE
 author:         Bryan O'Sullivan <bos@serpentine.com>
 maintainer:     Bryan O'Sullivan <bos@serpentine.com>
 copyright:      2009, 2010, 2011 Bryan O'Sullivan
-category:       Development, Performance, Testing
+category:       Development, Performance, Testing, Benchmarking
 homepage:       http://bitbucket.org/bos/criterion
 bug-reports:    http://bitbucket.org/bos/criterion/issues
 build-type:     Simple
