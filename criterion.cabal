@@ -79,7 +79,3 @@ library
 source-repository head
   type:     git
   location: git://github.com/bos/criterion.git
-
- source-repository head
-  type:     mercurial
-  location: https://bitbucket.org/bos/criterion
