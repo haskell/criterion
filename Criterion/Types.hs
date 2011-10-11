@@ -76,7 +76,7 @@ nfIO a = evaluate . rnf =<< a
 -- | Perform an action, then evaluate its result to weak head normal
 -- form (WHNF).  This is useful for forcing an IO action whose result
 -- is an expression to be evaluated down to a more useful value.
-whnfIO :: NFData a => IO a -> IO ()
+whnfIO :: IO a -> IO ()
 whnfIO a = a >>= evaluate >> return ()
 {-# INLINE whnfIO #-}
 
