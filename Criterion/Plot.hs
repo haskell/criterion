@@ -28,7 +28,7 @@ import Data.List (group, intersperse)
 import Statistics.Function (indexed)
 import Statistics.KernelDensity (Points, fromPoints)
 import Statistics.Types (Sample)
-import System.FilePath (pathSeparator)
+import System.FilePath (isPathSeparator)
 import System.IO (IOMode(..), Handle, hPutStr, withBinaryFile)
 import Text.Printf (printf)
 import qualified Criterion.MultiMap as M
@@ -222,7 +222,7 @@ putRow h s = hPutStr h (concat (intersperse "," (map escapeCSV s)) ++ "\r\n")
 mangle :: String -> FilePath
 mangle = concatMap (replace ((==) '-' . head) "-")
        . group
-       . map (replace isSpace '-' . replace (==pathSeparator) '-' . toLower)
+       . map (replace isSpace '-' . replace isPathSeparator '-' . toLower)
     where replace p r c | p c       = r
                         | otherwise = c
 
