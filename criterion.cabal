@@ -7,8 +7,8 @@ author:         Bryan O'Sullivan <bos@serpentine.com>
 maintainer:     Bryan O'Sullivan <bos@serpentine.com>
 copyright:      2009, 2010, 2011 Bryan O'Sullivan
 category:       Development, Performance, Testing, Benchmarking
-homepage:       http://bitbucket.org/bos/criterion
-bug-reports:    http://bitbucket.org/bos/criterion/issues
+homepage:       https://github.com/bos/criterion
+bug-reports:    https://github.com/bos/criterion/issues
 build-type:     Simple
 cabal-version:  >= 1.6
 extra-source-files:
@@ -16,11 +16,10 @@ extra-source-files:
   examples/*.hs
 
 description:
-  This library provides a powerful but simple way to measure the
-  performance of Haskell code.  It provides both a framework for
-  executing and analysing benchmarks and a set of driver functions
-  that makes it easy to build and run benchmarks, and to analyse their
-  results.
+  This library provides a powerful but simple way to measure software
+  performance.  It provides both a framework for executing and
+  analysing benchmarks and a set of driver functions that makes it
+  easy to build and run benchmarks, and to analyse their results.
   .
   The fastest way to get started is to read the documentation and
   examples in the Criterion.Main module.
@@ -78,5 +77,9 @@ library
     ghc-options: -fwarn-tabs
 
 source-repository head
+  type:     git
+  location: git://github.com/bos/criterion.git
+
+ source-repository head
   type:     mercurial
-  location: http://bitbucket.org/bos/criterion
+  location: https://bitbucket.org/bos/criterion
