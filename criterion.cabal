@@ -60,7 +60,7 @@ library
     parsec >= 3.1.0,
     statistics >= 0.8.0.6,
     time,
-    vector >= 0.7.0.0,
+    vector >= 0.7.1,
     vector-algorithms >= 0.4
 
   if flag(chart)
@@ -72,7 +72,7 @@ library
   if flag(gtk)
     cpp-options: -DHAVE_GTK
 
-  ghc-options: -Wall -funbox-strict-fields
+  ghc-options: -O2 -Wall -funbox-strict-fields
   if impl(ghc >= 6.8)
     ghc-options: -fwarn-tabs
 
