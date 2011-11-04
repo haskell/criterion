@@ -40,7 +40,7 @@ import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
                         bench, bgroup, nf, nfIO, whnf, whnfIO)
 import qualified Data.Vector.Unboxed as U
 import Statistics.Function (create, minMax)
-import Statistics.KernelDensity (epanechnikovPDF)
+import Statistics.Sample.KernelDensity (kde)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import Statistics.Types (Sample)
 import System.Mem (performGC)
@@ -109,7 +109,7 @@ plotAll :: [(String, Sample)] -> Criterion ()
 plotAll descTimes = forM_ descTimes $ \(desc,times) -> do
   plotWith Timing $ \o -> plotTiming o desc times
   plotWith KernelDensity $ \o -> uncurry (plotKDE o desc extremes)
-                                     (epanechnikovPDF 100 times)
+                                     (kde 128 times)
   where
     extremes = case descTimes of
                  (_:_:_) -> toJust . minMax . concatU . map snd $ descTimes
