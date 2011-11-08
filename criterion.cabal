@@ -45,7 +45,7 @@ library
     Paths_criterion
 
   build-depends:
-    aeson,
+    aeson >= 0.3.2.12,
     base < 5,
     bytestring >= 0.9 && < 1.0,
     containers,

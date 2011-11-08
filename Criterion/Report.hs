@@ -18,28 +18,30 @@ module Criterion.Report
     ) where
 
 import Control.Monad.IO.Class (liftIO)
+import Criterion.Analysis (SampleAnalysis(..))
 import Criterion.Monad (Criterion)
+import Data.ByteString.Char8 ()
 import Data.Char (isSpace, toLower)
 import Data.Data (Data, Typeable)
 import Data.List (group)
 import Paths_criterion (getDataFileName)
-import qualified Data.Aeson as A
+import Statistics.Sample (mean)
+import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Sample)
 import System.FilePath (isPathSeparator)
+import Text.Hastache (MuType(..))
+import Text.Hastache.Context (mkGenericContext, mkStrContext)
 import Text.Printf (printf)
+import qualified Data.Aeson as A
 import qualified Data.ByteString.Lazy as L
-import Data.ByteString.Char8 ()
 import qualified Data.Vector.Unboxed as U
 import qualified Text.Hastache as H
-import Text.Hastache (MuType(..))
-import Text.Hastache.Context (mkStrContext)
-import Statistics.Sample (mean)
 
 data Report = Report {
-      reportName :: String
-    , reportNumber :: Int
+      reportNumber :: Int
+    , reportName :: String
     , reportTimes :: Sample
-    , reportKDE :: (U.Vector Double, U.Vector Double)
+    , reportAnalysis :: SampleAnalysis
     } deriving (Eq, Show, Typeable, Data)
 
 templatePath :: FilePath
@@ -49,17 +51,17 @@ report :: String -> [Report] -> Criterion ()
 report name reports = do
   let context "report" = MuList $ map inner reports
       context _        = MuNothing
-      inner Report{..} = mkStrContext $ \ctx ->
-                         case ctx of
-                           "name"   -> MuVariable (H.encodeStrLBS reportName)
-                           "number" -> MuVariable reportNumber
-                           "times"  -> enc (U.map (*scale) reportTimes)
-                           "units"  -> MuVariable units
-                           "kde"    -> enc (U.zip (U.map (*scale) kdeTimes)
-                                                  (U.map (/U.maximum kdePDF) kdePDF))
-                           _        -> MuNothing
+      inner Report{..} = mkStrContext $ \nym ->
+                         case nym of
+                           "name"     -> MuVariable (H.encodeStrLBS reportName)
+                           "number"   -> MuVariable reportNumber
+                           "times"    -> enc (U.map (*scale) reportTimes)
+                           "units"    -> MuVariable units
+                           "kde"      -> enc (U.zip (U.map (*scale) kdeTimes)
+                                                    kdePDF)
+                           _          -> mkGenericContext reportAnalysis (H.encodeStr nym)
           where (scale,units)     = unitsOf (mean reportTimes)
-                (kdeTimes,kdePDF) = reportKDE
+                (kdeTimes,kdePDF) = kde 128 reportTimes
       enc :: (A.ToJSON a) => a -> MuType m
       enc = MuVariable . A.encode
   tplPath <- liftIO $ getDataFileName templatePath
