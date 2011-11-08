@@ -27,15 +27,6 @@ description:
   The fastest way to get started is to read the documentation and
   examples in the Criterion.Main module.
 
-flag Chart
-  description: enable use of the Chart package
-  -- Broken under GHC 6.12 so far.
-  default: False
-
-flag gtk
-  description: enable displaying charts in GTK+ windows
-  default: False
-
 library
   exposed-modules:
     Criterion
@@ -48,7 +39,6 @@ library
     Criterion.Measurement
     Criterion.Monad
     Criterion.MultiMap
-    Criterion.Plot
     Criterion.Report
     Criterion.Types
 
@@ -71,15 +61,6 @@ library
     transformers,
     vector >= 0.7.1,
     vector-algorithms >= 0.4
-
-  if flag(chart)
-    build-depends:
-      Chart >= 0.13 && < 0.15,
-      data-accessor
-    cpp-options: -DHAVE_CHART
-
-  if flag(gtk)
-    cpp-options: -DHAVE_GTK
 
   ghc-options: -O2 -Wall -funbox-strict-fields
   if impl(ghc >= 6.8)

@@ -25,24 +25,22 @@ module Criterion
     , runAndAnalyse
     ) where
 
-import Control.Monad ((<=<), forM_, replicateM_, when)
+import Control.Monad ((<=<), replicateM_, when)
 import Control.Monad.Trans (liftIO)
 import Criterion.Analysis (OutlierEffect(..), OutlierVariance(..),
                            SampleAnalysis(..), analyseSample,
                            classifyOutliers, noteOutliers)
-import Criterion.Config (Config(..), Plot(..), Verbosity(..), fromLJ)
+import Criterion.Config (Config(..), Verbosity(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (note, prolix, summary)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
-import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Report (Report(..), report)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
                         bench, bgroup, nf, nfIO, whnf, whnfIO)
 import qualified Data.Vector.Unboxed as U
-import Statistics.Function (minMax)
-import Statistics.Sample.KernelDensity (kde)
 import Statistics.Resampling.Bootstrap (Estimate(..))
+import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Sample)
 import System.Mem (performGC)
 import Text.Printf (printf)
@@ -110,19 +108,6 @@ plotAll :: [(String, Sample)] -> Criterion ()
 plotAll descTimes = do
   liftIO $ print (map fst descTimes)
   report "foo" (zipWith (\n (d,t) -> Report d n t (kde 128 t)) [0..] descTimes)
-  forM_ descTimes $ \(desc,times) -> do
-    plotWith Timing $ \o -> plotTiming o desc times
-    plotWith KernelDensity $ \o -> uncurry (plotKDE o desc extremes)
-                                       (kde 128 times)
-    where
-      extremes = case descTimes of
-                   (_:_:_) -> toJust . minMax . concatU . map snd $ descTimes
-                   _       -> Nothing
-      concatU = foldr (U.++) U.empty
-      toJust r@(lo, hi)
-          | lo == infinity || hi == -infinity = Nothing
-          | otherwise                         = Just r
-          where infinity                      = 1/0
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
