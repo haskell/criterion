@@ -61,6 +61,9 @@ plotTiming CSV desc times = do
     U.forM_ (indexed times) $ \(x,y) ->
       putRow h [show x, show y]
 
+plotTiming HTML desc times = do
+  return ()
+
 #ifdef HAVE_CHART
 plotTiming (PDF x y) desc times = void $
   renderableToPDFFile (renderTiming desc times) x y
@@ -97,6 +100,9 @@ plotKDE CSV desc _exs points pdf = do
     putRow h ["execution time", "probability"]
     U.forM_ (U.zip pdf points) $ \(x, y) ->
       putRow h [show x, show y]
+
+plotKDE HTML desc exs points pdf = do
+  return ()
 
 #ifdef HAVE_CHART
 plotKDE (PDF x y) desc exs points pdf = void $

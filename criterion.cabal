@@ -15,6 +15,9 @@ extra-source-files:
   README.markdown
   examples/*.hs
 
+data-files:
+  templates/report.tpl
+
 description:
   This library provides a powerful but simple way to measure software
   performance.  It provides both a framework for executing and
@@ -46,19 +49,26 @@ library
     Criterion.Monad
     Criterion.MultiMap
     Criterion.Plot
+    Criterion.Report
     Criterion.Types
 
+  other-modules:
+    Paths_criterion
+
   build-depends:
+    aeson,
     base < 5,
     bytestring >= 0.9 && < 1.0,
     containers,
     deepseq >= 1.1.0.0,
     filepath,
+    hastache >= 0.1.5,
     mtl,
     mwc-random >= 0.8.0.3,
     parsec >= 3.1.0,
     statistics >= 0.10.0.0,
     time,
+    transformers,
     vector >= 0.7.1,
     vector-algorithms >= 0.4
 

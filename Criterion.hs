@@ -36,6 +36,7 @@ import Criterion.IO (note, prolix, summary)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Plot (plotWith, plotKDE, plotTiming)
+import Criterion.Report (Report(..), report)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
                         bench, bgroup, nf, nfIO, whnf, whnfIO)
 import qualified Data.Vector.Unboxed as U
@@ -106,19 +107,22 @@ runAndAnalyseOne env _desc b = do
                       (estLowerBound e) (estUpperBound e)
 
 plotAll :: [(String, Sample)] -> Criterion ()
-plotAll descTimes = forM_ descTimes $ \(desc,times) -> do
-  plotWith Timing $ \o -> plotTiming o desc times
-  plotWith KernelDensity $ \o -> uncurry (plotKDE o desc extremes)
-                                     (kde 128 times)
-  where
-    extremes = case descTimes of
-                 (_:_:_) -> toJust . minMax . concatU . map snd $ descTimes
-                 _       -> Nothing
-    concatU = foldr (U.++) U.empty
-    toJust r@(lo, hi)
-        | lo == infinity || hi == -infinity = Nothing
-        | otherwise                         = Just r
-        where infinity                      = 1/0
+plotAll descTimes = do
+  liftIO $ print (map fst descTimes)
+  report "foo" (zipWith (\n (d,t) -> Report d n t (kde 128 t)) [0..] descTimes)
+  forM_ descTimes $ \(desc,times) -> do
+    plotWith Timing $ \o -> plotTiming o desc times
+    plotWith KernelDensity $ \o -> uncurry (plotKDE o desc extremes)
+                                       (kde 128 times)
+    where
+      extremes = case descTimes of
+                   (_:_:_) -> toJust . minMax . concatU . map snd $ descTimes
+                   _       -> Nothing
+      concatU = foldr (U.++) U.empty
+      toJust r@(lo, hi)
+          | lo == infinity || hi == -infinity = Nothing
+          | otherwise                         = Just r
+          where infinity                      = 1/0
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
@@ -132,10 +136,7 @@ runAndAnalyse p env = plotAll <=< go ""
             | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
                              summary (show desc' ++ ",") -- String will be quoted
                              x <- runAndAnalyseOne env desc' b
-                             sameAxis <- getConfigItem $ fromLJ cfgPlotSameAxis
-                             if sameAxis
-                               then return  [(desc',x)]
-                               else plotAll [(desc',x)] >> return []
+                             return [(desc',x)]
             | otherwise = return []
             where desc' = prefix pfx desc
         go pfx (BenchGroup desc bs) =

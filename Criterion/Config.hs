@@ -49,6 +49,7 @@ instance Monoid PrintExit where
 -- | Supported plot outputs.  Some outputs support width and height in
 -- varying units.  A point is 1\/72 of an inch (0.353mm).
 data PlotOutput = CSV           -- ^ Textual CSV file.
+                | HTML          -- ^ HTML report.
                 | PDF Int Int   -- ^ PDF file, dimensions in points.
                 | PNG Int Int   -- ^ PNG file, dimensions in pixels.
                 | SVG Int Int   -- ^ SVG file, dimensions in points.
