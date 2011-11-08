@@ -58,7 +58,7 @@ plotTiming :: PlotOutput        -- ^ The kind of output desired.
 plotTiming CSV desc times = do
   writeTo (mangle $ printf "%s timings.csv" desc) $ \h -> do
     putRow h ["sample", "execution time"]
-    forM_ (U.toList $ indexed times) $ \(x,y) ->
+    U.forM_ (indexed times) $ \(x,y) ->
       putRow h [show x, show y]
 
 #ifdef HAVE_CHART
@@ -95,7 +95,7 @@ plotKDE :: PlotOutput           -- ^ The kind of output desired.
 plotKDE CSV desc _exs points pdf = do
   writeTo (mangle $ printf "%s densities.csv" desc) $ \h -> do
     putRow h ["execution time", "probability"]
-    forM_ (zip (U.toList pdf) (U.toList points)) $ \(x, y) ->
+    U.forM_ (U.zip pdf points) $ \(x, y) ->
       putRow h [show x, show y]
 
 #ifdef HAVE_CHART

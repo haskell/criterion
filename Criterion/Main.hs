@@ -1,6 +1,6 @@
 -- |
 -- Module      : Criterion.Main
--- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
+-- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
