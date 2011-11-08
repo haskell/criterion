@@ -43,13 +43,11 @@ module Criterion.Main
     , parseArgs
     ) where
 
-import Control.Monad (MonadPlus(..))
 import Control.Monad.Trans (liftIO)
 import Criterion (runAndAnalyse)
 import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
-import Criterion.MultiMap (singleton)
 import Criterion.Monad (Criterion, withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure, bench,
                         benchNames, bgroup, nf, nfIO, whnf, whnfIO)
@@ -58,36 +56,6 @@ import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
 import System.Exit (ExitCode(..), exitWith)
-import Text.Parsec
-import Text.Parsec.String
-
--- | Parse a plot output.
-parsePlot :: Parser PlotOutput
-parsePlot = try (dim "window" Window 800 600)
-    `mplus` try (dim "win" Window 800 600)
-    `mplus` try (dim "pdf" PDF 432 324)
-    `mplus` try (dim "png" PNG 800 600)
-    `mplus` try (dim "svg" SVG 432 324)
-    `mplus` (string "csv" >> return CSV)
-  where dim s c dx dy = do
-          _ <- string s
-          try (uncurry c `fmap` dimensions) `mplus`
-              (eof >> return (c dx dy))
-        dimensions = do
-            _ <- char ':'
-            a <- many1 digit
-            _ <- char 'x'
-            b <- many1 digit
-            case (reads a, reads b) of
-              ([(x,[])],[(y,[])]) -> return (x, y)
-              _                   -> mzero
-           <?> "dimensions"
-
--- | Parse a plot type.
-plot :: Plot -> String -> IO Config
-plot p s = case parse parsePlot "" s of
-             Left _err -> parseError "unknown plot type\n"
-             Right t   -> return mempty { cfgPlot = singleton p t }
 
 -- | Parse a confidence interval.
 ci :: String -> IO Config
@@ -127,10 +95,6 @@ defaultOptions = [
           "bootstrap confidence interval"
  , Option ['l'] ["list"] (noArg mempty { cfgPrintExit = List })
           "print only a list of benchmark names"
- , Option ['k'] ["plot-kde"] (ReqArg (plot KernelDensity) "TYPE")
-          "plot kernel density estimate of probabilities"
- , Option [] ["kde-same-axis"] (noArg mempty {cfgPlotSameAxis = ljust True })
-          "plot all KDE graphs with identical X axes"
  , Option ['q'] ["quiet"] (noArg mempty { cfgVerbosity = ljust Quiet })
           "print less output"
  , Option [] ["resamples"]
@@ -139,8 +103,6 @@ defaultOptions = [
  , Option ['s'] ["samples"]
           (ReqArg (pos "sample count" $ \n -> mempty { cfgSamples = n }) "N")
           "number of samples to collect"
- , Option ['t'] ["plot-timing"] (ReqArg (plot Timing) "TYPE")
-          "plot timings"
  , Option ['u'] ["summary"] (ReqArg (\s -> return $ mempty { cfgSummaryFile = ljust s }) "FILENAME")
           "produce a summary CSV file of all results"
  , Option ['V'] ["version"] (noArg mempty { cfgPrintExit = Version })
@@ -159,21 +121,8 @@ printUsage :: [OptDescr (IO Config)] -> ExitCode -> IO a
 printUsage options exitCode = do
   p <- getProgName
   putStr (usageInfo ("Usage: " ++ p ++ " [OPTIONS] [BENCHMARKS]") options)
-  mapM_ putStrLn [
-       ""
-    , "If no benchmark names are given, all are run"
-    , "Otherwise, benchmarks are run by prefix match"
-    , ""
-    , "Plot types:"
-    , "  window or win   display a window immediately"
-    , "  csv             save a CSV file"
-    , "  pdf             save a PDF file"
-    , "  png             save a PNG file"
-    , "  svg             save an SVG file"
-    , ""
-    , "You can specify plot dimensions via a suffix, e.g. \"window:640x480\""
-    , "Units are pixels for png and window, 72dpi points for pdf and svg"
-    ]
+  putStrLn "If no benchmark names are given, all are run\n\
+           \Otherwise, benchmarks are run by prefix match"
   exitWith exitCode
 
 -- | Parse command line options.
@@ -217,8 +166,8 @@ defaultMain = defaultMainWith defaultConfig (return ())
 -- > import Criterion.Main
 -- >
 -- > myConfig = defaultConfig {
--- >              -- Always display an 800x600 window with curves.
--- >              cfgPlot = M.singleton KernelDensity (Window 800 600)
+-- >              -- Always GC between runs.
+-- >              cfgPerformGC = ljust True
 -- >            }
 -- > 
 -- > main = defaultMainWith myConfig (return ()) [

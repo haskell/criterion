@@ -14,8 +14,6 @@
 module Criterion.Config
     (
       Config(..)
-    , PlotOutput(..)
-    , Plot(..)
     , PrintExit(..)
     , Verbosity(..)
     , defaultConfig
@@ -23,7 +21,6 @@ module Criterion.Config
     , ljust
     ) where
 
-import Criterion.MultiMap (MultiMap)
 import Data.Data (Data)
 import Data.Function (on)
 import Data.Monoid (Monoid(..), Last(..))
@@ -46,28 +43,11 @@ instance Monoid PrintExit where
     mempty  = Nada
     mappend = max
 
--- | Supported plot outputs.  Some outputs support width and height in
--- varying units.  A point is 1\/72 of an inch (0.353mm).
-data PlotOutput = CSV           -- ^ Textual CSV file.
-                | HTML          -- ^ HTML report.
-                | PDF Int Int   -- ^ PDF file, dimensions in points.
-                | PNG Int Int   -- ^ PNG file, dimensions in pixels.
-                | SVG Int Int   -- ^ SVG file, dimensions in points.
-                | Window Int Int-- ^ Display in a window, dimensions in pixels.
-                  deriving (Eq, Ord, Read, Show, Typeable, Data)
-
--- | What to plot.
-data Plot = KernelDensity       -- ^ Kernel density estimate of probabilities.
-          | Timing              -- ^ Benchmark timings.
-            deriving (Eq, Ord, Read, Show, Typeable, Data)
-
 -- | Top-level program configuration.
 data Config = Config {
       cfgBanner       :: Last String -- ^ The \"version\" banner to print.
     , cfgConfInterval :: Last Double -- ^ Confidence interval to use.
     , cfgPerformGC    :: Last Bool   -- ^ Whether to run the GC between passes.
-    , cfgPlot         :: MultiMap Plot PlotOutput -- ^ What to plot, and where.
-    , cfgPlotSameAxis :: Last Bool
     , cfgPrintExit    :: PrintExit   -- ^ Whether to print information and exit.
     , cfgResamples    :: Last Int    -- ^ Number of resamples to perform.
     , cfgSamples      :: Last Int    -- ^ Number of samples to collect.
@@ -85,8 +65,6 @@ defaultConfig = Config {
                   cfgBanner       = ljust "I don't know what version I am."
                 , cfgConfInterval = ljust 0.95
                 , cfgPerformGC    = ljust False
-                , cfgPlot         = mempty
-                , cfgPlotSameAxis = ljust False
                 , cfgPrintExit    = Nada
                 , cfgResamples    = ljust (100 * 1000)
                 , cfgSamples      = ljust 100
@@ -111,8 +89,6 @@ emptyConfig = Config {
                 cfgBanner       = mempty
               , cfgConfInterval = mempty
               , cfgPerformGC    = mempty
-              , cfgPlot         = mempty
-              , cfgPlotSameAxis = mempty
               , cfgPrintExit    = mempty
               , cfgResamples    = mempty
               , cfgSamples      = mempty
@@ -126,8 +102,6 @@ appendConfig a b =
       cfgBanner       = app cfgBanner a b
     , cfgConfInterval = app cfgConfInterval a b
     , cfgPerformGC    = app cfgPerformGC a b
-    , cfgPlot         = app cfgPlot a b
-    , cfgPlotSameAxis = app cfgPlotSameAxis a b
     , cfgPrintExit    = app cfgPrintExit a b
     , cfgSamples      = app cfgSamples a b
     , cfgSummaryFile  = app cfgSummaryFile a b

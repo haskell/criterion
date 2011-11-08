@@ -38,7 +38,6 @@ library
     Criterion.Main
     Criterion.Measurement
     Criterion.Monad
-    Criterion.MultiMap
     Criterion.Report
     Criterion.Types
 
