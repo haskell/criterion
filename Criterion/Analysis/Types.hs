@@ -18,9 +18,7 @@ module Criterion.Analysis.Types
     , SampleAnalysis(..)
     ) where
 
-import Control.Applicative ((<$>), (<*>), empty, pure)
 import Control.DeepSeq (NFData(rnf))
-import Data.Aeson.Types
 import Data.Data (Data)
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
@@ -44,24 +42,6 @@ data Outliers = Outliers {
 
 instance NFData Outliers
 
-instance ToJSON Outliers where
-    toJSON Outliers{..} = object [
-                            "samplesSeen" .= samplesSeen
-                          , "lowSevere" .= lowSevere
-                          , "lowMild" .= lowMild
-                          , "highMild" .= highMild
-                          , "highSevere" .= highSevere
-                          ]
-
-instance FromJSON Outliers where
-    parseJSON (Object v) = Outliers <$>
-                           v .: "samplesSeen" <*>
-                           v .: "lowSevere" <*>
-                           v .: "lowMild" <*>
-                           v .: "highMild" <*>
-                           v .: "highSevere"
-    parseJSON _ = empty
-
 -- | A description of the extent to which outliers in the sample data
 -- affect the sample mean and standard deviation.
 data OutlierEffect = Unaffected -- ^ Less than 1% effect.
@@ -72,21 +52,6 @@ data OutlierEffect = Unaffected -- ^ Less than 1% effect.
                      deriving (Eq, Ord, Read, Show, Typeable, Data)
 
 instance NFData OutlierEffect
-
-instance ToJSON OutlierEffect where
-    toJSON Unaffected = "unaffected"
-    toJSON Slight     = "slight"
-    toJSON Moderate   = "moderate"
-    toJSON Severe     = "severe"
-
-instance FromJSON OutlierEffect where
-    parseJSON (String t) = case t of
-                             _| t== "unaffected" -> pure Unaffected
-                             _| t== "slight"     -> pure Slight
-                             _| t== "moderate"   -> pure Moderate
-                             _| t== "severe"     -> pure Severe
-                              | otherwise        -> empty
-    parseJSON _ = empty
 
 instance Monoid Outliers where
     mempty  = Outliers 0 0 0 0 0
@@ -109,18 +74,6 @@ data OutlierVariance = OutlierVariance {
 instance NFData OutlierVariance where
     rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovFraction `seq` ()
 
-instance ToJSON OutlierVariance where
-    toJSON OutlierVariance{..} = object [
-                                   "effect" .= ovEffect
-                                 , "fraction" .= ovFraction
-                                 ]
-
-instance FromJSON OutlierVariance where
-    parseJSON (Object v) = OutlierVariance <$>
-                           v .: "effect" <*>
-                           v .: "fraction"
-    parseJSON _ = empty
-
 -- | Result of a bootstrap analysis of a non-parametric sample.
 data SampleAnalysis = SampleAnalysis {
       anMean :: B.Estimate
@@ -131,17 +84,3 @@ data SampleAnalysis = SampleAnalysis {
 instance NFData SampleAnalysis where
     rnf SampleAnalysis{..} =
         rnf anMean `seq` rnf anStdDev `seq` rnf anOutliers `seq` ()
-
-instance ToJSON SampleAnalysis where
-    toJSON SampleAnalysis{..} = object [
-                                  "mean" .= anMean
-                                , "stdDev" .= anStdDev
-                                , "outliers" .= anOutliers
-                                ]
-
-instance FromJSON SampleAnalysis where
-    parseJSON (Object v) = SampleAnalysis <$>
-                           v .: "mean" <*>
-                           v .: "stdDev" <*>
-                           v .: "outliers"
-    parseJSON _ = empty
