@@ -25,7 +25,6 @@ import Criterion.Measurement (getTime, runForAtLeast, time_)
 import Criterion.Monad (Criterion)
 import qualified Data.Vector.Unboxed as U
 import Data.Typeable (Typeable)
-import Statistics.Function (create)
 
 -- | Measured aspects of the execution environment.
 data Environment = Environment {
@@ -51,13 +50,13 @@ measureEnvironment = do
              }
   where
     resolution k = do
-      times <- create (k+1) (const getTime)
+      times <- U.replicateM (k+1) getTime
       return (U.tail . U.filter (>=0) . U.zipWith (-) (U.tail times) $ times,
               U.length times)
     cost timeLimit = liftIO $ do
       let timeClock k = time_ (replicateM_ k getTime)
       _ <- timeClock 1
       (_, iters, elapsed) <- runForAtLeast 0.01 10000 timeClock
-      times <- create (ceiling (timeLimit / elapsed)) $ \_ -> timeClock iters
+      times <- U.replicateM (ceiling (timeLimit / elapsed)) $ timeClock iters
       return (U.map (/ fromIntegral iters) times, U.length times)
     thd3 (_, _, c) = c

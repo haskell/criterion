@@ -39,7 +39,7 @@ import Criterion.Plot (plotWith, plotKDE, plotTiming)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
                         bench, bgroup, nf, nfIO, whnf, whnfIO)
 import qualified Data.Vector.Unboxed as U
-import Statistics.Function (create, minMax)
+import Statistics.Function (minMax)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import Statistics.Types (Sample)
@@ -65,7 +65,7 @@ runBenchmark env b = do
     note "collecting %d samples, %d iterations each, in estimated %s\n"
        sampleCount newIters (secs estTime)
   times <- liftIO . fmap (U.map ((/ newItersD) . subtract (envClockCost env))) .
-           create sampleCount . const $ do
+           U.replicateM sampleCount $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
              time_ (run b newIters)
   return times

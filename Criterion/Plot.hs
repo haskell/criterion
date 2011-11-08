@@ -88,14 +88,14 @@ plotTiming output _desc _times =
 plotKDE :: PlotOutput           -- ^ The kind of output desired.
         -> String               -- ^ Benchmark name.
         -> Maybe (Double, Double) -- ^ Range of x-axis
-        -> Points               -- ^ Points at which KDE was computed.
+        -> U.Vector Double      -- ^ Points at which KDE was computed.
         -> U.Vector Double      -- ^ Kernel density estimates.
         -> IO ()
 
 plotKDE CSV desc _exs points pdf = do
   writeTo (mangle $ printf "%s densities.csv" desc) $ \h -> do
     putRow h ["execution time", "probability"]
-    forM_ (zip (U.toList pdf) (U.toList (fromPoints points))) $ \(x, y) ->
+    forM_ (zip (U.toList pdf) (U.toList points)) $ \(x, y) ->
       putRow h [show x, show y]
 
 #ifdef HAVE_CHART
