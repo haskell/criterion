@@ -32,16 +32,63 @@
 
 <script type="text/javascript">
 $(function () {
+  function showTooltip(x, y, contents) {
+      $('<div id="tooltip">' + contents + '</div>').css( {
+	  position: 'absolute',
+	  display: 'none',
+	  top: y + 5,
+	  left: x + 5,
+	  border: '1px solid #fdd',
+	  padding: '2px',
+	  'background-color': '#fee',
+	  opacity: 0.80
+      }).appendTo("body").fadeIn(200);
+  };
   {{#report}}
   var kdetimes{{number}} = $.scaleTimes({{kdetimes}})[0];
   var kdepdf{{number}} = {{kdepdf}};
-  $.plot($("#kde{{number}}"), [$.zip(kdetimes{{number}},kdepdf{{number}})],
-         { yaxis: { ticks: false } });
-  var ts{{number}} = $.scaleTimes({{times}})[0];
+  var ts{{number}} = $.scaleTimes({{times}});
+  var units{{number}} = ts{{number}}[1];
+  ts{{number}} = ts{{number}}[0];
+  $.plot($("#kde{{number}}"),
+         [{ label: "{{name}} time densities (" + units{{number}} + ")",
+            data: $.zip(kdetimes{{number}},kdepdf{{number}}),
+            }],
+         { yaxis: { ticks: false },
+           grid: { hoverable: true },
+         });
   var times{{number}} = new Array(ts{{number}}.length);
   for (var i = 0; i < ts{{number}}.length; i++)
     times{{number}}[i] = [i,ts{{number}}[i]];
-  $.plot($("#time{{number}}"), [times{{number}}], { points: { show: true } });
+  $.plot($("#time{{number}}"),
+         [{ label: "{{name}} times (" + units{{number}} + ")",
+            data: times{{number}} }],
+         { points: { show: true },
+           grid: { hoverable: true },
+           xaxis: { ticks: false },
+           yaxis: { min: 0 },
+         });
+    var pp{{number}} = null;
+    $("#time{{number}}").bind("plothover", function (event, pos, item) {
+        $("#x").text(pos.x.toFixed(2));
+        $("#y").text(pos.y.toFixed(2));
+
+	if (item) {
+	    if (pp{{number}} != item.dataIndex) {
+		pp{{number}} = item.dataIndex;
+
+		$("#tooltip").remove();
+		var x = item.datapoint[0].toFixed(2),
+		    y = item.datapoint[1].toFixed(2);
+
+		showTooltip(item.pageX, item.pageY, y + " " + units{{number}});
+	    }
+	}
+	else {
+	    $("#tooltip").remove();
+	    pp{{number}} = null;            
+	}
+    });
   {{/report}}
 });
 $(document).ready(function () {

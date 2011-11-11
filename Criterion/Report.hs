@@ -57,6 +57,7 @@ report name reports = do
       inner Report{..} = mkStrContext $ \nym ->
                          case nym of
                            "name"     -> MuVariable reportName
+                           "jsname"   -> enc name
                            "number"   -> MuVariable reportNumber
                            "times"    -> enc reportTimes
                            "kdetimes" -> enc kdeTimes
