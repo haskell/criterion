@@ -47,5 +47,4 @@
 
     return x.toString().substring(0,prec) + " " + t[1];
   };
-
 })(jQuery);

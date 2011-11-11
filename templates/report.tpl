@@ -44,51 +44,56 @@ $(function () {
 	  opacity: 0.80
       }).appendTo("body").fadeIn(200);
   };
+  function mangulate(number, name, times, kdetimes, kdepdf) {
+    kdetimes = $.scaleTimes(kdetimes)[0];
+    var ts = $.scaleTimes(times);
+    var units = ts[1];
+    ts = ts[0];
+    $.plot($("#kde" + number),
+	   [{ label: name + " time densities (" + units + ")",
+	      data: $.zip(kdetimes, kdepdf),
+	      }],
+	   { yaxis: { ticks: false },
+	     grid: { hoverable: true },
+	   });
+    var timepairs = new Array(ts.length);
+    for (var i = 0; i < ts.length; i++)
+      timepairs[i] = [i,ts[i]];
+    $.plot($("#time" + number),
+	   [{ label: name + " times (" + units + ")",
+	      data: timepairs }],
+	   { points: { show: true },
+	     grid: { hoverable: true },
+	     xaxis: { ticks: false },
+	     yaxis: { min: 0 },
+	   });
+      var pp = null;
+      $("#time" + number).bind("plothover", function (event, pos, item) {
+	  $("#x").text(pos.x.toFixed(2));
+	  $("#y").text(pos.y.toFixed(2));
+
+	  if (item) {
+	      if (pp != item.dataIndex) {
+		  pp = item.dataIndex;
+
+		  $("#tooltip").remove();
+		  var x = item.datapoint[0].toFixed(2),
+		      y = item.datapoint[1].toFixed(2);
+
+		  showTooltip(item.pageX, item.pageY, y + " " + units);
+	      }
+	  }
+	  else {
+	      $("#tooltip").remove();
+	      pp = null;            
+	  }
+      });
+  };
   {{#report}}
-  var kdetimes{{number}} = $.scaleTimes({{kdetimes}})[0];
-  var kdepdf{{number}} = {{kdepdf}};
-  var ts{{number}} = $.scaleTimes({{times}});
-  var units{{number}} = ts{{number}}[1];
-  ts{{number}} = ts{{number}}[0];
-  $.plot($("#kde{{number}}"),
-         [{ label: "{{name}} time densities (" + units{{number}} + ")",
-            data: $.zip(kdetimes{{number}},kdepdf{{number}}),
-            }],
-         { yaxis: { ticks: false },
-           grid: { hoverable: true },
-         });
-  var times{{number}} = new Array(ts{{number}}.length);
-  for (var i = 0; i < ts{{number}}.length; i++)
-    times{{number}}[i] = [i,ts{{number}}[i]];
-  $.plot($("#time{{number}}"),
-         [{ label: "{{name}} times (" + units{{number}} + ")",
-            data: times{{number}} }],
-         { points: { show: true },
-           grid: { hoverable: true },
-           xaxis: { ticks: false },
-           yaxis: { min: 0 },
-         });
-    var pp{{number}} = null;
-    $("#time{{number}}").bind("plothover", function (event, pos, item) {
-        $("#x").text(pos.x.toFixed(2));
-        $("#y").text(pos.y.toFixed(2));
-
-	if (item) {
-	    if (pp{{number}} != item.dataIndex) {
-		pp{{number}} = item.dataIndex;
-
-		$("#tooltip").remove();
-		var x = item.datapoint[0].toFixed(2),
-		    y = item.datapoint[1].toFixed(2);
-
-		showTooltip(item.pageX, item.pageY, y + " " + units{{number}});
-	    }
-	}
-	else {
-	    $("#tooltip").remove();
-	    pp{{number}} = null;            
-	}
-    });
+  mangulate({{number}}, "{{name}}",
+	    {{times}},
+	    {{kdetimes}},
+            {{kdepdf}});
   {{/report}}
 });
 $(document).ready(function () {
