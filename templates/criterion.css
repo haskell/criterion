@@ -1,0 +1,33 @@
+body {
+  font: 14px Helvetica Neue;
+  text-rendering: optimizeLegibility;
+  margin-top: 1em;
+  overflow-y: scroll;
+}
+
+a {
+  color: steelblue;
+  text-decoration: none;
+}
+
+.hover {
+  color: steelblue;
+  text-decoration: none;
+}
+
+.body {
+  width: 960px;
+  margin: auto;
+}
+
+h1 {
+  font-size: 36px;
+  font-weight: 300;
+  margin-bottom: .3em;
+}
+
+h2 {
+  font-size: 30px;
+  font-weight: 300;
+  margin-bottom: .3em;
+}

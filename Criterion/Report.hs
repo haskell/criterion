@@ -42,22 +42,26 @@ data Report = Report {
     , reportAnalysis :: SampleAnalysis
     } deriving (Eq, Show, Typeable, Data)
 
+templateDir :: FilePath
+templateDir = "templates"
+
 templatePath :: FilePath
-templatePath = joinPath ["templates","report.tpl"]
+templatePath = joinPath [templateDir,"report.tpl"]
 
 javascriptPath :: FilePath
-javascriptPath = joinPath ["templates","js"]
+javascriptPath = joinPath [templateDir,"js"]
 
 report :: String -> [Report] -> Criterion ()
 report name reports = do
   jsURI <- fmap pathToURI . liftIO $ getDataFileName javascriptPath
-  let context "report" = MuList $ map inner reports
-      context "jspath" = MuVariable jsURI
-      context _        = MuNothing
+  tplURI <- fmap pathToURI . liftIO $ getDataFileName templateDir
+  let context "report"  = MuList $ map inner reports
+      context "jspath"  = MuVariable jsURI
+      context "tplpath" = MuVariable tplURI
+      context _         = MuNothing
       inner Report{..} = mkStrContext $ \nym ->
                          case nym of
                            "name"     -> MuVariable reportName
-                           "jsname"   -> enc name
                            "number"   -> MuVariable reportNumber
                            "times"    -> enc reportTimes
                            "kdetimes" -> enc kdeTimes

@@ -13,8 +13,12 @@
 	    src="file://{{jspath}}/jquery.flot-0.7.min.js"></script>
     <script language="javascript" type="text/javascript"
 	    src="file://{{jspath}}/jquery.criterion.js"></script>
+    <style type="text/css">
+@import url("file://{{tplpath}}/criterion.css");
+</style>
  </head>
     <body>
+      <div class="body">
     <h1>criterion performance measurements</h1>
 
 <ul>
@@ -25,25 +29,14 @@
 
 {{#report}}
 <h2><a name="b{{number}}">{{name}}</a></h2>
-    <div id="kde{{number}}" style="width:600px;height:300px;"></div>
-    Ran in <span class="time">{{anMean.estPoint}}</span>.
-    <div id="time{{number}}" style="width:600px;height:300px;"></div>
+    <div id="kde{{number}}" class="kdechart" style="width:600px;height:300px;"></div>
+    <p>Ran in <span class="time">{{anMean.estPoint}}</span>.</p>
+    <p class="timechart">Timing data</p>
+    <div id="time{{number}}" class="timechart" style="width:600px;height:300px;"></div>
 {{/report}}
 
 <script type="text/javascript">
 $(function () {
-  function showTooltip(x, y, contents) {
-      $('<div id="tooltip">' + contents + '</div>').css( {
-	  position: 'absolute',
-	  display: 'none',
-	  top: y + 5,
-	  left: x + 5,
-	  border: '1px solid #fdd',
-	  padding: '2px',
-	  'background-color': '#fee',
-	  opacity: 0.80
-      }).appendTo("body").fadeIn(200);
-  };
   function mangulate(number, name, times, kdetimes, kdepdf) {
     kdetimes = $.scaleTimes(kdetimes)[0];
     var ts = $.scaleTimes(times);
@@ -58,36 +51,17 @@ $(function () {
 	   });
     var timepairs = new Array(ts.length);
     for (var i = 0; i < ts.length; i++)
-      timepairs[i] = [i,ts[i]];
+      timepairs[i] = [ts[i],i];
     $.plot($("#time" + number),
 	   [{ label: name + " times (" + units + ")",
 	      data: timepairs }],
 	   { points: { show: true },
 	     grid: { hoverable: true },
-	     xaxis: { ticks: false },
-	     yaxis: { min: 0 },
+             xaxis: { min: kdetimes[0], max: kdetimes[kdetimes.length-1] },
+	     yaxis: { ticks: false },
 	   });
-      var pp = null;
-      $("#time" + number).bind("plothover", function (event, pos, item) {
-	  $("#x").text(pos.x.toFixed(2));
-	  $("#y").text(pos.y.toFixed(2));
-
-	  if (item) {
-	      if (pp != item.dataIndex) {
-		  pp = item.dataIndex;
-
-		  $("#tooltip").remove();
-		  var x = item.datapoint[0].toFixed(2),
-		      y = item.datapoint[1].toFixed(2);
-
-		  showTooltip(item.pageX, item.pageY, y + " " + units);
-	      }
-	  }
-	  else {
-	      $("#tooltip").remove();
-	      pp = null;            
-	  }
-      });
+    $.addTooltip("#kde" + number, function(x,y) { return x + ' ' + units; });
+    $.addTooltip("#time" + number, function(x,y) { return x + ' ' + units; });
   };
   {{#report}}
   mangulate({{number}}, "{{name}}",
@@ -100,8 +74,19 @@ $(document).ready(function () {
     $(".time").text(function(_, text) {
         return $.renderTime(text);
       });
+    $("div.timechart").toggle();
+    $("p.timechart").click(function() {
+        $(this).next().toggle();
+      }).hover(function() {
+        $(this).addClass("hover");
+        $(this).css("cursor", "pointer");
+      }, function() {
+        $(this).removeClass("hover");
+        $(this).css("cursor", "auto");
+      });
   });
 </script>
 
+   </div>
  </body>
 </html>

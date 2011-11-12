@@ -7,10 +7,14 @@ import Data.List (foldl')
 import Criterion.Config
 
 main = defaultMainWith defaultConfig (return ()) [
-         bench "fib 10" $ whnf fib 10
-       , bench "fib 30" $ whnf fib 30
-       , bench "intmap 50k" $ whnf intmap 50000
-       , bench "intmap 75k" $ whnf intmap 75000
+         bgroup "fib" [
+           bench "fib 10" $ whnf fib 10
+         , bench "fib 30" $ whnf fib 30
+         ],
+         bgroup "intmap" [
+           bench "intmap 50k" $ whnf intmap 50000
+         , bench "intmap 75k" $ whnf intmap 75000
+         ]
        ]
         
 fib :: Int -> Int
