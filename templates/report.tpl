@@ -29,10 +29,38 @@
 
 {{#report}}
 <h2><a name="b{{number}}">{{name}}</a></h2>
-    <div id="kde{{number}}" class="kdechart" style="width:600px;height:300px;"></div>
-    <p>Ran in <span class="time">{{anMean.estPoint}}</span>.</p>
-    <p class="timechart">Timing data</p>
-    <div id="time{{number}}" class="timechart" style="width:600px;height:300px;"></div>
+ <table width="100%">
+  <tbody>
+   <tr>
+    <td><div id="kde{{number}}" class="kdechart"
+	     style="width:450px;height:300px;"></div></td>
+    <td><div id="time{{number}}" class="timechart"
+	     style="width:450px;height:300px;"></div></td>
+  </tbody>
+ </table>
+ <table>
+  <thead class="analysis">
+   <th></th>
+   <th class="cibound">lower bound</th>
+   <th>estimate</th>
+   <th class="cibound">upper bound</th>
+  </thead>
+  <tbody>
+   <tr>
+    <td>Mean execution time</td>
+    <td><span class="citime">{{anMean.estLowerBound}}</span></td>
+    <td><span class="time">{{anMean.estPoint}}</span></td>
+    <td><span class="citime">{{anMean.estUpperBound}}</span></td>
+   </tr>
+   <tr>
+    <td>Standard deviation</td>
+    <td><span class="citime">{{anStdDev.estLowerBound}}</span></td>
+    <td><span class="time">{{anStdDev.estPoint}}</span></td>
+    <td><span class="citime">{{anStdDev.estUpperBound}}</span></td>
+   </tr>
+  </tbody>
+ </table>
+
 {{/report}}
 
 <script type="text/javascript">
@@ -74,15 +102,8 @@ $(document).ready(function () {
     $(".time").text(function(_, text) {
         return $.renderTime(text);
       });
-    $("div.timechart").toggle();
-    $("p.timechart").click(function() {
-        $(this).next().toggle();
-      }).hover(function() {
-        $(this).addClass("hover");
-        $(this).css("cursor", "pointer");
-      }, function() {
-        $(this).removeClass("hover");
-        $(this).css("cursor", "auto");
+    $(".citime").text(function(_, text) {
+        return $.renderTime(text);
       });
   });
 </script>

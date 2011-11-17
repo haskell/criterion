@@ -20,6 +20,19 @@ a {
   margin: auto;
 }
 
+th {
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+th.cibound {
+  opacity: 0.4;
+}
+
+.citime {
+  opacity: 0.5;
+}
+
 h1 {
   font-size: 36px;
   font-weight: 300;
