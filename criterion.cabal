@@ -59,7 +59,7 @@ library
     mtl,
     mwc-random >= 0.8.0.3,
     parsec >= 3.1.0,
-    statistics >= 0.8.0.6,
+    statistics >= 0.8.0.6 && < 0.10.0.0,
     time,
     vector >= 0.7.0.0,
     vector-algorithms >= 0.4
