@@ -67,12 +67,14 @@ addOutliers (Outliers s a b c d) (Outliers t w x y z) =
 data OutlierVariance = OutlierVariance {
       ovEffect   :: OutlierEffect
     -- ^ Qualitative description of effect.
+    , ovDesc     :: String
+    -- ^ Brief textual description of effect.
     , ovFraction :: Double
     -- ^ Quantitative description of effect (a fraction between 0 and 1).
     } deriving (Eq, Read, Show, Typeable, Data)
 
 instance NFData OutlierVariance where
-    rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovFraction
+    rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovDesc `seq` rnf ovFraction
 
 -- | Result of a bootstrap analysis of a non-parametric sample.
 data SampleAnalysis = SampleAnalysis {

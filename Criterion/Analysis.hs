@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, RecordWildCards #-}
+{-# LANGUAGE DeriveDataTypeable, RecordWildCards, UnboxedTuples #-}
 -- |
 -- Module      : Criterion.Analysis
 -- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
@@ -68,12 +68,12 @@ outlierVariance :: B.Estimate  -- ^ Bootstrap estimate of sample mean.
                                --   standard deviation.
                 -> Double      -- ^ Number of original iterations.
                 -> OutlierVariance
-outlierVariance µ σ a = OutlierVariance effect varOutMin
+outlierVariance µ σ a = OutlierVariance effect desc varOutMin
   where
-    effect | varOutMin < 0.01 = Unaffected
-           | varOutMin < 0.1  = Slight
-           | varOutMin < 0.5  = Moderate
-           | otherwise        = Severe
+    (# effect, desc #) | varOutMin < 0.01 = (# Unaffected, "no" #)
+                       | varOutMin < 0.1  = (# Slight,     "slight" #)
+                       | varOutMin < 0.5  = (# Moderate,   "moderate" #)
+                       | otherwise        = (# Severe,     "severe" #)
     varOutMin = (minBy varOut 1 (minBy cMax 0 µgMin)) / σb2
     varOut c  = (ac / a) * (σb2 - ac * σg2) where ac = a - c
     σb        = B.estPoint σ
