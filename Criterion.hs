@@ -27,7 +27,7 @@ module Criterion
 
 import Control.Monad ((<=<), replicateM_, when)
 import Control.Monad.Trans (liftIO)
-import Criterion.Analysis (OutlierEffect(..), OutlierVariance(..),
+import Criterion.Analysis (Outliers(..), OutlierEffect(..), OutlierVariance(..),
                            SampleAnalysis(..), analyseSample,
                            classifyOutliers, noteOutliers)
 import Criterion.Config (Config(..), Verbosity(..), fromLJ)
@@ -70,14 +70,14 @@ runBenchmark env b = do
 
 -- | Run a single benchmark and analyse its performance.
 runAndAnalyseOne :: Benchmarkable b => Environment -> String -> b
-                 -> Criterion (Sample,SampleAnalysis)
+                 -> Criterion (Sample,SampleAnalysis,Outliers)
 runAndAnalyseOne env _desc b = do
   times <- runBenchmark env b
   ci <- getConfigItem $ fromLJ cfgConfInterval
   numResamples <- getConfigItem $ fromLJ cfgResamples
   _ <- prolix "analysing with %d resamples\n" numResamples
   an@SampleAnalysis{..} <- liftIO $ analyseSample ci times numResamples
-  let OutlierVariance{..} = anOutliers
+  let OutlierVariance{..} = anOutlierVar
   let wibble = case ovEffect of
                  Unaffected -> "unaffected" :: String
                  Slight -> "slightly inflated"
@@ -88,12 +88,13 @@ runAndAnalyseOne env _desc b = do
   bs "std dev" anStdDev
   summary "\n"
   vrb <- getConfigItem $ fromLJ cfgVerbosity
+  let out = classifyOutliers times
   when (vrb == Verbose || (ovEffect > Unaffected && vrb > Quiet)) $ do
-    noteOutliers (classifyOutliers times)
+    noteOutliers out
     _ <- note "variance introduced by outliers: %.3f%%\n" (ovFraction * 100)
     _ <- note "variance is %s by outliers\n" wibble
     return ()
-  return (times,an)
+  return (times,an,out)
   where bs :: String -> Estimate -> Criterion ()
         bs d e = do _ <- note "%s: %s, lb %s, ub %s, ci %.3f\n" d
                       (secs $ estPoint e)
@@ -103,9 +104,9 @@ runAndAnalyseOne env _desc b = do
                       (estPoint e)
                       (estLowerBound e) (estUpperBound e)
 
-plotAll :: [(String, Sample, SampleAnalysis)] -> Criterion ()
+plotAll :: [(String, Sample, SampleAnalysis, Outliers)] -> Criterion ()
 plotAll descTimes = do
-  report "foo" (zipWith (\n (d,t,a) -> Report n d t a) [0..] descTimes)
+  report "foo" (zipWith (\n (d,t,a,o) -> Report n d t a o) [0..] descTimes)
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
@@ -118,8 +119,8 @@ runAndAnalyse p env = plotAll <=< go ""
   where go pfx (Benchmark desc b)
             | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
                              summary (show desc' ++ ",") -- String will be quoted
-                             (x,an) <- runAndAnalyseOne env desc' b
-                             return [(desc',x,an)]
+                             (x,an,out) <- runAndAnalyseOne env desc' b
+                             return [(desc',x,an,out)]
             | otherwise = return []
             where desc' = prefix pfx desc
         go pfx (BenchGroup desc bs) =

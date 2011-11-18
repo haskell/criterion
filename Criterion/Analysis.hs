@@ -132,7 +132,7 @@ analyseSample ci samples numResamples = do
   return SampleAnalysis {
                anMean = estMean
              , anStdDev = estStdDev
-             , anOutliers = ov
+             , anOutlierVar = ov
              }
 
 -- | Display a report of the 'Outliers' present in a 'Sample'.

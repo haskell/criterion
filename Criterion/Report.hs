@@ -18,7 +18,7 @@ module Criterion.Report
     ) where
 
 import Control.Monad.IO.Class (liftIO)
-import Criterion.Analysis (SampleAnalysis(..))
+import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.Monad (Criterion)
 import Data.ByteString.Char8 ()
 import Data.Char (isSpace, toLower)
@@ -40,6 +40,7 @@ data Report = Report {
     , reportName :: String
     , reportTimes :: Sample
     , reportAnalysis :: SampleAnalysis
+    , reportOutliers :: Outliers
     } deriving (Eq, Show, Typeable, Data)
 
 templateDir :: FilePath
@@ -66,7 +67,9 @@ report name reports = do
                            "times"    -> enc reportTimes
                            "kdetimes" -> enc kdeTimes
                            "kdepdf"   -> enc kdePDF
-                           _          -> mkGenericContext reportAnalysis $
+                           ('a':'n':_)-> mkGenericContext reportAnalysis $
+                                         H.encodeStr nym
+                           _          -> mkGenericContext reportOutliers $
                                          H.encodeStr nym
           where (kdeTimes,kdePDF) = kde 128 reportTimes
       enc :: (A.ToJSON a) => a -> MuType m

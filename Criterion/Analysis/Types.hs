@@ -63,7 +63,7 @@ addOutliers (Outliers s a b c d) (Outliers t w x y z) =
 {-# INLINE addOutliers #-}
 
 -- | Analysis of the extent to which outliers in a sample affect its
--- mean and standard deviation.
+-- standard deviation (and to some extent, its mean).
 data OutlierVariance = OutlierVariance {
       ovEffect   :: OutlierEffect
     -- ^ Qualitative description of effect.
@@ -72,15 +72,15 @@ data OutlierVariance = OutlierVariance {
     } deriving (Eq, Read, Show, Typeable, Data)
 
 instance NFData OutlierVariance where
-    rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovFraction `seq` ()
+    rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovFraction
 
 -- | Result of a bootstrap analysis of a non-parametric sample.
 data SampleAnalysis = SampleAnalysis {
       anMean :: B.Estimate
     , anStdDev :: B.Estimate
-    , anOutliers :: OutlierVariance
+    , anOutlierVar :: OutlierVariance
     } deriving (Eq, Show, Typeable, Data)
 
 instance NFData SampleAnalysis where
     rnf SampleAnalysis{..} =
-        rnf anMean `seq` rnf anStdDev `seq` rnf anOutliers `seq` ()
+        rnf anMean `seq` rnf anStdDev `seq` rnf anOutlierVar
