@@ -88,7 +88,7 @@ outlierVariance µ σ a = OutlierVariance effect varOutMin
         k1    = σb2 - a * σg2 + ad
         k0    = -a * ad
         ad    = a * d
-        d     = k * 2 where k = µa - x
+        d     = k * k where k = µa - x
         det   = k1 * k1 - 4 * σg2 * k0
 
 -- | Count the total number of outliers in a sample.
