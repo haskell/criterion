@@ -33,17 +33,19 @@
   <tbody>
    <tr>
     <td><div id="kde{{number}}" class="kdechart"
-	     style="width:450px;height:300px;"></div></td>
+	     style="width:450px;height:278px;"></div></td>
     <td><div id="time{{number}}" class="timechart"
-	     style="width:450px;height:300px;"></div></td>
+	     style="width:450px;height:278px;"></div></td>
   </tbody>
  </table>
  <table>
   <thead class="analysis">
    <th></th>
-   <th class="cibound">lower bound</th>
+   <th class="cibound"
+       title="{{anMean.estConfidenceLevel}} confidence level">lower bound</th>
    <th>estimate</th>
-   <th class="cibound">upper bound</th>
+   <th class="cibound"
+       title="{{anMean.estConfidenceLevel}} confidence level">upper bound</th>
   </thead>
   <tbody>
    <tr>
@@ -61,22 +63,34 @@
   </tbody>
  </table>
 
+ <span class="outliers">
+   <p>Outlying measurements have {{anOutlierVar.ovDesc}}
+     (<span class="percent">{{anOutlierVar.ovFraction}}</span>%)
+     effect on estimated standard deviation.</p>
+ </span>
 {{/report}}
 
 <script type="text/javascript">
 $(function () {
-  function mangulate(number, name, times, kdetimes, kdepdf) {
+  function mangulate(number, name, mean, times, kdetimes, kdepdf) {
     kdetimes = $.scaleTimes(kdetimes)[0];
+    var meanSecs = mean;
+    mean *= $.timeUnits(mean)[0];
     var ts = $.scaleTimes(times);
     var units = ts[1];
     ts = ts[0];
-    $.plot($("#kde" + number),
+    var kq = $("#kde" + number);
+    var k = $.plot(kq,
 	   [{ label: name + " time densities (" + units + ")",
 	      data: $.zip(kdetimes, kdepdf),
 	      }],
 	   { yaxis: { ticks: false },
-	     grid: { hoverable: true },
+	     grid: { hoverable: true, markings: [ { color: '#e6d192', lineWidth: 1, xaxis: { from: mean, to: mean } } ] },
 	   });
+    var o = k.pointOffset({ x: mean, y: 0});
+    kq.append('<div class="meanlegend" title="' + $.renderTime(meanSecs) +
+              '" style="position:absolute;left:' + (o.left + 4) +
+              'px;bottom:26px;">mean</div>');
     var timepairs = new Array(ts.length);
     for (var i = 0; i < ts.length; i++)
       timepairs[i] = [ts[i],i];
@@ -93,6 +107,7 @@ $(function () {
   };
   {{#report}}
   mangulate({{number}}, "{{name}}",
+            {{anMean.estPoint}},
 	    {{times}},
 	    {{kdetimes}},
             {{kdepdf}});
@@ -104,6 +119,9 @@ $(document).ready(function () {
       });
     $(".citime").text(function(_, text) {
         return $.renderTime(text);
+      });
+    $(".percent").text(function(_, text) {
+        return (text*100).toFixed(1);
       });
   });
 </script>

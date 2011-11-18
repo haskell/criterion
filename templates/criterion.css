@@ -44,3 +44,10 @@ h2 {
   font-weight: 300;
   margin-bottom: .3em;
 }
+
+.meanlegend {
+  color: #404040;
+  background-color: #ffffff;
+  opacity: 0.6;
+  font-size: smaller;
+}
