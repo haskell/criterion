@@ -106,7 +106,7 @@ runAndAnalyseOne env _desc b = do
 
 plotAll :: [(String, Sample, SampleAnalysis, Outliers)] -> Criterion ()
 plotAll descTimes = do
-  report "foo" (zipWith (\n (d,t,a,o) -> Report n d t a o) [0..] descTimes)
+  report (zipWith (\n (d,t,a,o) -> Report n d t a o) [0..] descTimes)
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses

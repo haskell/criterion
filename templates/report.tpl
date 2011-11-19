@@ -4,17 +4,21 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>criterion report</title>
     <!--[if lte IE 8]>
-      <script language="javascript" type="text/javascript"
-              src="file://{{jspath}}/excanvas-r3.min.js"></script>
+      <script language="javascript" type="text/javascript">
+        {{#include}}js/excanvas-r3.min.js{{/include}}
+      </script>
     <![endif]-->
-    <script language="javascript" type="text/javascript"
-            src="file://{{jspath}}/jquery-1.6.4.min.js"></script>
-    <script language="javascript" type="text/javascript"
-	    src="file://{{jspath}}/jquery.flot-0.7.min.js"></script>
-    <script language="javascript" type="text/javascript"
-	    src="file://{{jspath}}/jquery.criterion.js"></script>
+    <script language="javascript" type="text/javascript">
+      {{#include}}js/jquery-1.6.4.min.js{{/include}}
+    </script>
+    <script language="javascript" type="text/javascript">
+      {{#include}}js/jquery.flot-0.7.min.js{{/include}}
+    </script>
+    <script language="javascript" type="text/javascript">
+      {{#include}}js/jquery.criterion.js{{/include}}
+    </script>
     <style type="text/css">
-@import url("file://{{tplpath}}/criterion.css");
+{{#include}}criterion.css{{/include}}
 </style>
  </head>
     <body>

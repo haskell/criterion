@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, RecordWildCards, ViewPatterns #-}
 
 -- |
 -- Module      : Criterion.Report
@@ -17,21 +17,24 @@ module Criterion.Report
     , report
     ) where
 
+import Control.Applicative ((<$>))
 import Control.Monad.IO.Class (liftIO)
 import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
+import Criterion.IO (note)
 import Criterion.Monad (Criterion)
-import Data.ByteString.Char8 ()
 import Data.Char (isSpace, toLower)
 import Data.Data (Data, Typeable)
 import Data.List (group)
 import Paths_criterion (getDataFileName)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Sample)
-import System.FilePath (isPathSeparator, joinPath)
+import System.Environment (getProgName)
+import System.FilePath ((</>), takeFileName)
 import Text.Hastache (MuType(..))
 import Text.Hastache.Context (mkGenericContext, mkStrContext)
 import Text.Printf (printf)
 import qualified Data.Aeson as A
+import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as L
 import qualified Text.Hastache as H
 
@@ -46,19 +49,12 @@ data Report = Report {
 templateDir :: FilePath
 templateDir = "templates"
 
-templatePath :: FilePath
-templatePath = joinPath [templateDir,"report.tpl"]
-
-javascriptPath :: FilePath
-javascriptPath = joinPath [templateDir,"js"]
-
-report :: String -> [Report] -> Criterion ()
-report name reports = do
-  jsURI <- fmap pathToURI . liftIO $ getDataFileName javascriptPath
-  tplURI <- fmap pathToURI . liftIO $ getDataFileName templateDir
+report :: [Report] -> Criterion ()
+report reports = do
+  tpl <- liftIO $ getDataFileName templateDir
   let context "report"  = MuList $ map inner reports
-      context "jspath"  = MuVariable jsURI
-      context "tplpath" = MuVariable tplURI
+      context "include" = MuLambdaM $ \n ->
+                            liftIO $ B.readFile (tpl </> H.decodeStr n)
       context _         = MuNothing
       inner Report{..} = mkStrContext $ \nym ->
                          case nym of
@@ -74,20 +70,20 @@ report name reports = do
           where (kdeTimes,kdePDF) = kde 128 reportTimes
       enc :: (A.ToJSON a) => a -> MuType m
       enc = MuVariable . A.encode
-  tplPath <- liftIO $ getDataFileName templatePath
-  bs <- liftIO $ H.hastacheFile H.defaultConfig tplPath context
-  liftIO $ L.writeFile (safePath $ printf "%s report.html" name) bs
-  return ()
-
-pathToURI :: FilePath -> String
-pathToURI = map (replace isPathSeparator '/')
+  rep <- liftIO $ do
+    bs <- H.hastacheFile H.defaultConfig (tpl </> "report.tpl") context
+    progName <- takeFileName <$> getProgName
+    let name = safePath $ printf "%s criterion.html" progName
+    L.writeFile name bs
+    return name
+  note "report written to %s\n" rep
 
 -- | Get rid of spaces and other potentially troublesome characters
 -- from a file name.
 safePath :: String -> FilePath
 safePath = concatMap (replace ((==) '-' . head) "-")
        . group
-       . map (replace isSpace '-' . replace isPathSeparator '-' . toLower)
+       . map (replace isSpace '-' . replace (`elem` "\"'();/\\") '-' . toLower)
 
 replace :: (a -> Bool) -> a -> a -> a
 replace p r c | p c       = r
