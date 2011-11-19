@@ -113,18 +113,26 @@ $(function () {
   {{/report}}
 
   var benches = [{{#report}}"{{name}}",{{/report}}];
-  var ylabels = [{{#report}}[{{number}},'<a href="#b{{number}}">{{name}}</a>'],{{/report}}];
+  var ylabels = [{{#report}}[-{{number}},'<a href="#b{{number}}">{{name}}</a>'],{{/report}}];
   var means = $.scaleTimes([{{#report}}{{anMean.estPoint}},{{/report}}]);
-  var xs = new Array(means[0].length);
+  var xs = [];
+  var prev = null;
   for (var i = 0; i < means[0].length; i++) {
-    var j = means[0].length - i - 1;
-    xs[i] = {label: benches[j], data: [[means[0][j], j]] };
+    var name = benches[i].split(/\//);
+    name.pop();
+    name = name.join('/');
+    if (name != prev) {
+      xs.push({ label: name, data: [[means[0][i], -i]]});
+      prev = name;
+    }
+    else
+      xs[xs.length-1].data.push([means[0][i],-i]);
   }
   var oq = $("#overview");
   o = $.plot(oq, xs, { bars: { show: true, horizontal: true,
 		               barWidth: 0.75, align: "center" },
 		       grid: { hoverable: true },
-		       legend: { show: false },
+		       legend: { show: xs.length > 1 },
 		       xaxis: { max: Math.max.apply(undefined,means[0]) * 1.02 },
 		       yaxis: { ticks: ylabels, tickColor: '#ffffff' } });
   if (benches.length > 3)
