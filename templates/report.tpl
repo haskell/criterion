@@ -83,12 +83,13 @@ $(function () {
 	      data: $.zip(kdetimes, kdepdf),
 	      }],
 	   { yaxis: { ticks: false },
-	     grid: { hoverable: true, markings: [ { color: '#e6d192', lineWidth: 1, xaxis: { from: mean, to: mean } } ] },
+	     grid: { hoverable: true, markings: [ { color: '#6fd3fb',
+                     lineWidth: 1.5, xaxis: { from: mean, to: mean } } ] },
 	   });
     var o = k.pointOffset({ x: mean, y: 0});
     kq.append('<div class="meanlegend" title="' + $.renderTime(meanSecs) +
               '" style="position:absolute;left:' + (o.left + 4) +
-              'px;bottom:26px;">mean</div>');
+              'px;bottom:139px;">mean</div>');
     var timepairs = new Array(ts.length);
     for (var i = 0; i < ts.length; i++)
       timepairs[i] = [ts[i],i];
@@ -127,7 +128,7 @@ $(function () {
 		       xaxis: { max: Math.max.apply(undefined,means[0]) * 1.02 },
 		       yaxis: { ticks: ylabels, tickColor: '#ffffff' } });
   if (benches.length > 3)
-    o.getPlaceholder().height(32*benches.length);
+    o.getPlaceholder().height(28*benches.length);
   o.resize();
   o.setupGrid();
   o.draw();
