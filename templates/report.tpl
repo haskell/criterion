@@ -21,11 +21,9 @@
       <div class="body">
     <h1>criterion performance measurements</h1>
 
-<ul>
-{{#report}}
-<li><a href="#b{{number}}">{{name}}</a></li>
-{{/report}}
-</ul>
+<h2>overview</h2>
+
+<div id="overview" class="ovchart" style="width:900px;height:100px;"></div>
 
 {{#report}}
 <h2><a name="b{{number}}">{{name}}</a></h2>
@@ -112,6 +110,28 @@ $(function () {
 	    {{kdetimes}},
             {{kdepdf}});
   {{/report}}
+
+  var benches = [{{#report}}"{{name}}",{{/report}}];
+  var ylabels = [{{#report}}[{{number}},'<a href="#b{{number}}">{{name}}</a>'],{{/report}}];
+  var means = $.scaleTimes([{{#report}}{{anMean.estPoint}},{{/report}}]);
+  var xs = new Array(means[0].length);
+  for (var i = 0; i < means[0].length; i++) {
+    var j = means[0].length - i - 1;
+    xs[i] = {label: benches[j], data: [[means[0][j], j]] };
+  }
+  var oq = $("#overview");
+  o = $.plot(oq, xs, { bars: { show: true, horizontal: true,
+		               barWidth: 0.75, align: "center" },
+		       grid: { hoverable: true },
+		       legend: { show: false },
+		       xaxis: { max: Math.max.apply(undefined,means[0]) * 1.02 },
+		       yaxis: { ticks: ylabels, tickColor: '#ffffff' } });
+  if (benches.length > 3)
+    o.getPlaceholder().height(32*benches.length);
+  o.resize();
+  o.setupGrid();
+  o.draw();
+  $.addTooltip("#overview", function(x,y) { return x + ' ' + means[1]; });
 });
 $(document).ready(function () {
     $(".time").text(function(_, text) {
