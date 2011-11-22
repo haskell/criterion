@@ -35,9 +35,9 @@
   <tbody>
    <tr>
     <td><div id="kde{{number}}" class="kdechart"
-	     style="width:450px;height:278px;"></div></td>
+             style="width:450px;height:278px;"></div></td>
     <td><div id="time{{number}}" class="timechart"
-	     style="width:450px;height:278px;"></div></td>
+             style="width:450px;height:278px;"></div></td>
   </tbody>
  </table>
  <table>
@@ -83,13 +83,13 @@ $(function () {
     ts = ts[0];
     var kq = $("#kde" + number);
     var k = $.plot(kq,
-	   [{ label: name + " time densities (" + units + ")",
-	      data: $.zip(kdetimes, kdepdf),
-	      }],
-	   { yaxis: { ticks: false },
-	     grid: { hoverable: true, markings: [ { color: '#6fd3fb',
+           [{ label: name + " time densities (" + units + ")",
+              data: $.zip(kdetimes, kdepdf),
+              }],
+           { yaxis: { ticks: false },
+             grid: { hoverable: true, markings: [ { color: '#6fd3fb',
                      lineWidth: 1.5, xaxis: { from: mean, to: mean } } ] },
-	   });
+           });
     var o = k.pointOffset({ x: mean, y: 0});
     kq.append('<div class="meanlegend" title="' + $.renderTime(meanSecs) +
               '" style="position:absolute;left:' + (o.left + 4) +
@@ -98,21 +98,21 @@ $(function () {
     for (var i = 0; i < ts.length; i++)
       timepairs[i] = [ts[i],i];
     $.plot($("#time" + number),
-	   [{ label: name + " times (" + units + ")",
-	      data: timepairs }],
-	   { points: { show: true },
-	     grid: { hoverable: true },
+           [{ label: name + " times (" + units + ")",
+              data: timepairs }],
+           { points: { show: true },
+             grid: { hoverable: true },
              xaxis: { min: kdetimes[0], max: kdetimes[kdetimes.length-1] },
-	     yaxis: { ticks: false },
-	   });
+             yaxis: { ticks: false },
+           });
     $.addTooltip("#kde" + number, function(x,y) { return x + ' ' + units; });
     $.addTooltip("#time" + number, function(x,y) { return x + ' ' + units; });
   };
   {{#report}}
   mangulate({{number}}, "{{name}}",
             {{anMean.estPoint}},
-	    [{{#times}}{{x}},{{/times}}],
-	    [{{#kdetimes}}{{x}},{{/kdetimes}}],
+            [{{#times}}{{x}},{{/times}}],
+            [{{#kdetimes}}{{x}},{{/kdetimes}}],
             [{{#kdepdf}}{{x}},{{/kdepdf}}]);
   {{/report}}
 
@@ -134,11 +134,11 @@ $(function () {
   }
   var oq = $("#overview");
   o = $.plot(oq, xs, { bars: { show: true, horizontal: true,
-		               barWidth: 0.75, align: "center" },
-		       grid: { hoverable: true },
-		       legend: { show: xs.length > 1 },
-		       xaxis: { max: Math.max.apply(undefined,means[0]) * 1.02 },
-		       yaxis: { ticks: ylabels, tickColor: '#ffffff' } });
+                               barWidth: 0.75, align: "center" },
+                       grid: { hoverable: true },
+                       legend: { show: xs.length > 1 },
+                       xaxis: { max: Math.max.apply(undefined,means[0]) * 1.02 },
+                       yaxis: { ticks: ylabels, tickColor: '#ffffff' } });
   if (benches.length > 3)
     o.getPlaceholder().height(28*benches.length);
   o.resize();
