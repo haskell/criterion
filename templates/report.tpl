@@ -111,9 +111,9 @@ $(function () {
   {{#report}}
   mangulate({{number}}, "{{name}}",
             {{anMean.estPoint}},
-	    {{times}},
-	    {{kdetimes}},
-            {{kdepdf}});
+	    [{{#times}}{{x}},{{/times}}],
+	    [{{#kdetimes}}{{x}},{{/kdetimes}}],
+            [{{#kdepdf}}{{x}},{{/kdepdf}}]);
   {{/report}}
 
   var benches = [{{#report}}"{{name}}",{{/report}}];

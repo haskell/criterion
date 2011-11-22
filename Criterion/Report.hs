@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, RecordWildCards, ViewPatterns #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, RecordWildCards #-}
 
 -- |
 -- Module      : Criterion.Report
@@ -15,6 +15,9 @@ module Criterion.Report
     (
       Report(..)
     , report
+    -- * Rendering helper functions
+    , vector
+    , vector2
     ) where
 
 import Control.Applicative ((<$>))
@@ -33,9 +36,10 @@ import System.FilePath ((</>), takeFileName)
 import Text.Hastache (MuType(..))
 import Text.Hastache.Context (mkGenericContext, mkStrContext)
 import Text.Printf (printf)
-import qualified Data.Aeson as A
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as L
+import qualified Data.Vector.Generic as G
+import qualified Data.Vector.Unboxed as U
 import qualified Text.Hastache as H
 
 data Report = Report {
@@ -60,16 +64,15 @@ report reports = do
                          case nym of
                            "name"     -> MuVariable reportName
                            "number"   -> MuVariable reportNumber
-                           "times"    -> enc reportTimes
-                           "kdetimes" -> enc kdeTimes
-                           "kdepdf"   -> enc kdePDF
+                           "times"    -> vector "x" reportTimes
+                           "kdetimes" -> vector "x" kdeTimes
+                           "kdepdf"   -> vector "x" kdePDF
+                           "kde"      -> vector2 "time" "pdf" kdeTimes kdePDF
                            ('a':'n':_)-> mkGenericContext reportAnalysis $
                                          H.encodeStr nym
                            _          -> mkGenericContext reportOutliers $
                                          H.encodeStr nym
           where (kdeTimes,kdePDF) = kde 128 reportTimes
-      enc :: (A.ToJSON a) => a -> MuType m
-      enc = MuVariable . A.encode
   rep <- liftIO $ do
     bs <- H.hastacheFile H.defaultConfig (tpl </> "report.tpl") context
     progName <- takeFileName <$> getProgName
@@ -77,6 +80,26 @@ report reports = do
     L.writeFile name bs
     return name
   note "report written to %s\n" rep
+
+vector :: (Monad m, G.Vector v a, H.MuVar a) =>
+          String -> v a -> MuType m
+{-# SPECIALIZE vector :: String -> U.Vector Double -> MuType IO #-}
+vector name v = MuList . map val . G.toList $ v
+    where val i = mkStrContext $ \nym ->
+                  if nym == name
+                  then MuVariable i
+                  else MuNothing
+
+vector2 :: (Monad m, G.Vector v a, G.Vector v b, H.MuVar a, H.MuVar b) =>
+           String -> String -> v a -> v b -> MuType m
+{-# SPECIALIZE vector2 :: String -> String -> U.Vector Double -> U.Vector Double
+                       -> MuType IO #-}
+vector2 name1 name2 v1 v2 = MuList $ zipWith val (G.toList v1) (G.toList v2)
+    where val i j = mkStrContext $ \nym ->
+                    case undefined of
+                      _| nym == name1 -> MuVariable i
+                       | nym == name2 -> MuVariable j
+                       | otherwise    -> MuNothing
 
 -- | Get rid of spaces and other potentially troublesome characters
 -- from a file name.
