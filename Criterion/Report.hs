@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, RecordWildCards,
+    ScopedTypeVariables #-}
 
 -- |
 -- Module      : Criterion.Report
@@ -16,12 +17,15 @@ module Criterion.Report
       Report(..)
     , report
     -- * Rendering helper functions
+    , includeFile
+    , templateDir
     , vector
     , vector2
     ) where
 
 import Control.Applicative ((<$>))
-import Control.Monad.IO.Class (liftIO)
+import Control.Exception (IOException, catch)
+import Control.Monad.IO.Class (MonadIO(liftIO))
 import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.IO (note)
 import Criterion.Monad (Criterion)
@@ -29,10 +33,12 @@ import Data.Char (isSpace, toLower)
 import Data.Data (Data, Typeable)
 import Data.List (group)
 import Paths_criterion (getDataFileName)
+import Prelude hiding (catch)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Sample)
 import System.Environment (getProgName)
 import System.FilePath ((</>), takeFileName)
+import System.IO.Unsafe (unsafePerformIO)
 import Text.Hastache (MuType(..))
 import Text.Hastache.Context (mkGenericContext, mkStrContext)
 import Text.Printf (printf)
@@ -50,15 +56,17 @@ data Report = Report {
     , reportOutliers :: Outliers
     } deriving (Eq, Show, Typeable, Data)
 
+-- | The path to the template and other files used for generating
+-- reports.
 templateDir :: FilePath
-templateDir = "templates"
+templateDir = unsafePerformIO $ getDataFileName "templates"
+{-# NOINLINE templateDir #-}
 
+-- | Write out a series of 'Report' values to a single file.
 report :: [Report] -> Criterion ()
 report reports = do
-  tpl <- liftIO $ getDataFileName templateDir
   let context "report"  = MuList $ map inner reports
-      context "include" = MuLambdaM $ \n ->
-                            liftIO $ B.readFile (tpl </> H.decodeStr n)
+      context "include" = MuLambdaM $ includeFile [templateDir]
       context _         = MuNothing
       inner Report{..} = mkStrContext $ \nym ->
                          case nym of
@@ -74,7 +82,7 @@ report reports = do
                                          H.encodeStr nym
           where (kdeTimes,kdePDF) = kde 128 reportTimes
   rep <- liftIO $ do
-    bs <- H.hastacheFile H.defaultConfig (tpl </> "report.tpl") context
+    bs <- H.hastacheFile H.defaultConfig (templateDir </> "report.tpl") context
     progName <- takeFileName <$> getProgName
     let name = safePath $ printf "%s criterion.html" progName
     L.writeFile name bs
@@ -111,3 +119,24 @@ safePath = concatMap (replace ((==) '-' . head) "-")
 replace :: (a -> Bool) -> a -> a -> a
 replace p r c | p c       = r
               | otherwise = c
+
+-- | Attempt to include the contents of a file based on a search path.
+-- Returns 'B.empty' if the search fails.
+--
+-- Intended for use with Hastache's 'MuLambdaM', for example:
+--
+-- @context \"include\" = 'MuLambdaM' $ 'includeFile' ['templateDir']@
+--
+-- Hastache template expansion is /not/ performed within the included
+-- file.  No attempt is made to ensure that the included file path is
+-- safe, i.e. that it does not refer to an unexpected file such as
+-- \"@/etc/passwd@\".
+includeFile :: (MonadIO m) =>
+               [FilePath]       -- ^ Directories to search.
+            -> B.ByteString     -- ^ Name of the file to search for.
+            -> m B.ByteString
+{-# SPECIALIZE includeFile :: [FilePath] -> B.ByteString -> IO B.ByteString #-}
+includeFile searchPath name = liftIO $ foldr go (return B.empty) searchPath
+    where go dir next = do
+            let path = dir </> H.decodeStr name
+            B.readFile path `catch` \(_::IOException) -> next
