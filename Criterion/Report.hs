@@ -89,8 +89,24 @@ report reports = do
     return name
   note "report written to %s\n" rep
 
+-- | Render the elements of a vector.
+--
+-- For example, given this piece of Haskell:
+--
+-- @'mkStrContext' $ \\name ->
+-- case name of
+--   \"foo\" -> 'vector' \"x\" foo@
+--
+-- It will substitute each value in the vector for @x@ in the
+-- following Hastache template:
+--
+-- > {{#foo}}
+-- >  {{x}}
+-- > {{/foo}}
 vector :: (Monad m, G.Vector v a, H.MuVar a) =>
-          String -> v a -> MuType m
+          String                -- ^ Name to use when substituting.
+       -> v a
+       -> MuType m
 {-# SPECIALIZE vector :: String -> U.Vector Double -> MuType IO #-}
 vector name v = MuList . map val . G.toList $ v
     where val i = mkStrContext $ \nym ->
@@ -98,8 +114,13 @@ vector name v = MuList . map val . G.toList $ v
                   then MuVariable i
                   else MuNothing
 
+-- | Render the elements of two vectors.
 vector2 :: (Monad m, G.Vector v a, G.Vector v b, H.MuVar a, H.MuVar b) =>
-           String -> String -> v a -> v b -> MuType m
+           String               -- ^ Name for elements from the first vector.
+        -> String               -- ^ Name for elements from the second vector.
+        -> v a                  -- ^ First vector.
+        -> v b                  -- ^ Second vector.
+        -> MuType m
 {-# SPECIALIZE vector2 :: String -> String -> U.Vector Double -> U.Vector Double
                        -> MuType IO #-}
 vector2 name1 name2 v1 v2 = MuList $ zipWith val (G.toList v1) (G.toList v2)
