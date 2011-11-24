@@ -12,7 +12,8 @@
 {-# LANGUAGE FlexibleInstances, Rank2Types, TypeSynonymInstances #-}
 module Criterion.IO
     (
-      note
+      CritHPrintfType
+    , note
     , printError
     , prolix
     , summary
@@ -27,14 +28,15 @@ import System.IO (Handle, stderr, stdout)
 import qualified Text.Printf (HPrintfType, hPrintf)
 import Text.Printf (PrintfArg)
 
--- First item is the action to print now, given all the arguments gathered
--- together so far.  The second item is the function that will take a further argument
--- and give back a new PrintfCont.
+-- First item is the action to print now, given all the arguments
+-- gathered together so far.  The second item is the function that
+-- will take a further argument and give back a new PrintfCont.
 data PrintfCont = PrintfCont (IO ()) (PrintfArg a => a -> PrintfCont)
 
--- An internal class that acts like Printf/HPrintf.
+-- | An internal class that acts like Printf/HPrintf.
 --
--- The implementation is visible to the rest of the program, but the class is
+-- The implementation is visible to the rest of the program, but the
+-- details of the class are not.
 class CritHPrintfType a where
   chPrintfImpl :: (Config -> Bool) -> PrintfCont -> a
 
@@ -55,12 +57,16 @@ instance (CritHPrintfType r, PrintfArg a) => CritHPrintfType (a -> r) where
 
 chPrintf :: CritHPrintfType r => (Config -> Bool) -> Handle -> String -> r
 chPrintf shouldPrint h s
-  = chPrintfImpl shouldPrint (make (Text.Printf.hPrintf h s) (Text.Printf.hPrintf h s))
+  = chPrintfImpl shouldPrint (make (Text.Printf.hPrintf h s)
+                                   (Text.Printf.hPrintf h s))
   where
-    make :: IO () -> (forall a r. (PrintfArg a, Text.Printf.HPrintfType r) => a -> r) -> PrintfCont
-    make curCall curCall' = PrintfCont curCall (\x -> make (curCall' x) (curCall' x))
+    make :: IO () -> (forall a r. (PrintfArg a, Text.Printf.HPrintfType r) =>
+                      a -> r) -> PrintfCont
+    make curCall curCall' = PrintfCont curCall (\x -> make (curCall' x)
+                                                      (curCall' x))
 
-{- A demonstration of how to write printf in this style, in case it is ever needed
+{- A demonstration of how to write printf in this style, in case it is
+ever needed
   in fututre:
 
 cPrintf :: CritHPrintfType r => (Config -> Bool) -> String -> r
