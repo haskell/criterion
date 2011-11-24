@@ -55,6 +55,7 @@ library
     bytestring >= 0.9 && < 1.0,
     containers,
     deepseq >= 1.1.0.0,
+    directory,
     filepath,
     hastache >= 0.1.5,
     mtl,

@@ -17,6 +17,8 @@ module Criterion.Report
       Report(..)
     , report
     -- * Rendering helper functions
+    , TemplateException(..)
+    , loadTemplate
     , includeFile
     , templateDir
     , vector
@@ -24,7 +26,8 @@ module Criterion.Report
     ) where
 
 import Control.Applicative ((<$>))
-import Control.Exception (IOException, catch)
+import Control.Exception (Exception, IOException, catch, throwIO)
+import Control.Monad (mplus)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.IO (note)
@@ -36,8 +39,9 @@ import Paths_criterion (getDataFileName)
 import Prelude hiding (catch)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Sample)
+import System.Directory (doesFileExist)
 import System.Environment (getProgName)
-import System.FilePath ((</>), takeFileName)
+import System.FilePath ((</>), isPathSeparator, takeFileName)
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Hastache (MuType(..))
 import Text.Hastache.Context (mkGenericContext, mkStrContext)
@@ -82,7 +86,8 @@ report reports = do
                                          H.encodeStr nym
           where (kdeTimes,kdePDF) = kde 128 reportTimes
   rep <- liftIO $ do
-    bs <- H.hastacheFile H.defaultConfig (templateDir </> "report.tpl") context
+    tpl <- loadTemplate [".",templateDir] "report.tpl"
+    bs <- H.hastacheStr H.defaultConfig tpl context
     progName <- takeFileName <$> getProgName
     let name = safePath $ printf "%s criterion.html" progName
     L.writeFile name bs
@@ -142,7 +147,7 @@ replace p r c | p c       = r
               | otherwise = c
 
 -- | Attempt to include the contents of a file based on a search path.
--- Returns 'B.empty' if the search fails.
+-- Returns 'B.empty' if the search fails or the file could not be read.
 --
 -- Intended for use with Hastache's 'MuLambdaM', for example:
 --
@@ -161,3 +166,32 @@ includeFile searchPath name = liftIO $ foldr go (return B.empty) searchPath
     where go dir next = do
             let path = dir </> H.decodeStr name
             B.readFile path `catch` \(_::IOException) -> next
+
+-- | A problem arose with a template.
+data TemplateException =
+    TemplateNotFound FilePath   -- ^ The template could not be found.
+    deriving (Eq, Show, Typeable, Data)
+
+instance Exception TemplateException
+
+-- | Load a Hastache template file.
+--
+-- If the name is an absolute or relative path, the search path is
+-- /not/ used, and the name is treated as a literal path.
+--
+-- This function throws a 'TemplateException' if the template could
+-- not be found, or an 'IOException' if no template could be loaded.
+loadTemplate :: [FilePath]      -- ^ Search path.
+             -> FilePath        -- ^ Name of template file.
+             -> IO B.ByteString
+loadTemplate paths name
+    | any isPathSeparator name = B.readFile name
+    | otherwise                = go Nothing paths
+  where go me (p:ps) = do
+          let cur = p </> name
+          x <- doesFileExist cur
+          if x
+            then B.readFile cur `catch` \e -> go (me `mplus` Just e) ps
+            else go me ps
+        go (Just e) _ = throwIO (e::IOException)
+        go _        _ = throwIO . TemplateNotFound $ name
