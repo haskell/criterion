@@ -48,6 +48,19 @@
     return x.toString().substring(0,prec) + " " + t[1];
   };
 
+  $.unitFormatter = function(units) {
+    var ticked = 0;
+    return function(val,axis) {
+        var s = val.toFixed(axis.tickDecimals);
+	if (ticked > 1)
+	  return s;
+        else {
+          ticked++;
+	  return s + ' ' + units;
+	}
+    };
+  };
+
   $.addTooltip = function(name, renderText) {
     function showTooltip(x, y, contents) {
 	$('<div id="tooltip">' + contents + '</div>').css( {

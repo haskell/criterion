@@ -83,10 +83,11 @@ $(function () {
     ts = ts[0];
     var kq = $("#kde" + number);
     var k = $.plot(kq,
-           [{ label: name + " time densities (" + units + ")",
+           [{ label: name + " time densities",
               data: $.zip(kdetimes, kdepdf),
               }],
-           { yaxis: { ticks: false },
+           { xaxis: { $.unitFormatter(units) },
+             yaxis: { ticks: false },
              grid: { hoverable: true, markings: [ { color: '#6fd3fb',
                      lineWidth: 1.5, xaxis: { from: mean, to: mean } } ] },
            });
@@ -98,11 +99,12 @@ $(function () {
     for (var i = 0; i < ts.length; i++)
       timepairs[i] = [ts[i],i];
     $.plot($("#time" + number),
-           [{ label: name + " times (" + units + ")",
+           [{ label: name + " times",
               data: timepairs }],
            { points: { show: true },
              grid: { hoverable: true },
-             xaxis: { min: kdetimes[0], max: kdetimes[kdetimes.length-1] },
+             xaxis: { min: kdetimes[0], max: kdetimes[kdetimes.length-1],
+                      tickFormatter: $.unitFormatter(units) },
              yaxis: { ticks: false },
            });
     $.addTooltip("#kde" + number, function(x,y) { return x + ' ' + units; });
