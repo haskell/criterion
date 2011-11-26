@@ -38,6 +38,7 @@
              style="width:450px;height:278px;"></div></td>
     <td><div id="time{{number}}" class="timechart"
              style="width:450px;height:278px;"></div></td>
+   </tr>
   </tbody>
  </table>
  <table>
