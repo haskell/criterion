@@ -31,10 +31,14 @@
 
   $.scaleTimes = function(ary) {
     var s = $.timeUnits($.mean(ary));
+    return [$.scaleBy(s[0], ary), s[1]];
+  };
+
+  $.scaleBy = function(x, ary) {
     var nary = new Array(ary.length);
     for (var i = 0; i < ary.length; i++)
-      nary[i] = ary[i] * s[0];
-    return [nary, s[1]];
+      nary[i] = ary[i] * x;
+    return nary;
   };
 
   $.renderTime = function(text) {
