@@ -19,13 +19,21 @@
     </script>
     <style type="text/css">
 {{#include}}criterion.css{{/include}}
-</style>
+    </style>
+    <!--[if !IE 7]>
+	    <style type="text/css">
+		    #wrap {display:table;height:100%}
+	    </style>
+    <![endif]-->
  </head>
     <body>
-      <div class="body">
+     <div id="wrap">
+      <div id="main" class="body">
     <h1>criterion performance measurements</h1>
 
 <h2>overview</h2>
+
+<p><a href="#grokularation">want to understand this report?</a></p>
 
 <div id="overview" class="ovchart" style="width:900px;height:100px;"></div>
 
@@ -73,23 +81,64 @@
  </span>
 {{/report}}
 
+ <h2><a name="grokularation">understanding this report</a></h2>
+
+ <p>In this report, each function benchmarked by criterion is assigned
+   a section of its own.  In each section, we display two charts, each
+   with an <i>x</i> axis that represents measured execution time.
+   These charts are active; if you hover your mouse over data points
+   and annotations, you will see more details.</p>
+
+ <ul>
+   <li>The chart on the left is a
+     <a href="http://en.wikipedia.org/wiki/Kernel_density_estimation">kernel
+       density estimate</a> (also known as a KDE) of time
+     measurements.  This graphs the probability of any given time
+     measurement occurring.  A spike indicates that a measurement of a
+     particular time occurred; its height indicates how often that
+     measurement was repeated.</li>
+
+   <li>The chart on the right is the raw data from which the kernel
+     density estimate is built.  Measurements are displayed on
+     the <i>y</i> axis in the order in which they occurred.</li>
+ </ul>
+   
+ <p>Under the charts is a small table displaying the mean and standard
+   deviation of the measurements.  We use a statistical technique
+   called
+   the <a href="http://en.wikipedia.org/wiki/Bootstrapping_(statistics)">bootstrap</a>
+   to provide confidence intervals on our estimates of these values.
+   The bootstrap-derived upper and lower bounds on the mean and
+   standard deviation let you see how accurate we believe those
+   estimates to be.  (Hover the mouse over the table headers to see
+   the confidence levels.)</p>
+   
+ <p>A noisy benchmarking environment can cause some or many
+   measurements to fall far from the mean.  These outlying
+   measurements can have a significant inflationary effect on the
+   estimate of the standard deviation.  We calculate and display an
+   estimate of the extent to which the standard deviation has been
+   inflated by outliers.</p>
+
 <script type="text/javascript">
 $(function () {
   function mangulate(number, name, mean, times, kdetimes, kdepdf) {
-    kdetimes = $.scaleTimes(kdetimes)[0];
     var meanSecs = mean;
-    mean *= $.timeUnits(mean)[0];
-    var ts = $.scaleTimes(times);
-    var units = ts[1];
-    ts = ts[0];
+    var units = $.timeUnits(mean);
+    var scale = units[0];
+    units = units[1];
+    mean *= scale;
+    kdetimes = $.scaleBy(scale, kdetimes);
+    var ts = $.scaleBy(scale, times);
     var kq = $("#kde" + number);
     var k = $.plot(kq,
            [{ label: name + " time densities",
               data: $.zip(kdetimes, kdepdf),
               }],
-           { xaxis: { $.unitFormatter(units) },
+           { xaxis: { tickFormatter: $.unitFormatter(units) },
              yaxis: { ticks: false },
-             grid: { hoverable: true, markings: [ { color: '#6fd3fb',
+             grid: { borderColor: "#777",
+                     hoverable: true, markings: [ { color: '#6fd3fb',
                      lineWidth: 1.5, xaxis: { from: mean, to: mean } } ] },
            });
     var o = k.pointOffset({ x: mean, y: 0});
@@ -103,7 +152,7 @@ $(function () {
            [{ label: name + " times",
               data: timepairs }],
            { points: { show: true },
-             grid: { hoverable: true },
+             grid: { borderColor: "#777", hoverable: true },
              xaxis: { min: kdetimes[0], max: kdetimes[kdetimes.length-1],
                       tickFormatter: $.unitFormatter(units) },
              yaxis: { ticks: false },
@@ -138,7 +187,7 @@ $(function () {
   var oq = $("#overview");
   o = $.plot(oq, xs, { bars: { show: true, horizontal: true,
                                barWidth: 0.75, align: "center" },
-                       grid: { hoverable: true },
+                       grid: { borderColor: "#777", hoverable: true },
                        legend: { show: xs.length > 1 },
                        xaxis: { max: Math.max.apply(undefined,means[0]) * 1.02 },
                        yaxis: { ticks: ylabels, tickColor: '#ffffff' } });
@@ -163,5 +212,18 @@ $(document).ready(function () {
 </script>
 
    </div>
+  </div>
+  <div id="footer">
+    <div class="body">
+     <div class="footfirst">
+      <h2>colophon</h2>
+      <p>This report was created using the
+	<a href="http://hackage.haskell.org/package/criterion">criterion</a>
+	benchmark execution and performance analysis tool.</p>
+      <p>Criterion is developed and maintained
+      by <a href="http://www.serpentine.com/blog/">Bryan O'Sullivan</a>.</p>
+     </div>
+    </div>
+  </div>
  </body>
 </html>
