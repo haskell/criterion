@@ -32,6 +32,9 @@ description:
   .
   The fastest way to get started is to read the documentation and
   examples in the Criterion.Main module.
+  .
+  For an example of the kinds of reports that criterion generates, see
+  <http://bos.github.com/criterion/>.
 
 library
   exposed-modules:
