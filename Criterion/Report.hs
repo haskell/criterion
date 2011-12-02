@@ -15,6 +15,7 @@
 module Criterion.Report
     (
       Report(..)
+    , formatReport
     , report
     -- * Rendering helper functions
     , TemplateException(..)
@@ -25,27 +26,23 @@ module Criterion.Report
     , vector2
     ) where
 
-import Control.Applicative ((<$>))
 import Control.Exception (Exception, IOException, catch, throwIO)
 import Control.Monad (mplus)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
-import Criterion.IO (note)
-import Criterion.Monad (Criterion)
-import Data.Char (isSpace, toLower)
+import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
+import Criterion.Monad (Criterion, getConfig)
 import Data.Data (Data, Typeable)
-import Data.List (group)
+import Data.Monoid (Last(..))
 import Paths_criterion (getDataFileName)
 import Prelude hiding (catch)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Sample)
 import System.Directory (doesFileExist)
-import System.Environment (getProgName)
-import System.FilePath ((</>), isPathSeparator, takeFileName)
+import System.FilePath ((</>), isPathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Hastache (MuType(..))
 import Text.Hastache.Context (mkGenericContext, mkStrContext)
-import Text.Printf (printf)
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Vector.Generic as G
@@ -66,9 +63,23 @@ templateDir :: FilePath
 templateDir = unsafePerformIO $ getDataFileName "templates"
 {-# NOINLINE templateDir #-}
 
--- | Write out a series of 'Report' values to a single file.
+-- | Write out a series of 'Report' values to a single file, if
+-- configured to do so.
 report :: [Report] -> Criterion ()
 report reports = do
+  cfg <- getConfig
+  case cfgReport cfg of
+    Last Nothing -> return ()
+    Last (Just name) -> liftIO $ do
+      tpl <- loadTemplate [".",templateDir] (fromLJ cfgTemplate cfg)
+      L.writeFile name =<< formatReport reports tpl
+
+-- | Format a series of 'Report' values using the given Hastache
+-- template.
+formatReport :: [Report]
+             -> B.ByteString    -- ^ Hastache template.
+             -> IO L.ByteString
+formatReport reports template = do
   let context "report"  = MuList $ map inner reports
       context "include" = MuLambdaM $ includeFile [templateDir]
       context _         = MuNothing
@@ -85,14 +96,7 @@ report reports = do
                            _          -> mkGenericContext reportOutliers $
                                          H.encodeStr nym
           where (kdeTimes,kdePDF) = kde 128 reportTimes
-  rep <- liftIO $ do
-    tpl <- loadTemplate [".",templateDir] "report.tpl"
-    bs <- H.hastacheStr H.defaultConfig tpl context
-    progName <- takeFileName <$> getProgName
-    let name = safePath $ printf "%s criterion.html" progName
-    L.writeFile name bs
-    return name
-  note "report written to %s\n" rep
+  H.hastacheStr H.defaultConfig template context
 
 -- | Render the elements of a vector.
 --
@@ -134,17 +138,6 @@ vector2 name1 name2 v1 v2 = MuList $ zipWith val (G.toList v1) (G.toList v2)
                       _| nym == name1 -> MuVariable i
                        | nym == name2 -> MuVariable j
                        | otherwise    -> MuNothing
-
--- | Get rid of spaces and other potentially troublesome characters
--- from a file name.
-safePath :: String -> FilePath
-safePath = concatMap (replace ((==) '-' . head) "-")
-       . group
-       . map (replace isSpace '-' . replace (`elem` "\"'();/\\") '-' . toLower)
-
-replace :: (a -> Bool) -> a -> a -> a
-replace p r c | p c       = r
-              | otherwise = c
 
 -- | Attempt to include the contents of a file based on a search path.
 -- Returns 'B.empty' if the search fails or the file could not be read.

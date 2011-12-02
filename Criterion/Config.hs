@@ -50,8 +50,10 @@ data Config = Config {
     , cfgPerformGC    :: Last Bool   -- ^ Whether to run the GC between passes.
     , cfgPrintExit    :: PrintExit   -- ^ Whether to print information and exit.
     , cfgResamples    :: Last Int    -- ^ Number of resamples to perform.
+    , cfgReport       :: Last FilePath -- ^ Filename of report.
     , cfgSamples      :: Last Int    -- ^ Number of samples to collect.
-    , cfgSummaryFile  :: Last FilePath -- ^ Filename of summary CSV
+    , cfgSummaryFile  :: Last FilePath -- ^ Filename of summary CSV.
+    , cfgTemplate     :: Last FilePath -- ^ Filename of report template.
     , cfgVerbosity    :: Last Verbosity -- ^ Whether to run verbosely.
     } deriving (Eq, Read, Show, Typeable)
 
@@ -67,8 +69,10 @@ defaultConfig = Config {
                 , cfgPerformGC    = ljust False
                 , cfgPrintExit    = Nada
                 , cfgResamples    = ljust (100 * 1000)
+                , cfgReport       = mempty
                 , cfgSamples      = ljust 100
                 , cfgSummaryFile  = mempty
+                , cfgTemplate     = ljust "report.tpl"
                 , cfgVerbosity    = ljust Normal
                 }
 
@@ -90,9 +94,11 @@ emptyConfig = Config {
               , cfgConfInterval = mempty
               , cfgPerformGC    = mempty
               , cfgPrintExit    = mempty
+              , cfgReport       = mempty
               , cfgResamples    = mempty
               , cfgSamples      = mempty
               , cfgSummaryFile  = mempty
+              , cfgTemplate     = mempty
               , cfgVerbosity    = mempty
               }
 
@@ -103,9 +109,11 @@ appendConfig a b =
     , cfgConfInterval = app cfgConfInterval a b
     , cfgPerformGC    = app cfgPerformGC a b
     , cfgPrintExit    = app cfgPrintExit a b
+    , cfgReport       = app cfgReport a b
+    , cfgResamples    = app cfgResamples a b
     , cfgSamples      = app cfgSamples a b
     , cfgSummaryFile  = app cfgSummaryFile a b
-    , cfgResamples    = app cfgResamples a b
+    , cfgTemplate     = app cfgTemplate a b
     , cfgVerbosity    = app cfgVerbosity a b
     }
   where app f = mappend `on` f

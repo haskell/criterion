@@ -95,6 +95,9 @@ defaultOptions = [
           "bootstrap confidence interval"
  , Option ['l'] ["list"] (noArg mempty { cfgPrintExit = List })
           "print only a list of benchmark names"
+ , Option ['o'] ["output"]
+          (ReqArg (\t -> return $ mempty { cfgReport = ljust t }) "FILENAME")
+          "report file to write to"
  , Option ['q'] ["quiet"] (noArg mempty { cfgVerbosity = ljust Quiet })
           "print less output"
  , Option [] ["resamples"]
@@ -103,6 +106,9 @@ defaultOptions = [
  , Option ['s'] ["samples"]
           (ReqArg (pos "sample count" $ \n -> mempty { cfgSamples = n }) "N")
           "number of samples to collect"
+ , Option ['t'] ["template"]
+          (ReqArg (\t -> return $ mempty { cfgTemplate = ljust t }) "FILENAME")
+          "template file to use"
  , Option ['u'] ["summary"] (ReqArg (\s -> return $ mempty { cfgSummaryFile = ljust s }) "FILENAME")
           "produce a summary CSV file of all results"
  , Option ['V'] ["version"] (noArg mempty { cfgPrintExit = Version })
