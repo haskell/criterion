@@ -14,14 +14,12 @@ cabal-version:  >= 1.6
 extra-source-files:
   README.markdown
   examples/*.hs
+  examples/*.html
 
 data-files:
-  templates/js/excanvas-r3.min.js
-  templates/js/jquery-1.6.4.min.js
-  templates/js/jquery.criterion.js
-  templates/js/jquery.flot-0.7.min.js
-  templates/criterion.css
-  templates/report.tpl
+  templates/js/*.js
+  templates/*.css
+  templates/*.tpl
 
 description:
   This library provides a powerful but simple way to measure software
