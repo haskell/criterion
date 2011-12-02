@@ -17,7 +17,10 @@ extra-source-files:
   examples/*.html
 
 data-files:
-  templates/js/*.js
+  templates/js/excanvas-r3.min.js
+  templates/js/jquery-1.6.4.min.js
+  templates/js/jquery.criterion.js
+  templates/js/jquery.flot-0.7.min.js
   templates/*.css
   templates/*.tpl
 
