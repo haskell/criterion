@@ -62,7 +62,7 @@ library
     directory,
     filepath,
     hastache >= 0.1.5,
-    mtl,
+    mtl >= 2,
     mwc-random >= 0.8.0.3,
     parsec >= 3.1.0,
     statistics >= 0.10.0.0,
