@@ -125,7 +125,7 @@ bgroup = BenchGroup
 -- (The first 'bench' in the given list).
 --
 -- The results of the comparisons are written to a CSV file specified using the
--- @-d@ command line flag. The CSV file uses the following format:
+-- @-r@ command line flag. The CSV file uses the following format:
 --
 -- @Reference,Name,% faster than the reference@
 bcompare :: [Benchmark] -> Benchmark
