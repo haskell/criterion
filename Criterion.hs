@@ -25,7 +25,7 @@ module Criterion
     , runAndAnalyse
     ) where
 
-import Control.Monad ((<=<), replicateM_, when)
+import Control.Monad (replicateM_, when, mplus)
 import Control.Monad.Trans (liftIO)
 import Criterion.Analysis (Outliers(..), OutlierEffect(..), OutlierVariance(..),
                            SampleAnalysis(..), analyseSample,
@@ -39,6 +39,7 @@ import Criterion.Report (Report(..), report)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
                         bench, bgroup, nf, nfIO, whnf, whnfIO)
 import qualified Data.Vector.Unboxed as U
+import Data.Monoid (getLast)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import Statistics.Types (Sample)
 import System.Mem (performGC)
@@ -100,13 +101,23 @@ runAndAnalyseOne env _desc b = do
                       (secs $ estPoint e)
                       (secs $ estLowerBound e) (secs $ estUpperBound e)
                       (estConfidenceLevel e)
-                    summary $ printf "%g,%g,%g" 
+                    summary $ printf "%g,%g,%g"
                       (estPoint e)
                       (estLowerBound e) (estUpperBound e)
 
-plotAll :: [(String, Sample, SampleAnalysis, Outliers)] -> Criterion ()
+
+plotAll :: [Result] -> Criterion ()
 plotAll descTimes = do
-  report (zipWith (\n (d,t,a,o) -> Report n d t a o) [0..] descTimes)
+  report (zipWith (\n (Result d t a o) -> Report n d t a o) [0..] descTimes)
+
+data Result = Result { description    :: String
+                     , _sample        :: Sample
+                     , sampleAnalysis :: SampleAnalysis
+                     , _outliers      :: Outliers
+                     }
+
+type ResultForest = [ResultTree]
+data ResultTree = Single Result | Compare ResultForest
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
@@ -115,15 +126,75 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Environment
               -> Benchmark
               -> Criterion ()
-runAndAnalyse p env = plotAll <=< go ""
-  where go pfx (Benchmark desc b)
+runAndAnalyse p env bs' = do
+  rts <- go "" bs'
+
+  mbCompareFile <- getConfigItem $ getLast . cfgCompareFile
+  case mbCompareFile of
+    Nothing -> return ()
+    Just compareFile -> do
+      liftIO $ writeFile compareFile $ resultForestToCSV rts
+
+  plotAll $ flatten rts
+
+  where go :: String -> Benchmark -> Criterion ResultForest
+        go pfx (Benchmark desc b)
             | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
                              summary (show desc' ++ ",") -- String will be quoted
                              (x,an,out) <- runAndAnalyseOne env desc' b
-                             return [(desc',x,an,out)]
+                             let result = Result desc' x an out
+                             return [Single result]
             | otherwise = return []
             where desc' = prefix pfx desc
         go pfx (BenchGroup desc bs) =
             concat `fmap` mapM (go (prefix pfx desc)) bs
+        go pfx (BenchCompare bs) = ((:[]) . Compare . concat) `fmap` mapM (go pfx) bs
+
         prefix ""  desc = desc
         prefix pfx desc = pfx ++ '/' : desc
+
+        flatten :: ResultForest -> [Result]
+        flatten [] = []
+        flatten (Single r    : rs) = r : flatten rs
+        flatten (Compare crs : rs) = flatten crs ++ flatten rs
+
+resultForestToCSV :: ResultForest -> String
+resultForestToCSV = unlines
+                  . ("Reference,Name,% faster than reference" :)
+                  . map (\(ref, n, p) -> printf "%s,%s,%.0f" ref n p)
+                  . top
+        where
+          top :: ResultForest -> [(String, String, Double)]
+          top [] = []
+          top (Single _     : rts) = top rts
+          top (Compare rts' : rts) = cmpRT rts' ++ top rts
+
+          cmpRT :: ResultForest -> [(String, String, Double)]
+          cmpRT [] = []
+          cmpRT (Single r     : rts) = cmpWith r rts
+          cmpRT (Compare rts' : rts) = case getReference rts' of
+                                         Nothing -> cmpRT rts
+                                         Just r  -> cmpRT rts' ++ cmpWith r rts
+
+          cmpWith :: Result -> ResultForest -> [(String, String, Double)]
+          cmpWith _   [] = []
+          cmpWith ref (Single r     : rts) = cmp ref r : cmpWith ref rts
+          cmpWith ref (Compare rts' : rts) = cmpRT rts'       ++
+                                             cmpWith ref rts' ++
+                                             cmpWith ref rts
+
+          getReference :: ResultForest -> Maybe Result
+          getReference []                   = Nothing
+          getReference (Single r     : _)   = Just r
+          getReference (Compare rts' : rts) = getReference rts' `mplus`
+                                              getReference rts
+
+cmp :: Result -> Result -> (String, String, Double)
+cmp ref r = (description ref, description r, percentFaster)
+    where
+      percentFaster = (meanRef - meanR) / meanRef * 100
+
+      meanRef = mean ref
+      meanR   = mean r
+
+      mean = estPoint . anMean . sampleAnalysis
