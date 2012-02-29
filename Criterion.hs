@@ -62,6 +62,9 @@ runBenchmark env b = do
   when (fromLJ cfgVerbosity cfg > Normal || estTime > 5) $
     note "collecting %d samples, %d iterations each, in estimated %s\n"
        sampleCount newIters (secs estTime)
+  -- Run the GC to make sure garabage created by previous benchmarks
+  -- don't affect this benchmark.
+  liftIO performGC
   times <- liftIO . fmap (U.map ((/ newItersD) . subtract (envClockCost env))) .
            U.replicateM sampleCount $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
