@@ -35,6 +35,7 @@ module Criterion.Types
     , whnfIO
     , bench
     , bgroup
+    , bcompare
     , benchNames
     ) where
 
@@ -103,8 +104,9 @@ instance Benchmarkable (IO a) where
 -- with a name, created with 'bench', or a (possibly nested) group of
 -- 'Benchmark's, created with 'bgroup'.
 data Benchmark where
-    Benchmark  :: Benchmarkable b => String -> b -> Benchmark
-    BenchGroup :: String -> [Benchmark] -> Benchmark
+    Benchmark    :: Benchmarkable b => String -> b -> Benchmark
+    BenchGroup   :: String -> [Benchmark] -> Benchmark
+    BenchCompare :: [Benchmark] -> Benchmark
 
 -- | Create a single benchmark.
 bench :: Benchmarkable b =>
@@ -119,12 +121,24 @@ bgroup :: String                -- ^ A name to identify the group of benchmarks.
        -> Benchmark
 bgroup = BenchGroup
 
+-- | Compare benchmarks against a reference benchmark
+-- (The first 'bench' in the given list).
+--
+-- The results of the comparisons are written to a CSV file specified using the
+-- @-r@ command line flag. The CSV file uses the following format:
+--
+-- @Reference,Name,% faster than the reference@
+bcompare :: [Benchmark] -> Benchmark
+bcompare = BenchCompare
+
 -- | Retrieve the names of all benchmarks.  Grouped benchmarks are
 -- prefixed with the name of the group they're in.
 benchNames :: Benchmark -> [String]
 benchNames (Benchmark d _)   = [d]
 benchNames (BenchGroup d bs) = map ((d ++ "/") ++) . concatMap benchNames $ bs
+benchNames (BenchCompare bs) =                       concatMap benchNames $ bs
 
 instance Show Benchmark where
     show (Benchmark d _)  = ("Benchmark " ++ show d)
     show (BenchGroup d _) = ("BenchGroup " ++ show d)
+    show (BenchCompare _) = ("BenchCompare")

@@ -31,6 +31,7 @@ module Criterion.Main
     -- * Constructing benchmarks
     , bench
     , bgroup
+    , bcompare
     , nf
     , whnf
     , nfIO
@@ -50,7 +51,7 @@ import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.Monad (Criterion, withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure, bench,
-                        benchNames, bgroup, nf, nfIO, whnf, whnfIO)
+                        benchNames, bgroup, bcompare, nf, nfIO, whnf, whnfIO)
 import Data.List (isPrefixOf, sort)
 import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt
@@ -111,6 +112,8 @@ defaultOptions = [
           "template file to use"
  , Option ['u'] ["summary"] (ReqArg (\s -> return $ mempty { cfgSummaryFile = ljust s }) "FILENAME")
           "produce a summary CSV file of all results"
+ , Option ['r'] ["compare"] (ReqArg (\s -> return $ mempty { cfgCompareFile = ljust s }) "FILENAME")
+          "produce a CSV file of comparisons\nagainst reference benchmarks.\nSee the bcompare combinator"
  , Option ['V'] ["version"] (noArg mempty { cfgPrintExit = Version })
           "display version, then exit"
  , Option ['v'] ["verbose"] (noArg mempty { cfgVerbosity = ljust Verbose })
@@ -118,7 +121,7 @@ defaultOptions = [
  ]
 
 printBanner :: Config -> IO ()
-printBanner cfg = withConfig cfg $ 
+printBanner cfg = withConfig cfg $
     case cfgBanner cfg of
       Last (Just b) -> note "%s\n" b
       _             -> note "Hey, nobody told me what version I am!\n"
@@ -175,7 +178,7 @@ defaultMain = defaultMainWith defaultConfig (return ())
 -- >              -- Always GC between runs.
 -- >              cfgPerformGC = ljust True
 -- >            }
--- > 
+-- >
 -- > main = defaultMainWith myConfig (return ()) [
 -- >          bench "fib 30" $ whnf fib 30
 -- >        ]
