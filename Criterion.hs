@@ -23,6 +23,7 @@ module Criterion
     , bgroup
     , runBenchmark
     , runAndAnalyse
+    , runNotAnalyse
     ) where
 
 import Control.Monad (replicateM_, when, mplus)
@@ -153,13 +154,34 @@ runAndAnalyse p env bs' = do
             concat `fmap` mapM (go (prefix pfx desc)) bs
         go pfx (BenchCompare bs) = ((:[]) . Compare . concat) `fmap` mapM (go pfx) bs
 
-        prefix ""  desc = desc
-        prefix pfx desc = pfx ++ '/' : desc
+runNotAnalyse :: (String -> Bool) -- ^ A predicate that chooses
+                                  -- whether to run a benchmark by its
+                                  -- name.
+              -> Benchmark
+              -> Criterion ()
+runNotAnalyse p bs' = goQuickly "" bs'
+  where goQuickly :: String -> Benchmark -> Criterion ()
+        goQuickly pfx (Benchmark desc b)
+            | p desc'   = do _ <- note "benchmarking %s\n" desc'
+                             runOne b
+            | otherwise = return ()
+            where desc' = prefix pfx desc
+        goQuickly pfx (BenchGroup desc bs) =
+            mapM_ (goQuickly (prefix pfx desc)) bs
+        goQuickly pfx (BenchCompare bs) = mapM_ (goQuickly pfx) bs
 
-        flatten :: ResultForest -> [Result]
-        flatten [] = []
-        flatten (Single r    : rs) = r : flatten rs
-        flatten (Compare crs : rs) = flatten crs ++ flatten rs
+        runOne b = do
+            samples <- getConfigItem $ fromLJ cfgSamples
+            liftIO $ run b samples
+
+prefix :: String -> String -> String
+prefix ""  desc = desc
+prefix pfx desc = pfx ++ '/' : desc
+
+flatten :: ResultForest -> [Result]
+flatten [] = []
+flatten (Single r    : rs) = r : flatten rs
+flatten (Compare crs : rs) = flatten crs ++ flatten rs
 
 resultForestToCSV :: ResultForest -> String
 resultForestToCSV = unlines
