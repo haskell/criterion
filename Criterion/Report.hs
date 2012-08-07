@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, RecordWildCards,
+{-# LANGUAGE CPP, DeriveDataTypeable, OverloadedStrings, RecordWildCards,
     ScopedTypeVariables #-}
 
 -- |
@@ -35,7 +35,9 @@ import Criterion.Monad (Criterion, getConfig)
 import Data.Data (Data, Typeable)
 import Data.Monoid (Last(..))
 import Paths_criterion (getDataFileName)
+#if !MIN_VERSION_base(4,6,0)
 import Prelude hiding (catch)
+#endif
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Sample)
 import System.Directory (doesFileExist)
