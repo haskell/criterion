@@ -26,7 +26,7 @@ module Criterion.Report
     , vector2
     ) where
 
-import Control.Exception (Exception, IOException, catch, throwIO)
+import Control.Exception (Exception, IOException, throwIO)
 import Control.Monad (mplus)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
@@ -35,7 +35,6 @@ import Criterion.Monad (Criterion, getConfig)
 import Data.Data (Data, Typeable)
 import Data.Monoid (Last(..))
 import Paths_criterion (getDataFileName)
-import Prelude hiding (catch)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Sample)
 import System.Directory (doesFileExist)
@@ -43,6 +42,7 @@ import System.FilePath ((</>), isPathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Hastache (MuType(..))
 import Text.Hastache.Context (mkGenericContext, mkStrContext)
+import qualified Control.Exception as E
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as L
 import qualified Data.Vector.Generic as G
@@ -158,7 +158,7 @@ includeFile :: (MonadIO m) =>
 includeFile searchPath name = liftIO $ foldr go (return B.empty) searchPath
     where go dir next = do
             let path = dir </> H.decodeStr name
-            B.readFile path `catch` \(_::IOException) -> next
+            B.readFile path `E.catch` \(_::IOException) -> next
 
 -- | A problem arose with a template.
 data TemplateException =
@@ -184,7 +184,7 @@ loadTemplate paths name
           let cur = p </> name
           x <- doesFileExist cur
           if x
-            then B.readFile cur `catch` \e -> go (me `mplus` Just e) ps
+            then B.readFile cur `E.catch` \e -> go (me `mplus` Just e) ps
             else go me ps
         go (Just e) _ = throwIO (e::IOException)
         go _        _ = throwIO . TemplateNotFound $ name
