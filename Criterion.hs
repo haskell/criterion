@@ -138,7 +138,9 @@ runAndAnalyse p env bs' = do
     Just compareFile -> do
       liftIO $ writeFile compareFile $ resultForestToCSV rts
 
-  plotAll $ flatten rts
+  let rs = flatten rts
+  plotAll rs
+  junit rs
 
   where go :: String -> Benchmark -> Criterion ResultForest
         go pfx (Benchmark desc b)
@@ -201,3 +203,27 @@ cmp ref r = (description ref, description r, percentFaster)
       meanR   = mean r
 
       mean = estPoint . anMean . sampleAnalysis
+
+-- | Write summary JUnit file (if applicable)
+junit :: [Result] -> Criterion ()
+junit rs
+  = do junitOpt <- getConfigItem (getLast . cfgJUnitFile)
+       case junitOpt of
+         Just fn -> liftIO $ writeFile fn msg
+         Nothing -> return ()
+  where
+    msg = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" ++
+          printf "<testsuite name=\"Criterion benchmarks\" tests=\"%d\">\n"
+          (length rs) ++
+          concatMap single rs ++
+          "</testsuite>\n"
+    single r = printf "  <testcase name=\"%s\" time=\"%f\" />\n"
+               (attrEsc $ description r) (estPoint $ anMean $ sampleAnalysis r)
+    attrEsc = concatMap esc
+      where
+        esc '\'' = "&apos;"
+        esc '"'  = "&quot;"
+        esc '<'  = "&lt;"
+        esc '>'  = "&gt;"
+        esc '&'  = "&amp;"
+        esc c    = [c]
