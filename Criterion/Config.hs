@@ -56,6 +56,7 @@ data Config = Config {
     , cfgCompareFile  :: Last FilePath -- ^ Filename of the comparison CSV.
     , cfgTemplate     :: Last FilePath -- ^ Filename of report template.
     , cfgVerbosity    :: Last Verbosity -- ^ Whether to run verbosely.
+    , cfgJUnitFile    :: Last FilePath -- ^ Filename of JUnit report.
     } deriving (Eq, Read, Show, Typeable)
 
 instance Monoid Config where
@@ -76,6 +77,7 @@ defaultConfig = Config {
                 , cfgCompareFile  = mempty
                 , cfgTemplate     = ljust "report.tpl"
                 , cfgVerbosity    = ljust Normal
+                , cfgJUnitFile    = mempty
                 }
 
 -- | Constructor for 'Last' values.
@@ -103,6 +105,7 @@ emptyConfig = Config {
               , cfgCompareFile  = mempty
               , cfgTemplate     = mempty
               , cfgVerbosity    = mempty
+              , cfgJUnitFile    = mempty
               }
 
 appendConfig :: Config -> Config -> Config
@@ -119,5 +122,6 @@ appendConfig a b =
     , cfgCompareFile  = app cfgCompareFile a b
     , cfgTemplate     = app cfgTemplate a b
     , cfgVerbosity    = app cfgVerbosity a b
+    , cfgJUnitFile    = app cfgJUnitFile a b
     }
   where app f = mappend `on` f

@@ -118,6 +118,8 @@ defaultOptions = [
           "display version, then exit"
  , Option ['v'] ["verbose"] (noArg mempty { cfgVerbosity = ljust Verbose })
           "print more output"
+ , Option [] ["junit"] (ReqArg (\s -> return $ mempty { cfgJUnitFile = ljust s }) "FILENAME")
+          "produce a JUnit report file of all results"
  ]
 
 printBanner :: Config -> IO ()
