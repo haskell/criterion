@@ -45,7 +45,7 @@ module Criterion.Main
     ) where
 
 import Control.Monad.Trans (liftIO)
-import Criterion (runAndAnalyse)
+import Criterion (runAndAnalyse, runNotAnalyse)
 import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
@@ -114,6 +114,8 @@ defaultOptions = [
           "produce a summary CSV file of all results"
  , Option ['r'] ["compare"] (ReqArg (\s -> return $ mempty { cfgCompareFile = ljust s }) "FILENAME")
           "produce a CSV file of comparisons\nagainst reference benchmarks.\nSee the bcompare combinator"
+ , Option ['n'] ["no-measurements"] (noArg mempty { cfgMeasure = ljust False })
+          "Don't do any measurements"
  , Option ['V'] ["version"] (noArg mempty { cfgPrintExit = Version })
           "display version, then exit"
  , Option ['v'] ["verbose"] (noArg mempty { cfgVerbosity = ljust Verbose })
@@ -198,19 +200,24 @@ defaultMainWith :: Config
                 -> IO ()
 defaultMainWith defCfg prep bs = do
   (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
+  let shouldRun b = null args || any (`isPrefixOf` b) args
   withConfig cfg $
-   if cfgPrintExit cfg == List
-    then do
-      _ <- note "Benchmarks:\n"
-      mapM_ (note "  %s\n") (sort $ concatMap benchNames bs)
-    else do
-      case getLast $ cfgSummaryFile cfg of
-        Just fn -> liftIO $ writeFile fn "Name,Mean,MeanLB,MeanUB,Stddev,StddevLB,StddevUB\n"
-        Nothing -> return ()
-      env <- measureEnvironment
-      let shouldRun b = null args || any (`isPrefixOf` b) args
-      prep
-      runAndAnalyse shouldRun env $ BenchGroup "" bs
+   if not $ fromLJ cfgMeasure cfg
+     then runNotAnalyse shouldRun bsgroup
+     else do
+       if cfgPrintExit cfg == List
+        then do
+          _ <- note "Benchmarks:\n"
+          mapM_ (note "  %s\n") (sort $ concatMap benchNames bs)
+        else do
+          case getLast $ cfgSummaryFile cfg of
+            Just fn -> liftIO $ writeFile fn "Name,Mean,MeanLB,MeanUB,Stddev,StddevLB,StddevUB\n"
+            Nothing -> return ()
+          env <- measureEnvironment
+          prep
+          runAndAnalyse shouldRun env bsgroup
+  where
+  bsgroup = BenchGroup "" bs
 
 -- | Display an error message from a command line parsing failure, and
 -- exit.

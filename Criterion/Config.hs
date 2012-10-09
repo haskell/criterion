@@ -57,6 +57,7 @@ data Config = Config {
     , cfgTemplate     :: Last FilePath -- ^ Filename of report template.
     , cfgVerbosity    :: Last Verbosity -- ^ Whether to run verbosely.
     , cfgJUnitFile    :: Last FilePath -- ^ Filename of JUnit report.
+    , cfgMeasure      :: Last Bool   -- ^ Whether to do any measurement.
     } deriving (Eq, Read, Show, Typeable)
 
 instance Monoid Config where
@@ -78,6 +79,7 @@ defaultConfig = Config {
                 , cfgTemplate     = ljust "report.tpl"
                 , cfgVerbosity    = ljust Normal
                 , cfgJUnitFile    = mempty
+                , cfgMeasure      = ljust True
                 }
 
 -- | Constructor for 'Last' values.
@@ -106,6 +108,7 @@ emptyConfig = Config {
               , cfgTemplate     = mempty
               , cfgVerbosity    = mempty
               , cfgJUnitFile    = mempty
+              , cfgMeasure      = mempty
               }
 
 appendConfig :: Config -> Config -> Config
@@ -123,5 +126,6 @@ appendConfig a b =
     , cfgTemplate     = app cfgTemplate a b
     , cfgVerbosity    = app cfgVerbosity a b
     , cfgJUnitFile    = app cfgJUnitFile a b
+    , cfgMeasure      = app cfgMeasure a b
     }
   where app f = mappend `on` f
