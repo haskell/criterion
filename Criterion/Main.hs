@@ -175,7 +175,6 @@ defaultMain = defaultMainWith defaultConfig (return ())
 -- Example:
 --
 -- > import Criterion.Config
--- > import qualified Criterion.MultiMap as M
 -- > import Criterion.Main
 -- >
 -- > myConfig = defaultConfig {
