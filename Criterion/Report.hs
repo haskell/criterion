@@ -41,7 +41,7 @@ import System.Directory (doesFileExist)
 import System.FilePath ((</>), isPathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Hastache (MuType(..))
-import Text.Hastache.Context (mkGenericContext, mkStrContext)
+import Text.Hastache.Context (mkGenericContext, mkStrContext, mkStrContextM)
 import qualified Control.Exception as E
 import qualified Data.ByteString.Char8 as B
 import qualified Data.ByteString.Lazy as L
@@ -80,17 +80,17 @@ formatReport :: [Report]
              -> B.ByteString    -- ^ Hastache template.
              -> IO L.ByteString
 formatReport reports template = do
-  let context "report"  = MuList $ map inner reports
-      context "include" = MuLambdaM $ includeFile [templateDir]
-      context _         = MuNothing
-      inner Report{..} = mkStrContext $ \nym ->
+  let context "report"  = return $ MuList $ map inner reports
+      context "include" = return $ MuLambdaM $ includeFile [templateDir]
+      context _         = return $ MuNothing
+      inner Report{..} = mkStrContextM $ \nym ->
                          case nym of
-                           "name"     -> MuVariable reportName
-                           "number"   -> MuVariable reportNumber
-                           "times"    -> vector "x" reportTimes
-                           "kdetimes" -> vector "x" kdeTimes
-                           "kdepdf"   -> vector "x" kdePDF
-                           "kde"      -> vector2 "time" "pdf" kdeTimes kdePDF
+                           "name"     -> return $ MuVariable reportName
+                           "number"   -> return $ MuVariable reportNumber
+                           "times"    -> return $ vector "x" reportTimes
+                           "kdetimes" -> return $ vector "x" kdeTimes
+                           "kdepdf"   -> return $ vector "x" kdePDF
+                           "kde"      -> return $ vector2 "time" "pdf" kdeTimes kdePDF
                            ('a':'n':_)-> mkGenericContext reportAnalysis $
                                          H.encodeStr nym
                            _          -> mkGenericContext reportOutliers $
