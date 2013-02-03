@@ -1,11 +1,11 @@
 name:           criterion
-version:        0.6.2.0
+version:        0.6.2.1
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
 author:         Bryan O'Sullivan <bos@serpentine.com>
 maintainer:     Bryan O'Sullivan <bos@serpentine.com>
-copyright:      2009, 2010, 2011 Bryan O'Sullivan
+copyright:      2009-2013 Bryan O'Sullivan
 category:       Development, Performance, Testing, Benchmarking
 homepage:       https://github.com/bos/criterion
 bug-reports:    https://github.com/bos/criterion/issues
@@ -61,7 +61,7 @@ library
     deepseq >= 1.1.0.0,
     directory,
     filepath,
-    hastache >= 0.1.5,
+    hastache >= 0.5.0,
     mtl >= 2,
     mwc-random >= 0.8.0.3,
     parsec >= 3.1.0,
