@@ -19,11 +19,11 @@ module Criterion.Measurement
     , time
     , time_
     ) where
-    
+
 import Control.Monad (when)
 import Data.Time.Clock.POSIX (getPOSIXTime)
 import Text.Printf (printf)
-        
+
 time :: IO a -> IO (Double, a)
 time act = do
   start <- getTime

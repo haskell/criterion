@@ -40,23 +40,28 @@ module Criterion.Main
     , defaultMain
     , defaultMainWith
     -- * Other useful code
+    , makeMatcher
     , defaultOptions
     , parseArgs
     ) where
 
+import Control.Monad (unless)
 import Control.Monad.Trans (liftIO)
-import Criterion (runAndAnalyse, runNotAnalyse)
+import Criterion.Internal (runAndAnalyse, runNotAnalyse, prefix)
 import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO (note, printError)
 import Criterion.Monad (Criterion, withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure, bench,
                         benchNames, bgroup, bcompare, nf, nfIO, whnf, whnfIO)
-import Data.List (isPrefixOf, sort)
+import Data.Char (toLower)
+import Data.List (isPrefixOf, sort, stripPrefix)
+import Data.Maybe (fromMaybe)
 import Data.Monoid (Monoid(..), Last(..))
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
 import System.Exit (ExitCode(..), exitWith)
+import System.FilePath.Glob
 
 -- | Parse a confidence interval.
 ci :: String -> IO Config
@@ -70,6 +75,12 @@ ci s = case reads s' of
         check d | d <= 0 = parseError "confidence interval is negative"
                 | d >= 1 = parseError "confidence interval is greater than 1"
                 | otherwise = return mempty { cfgConfInterval = ljust d }
+
+matchType :: String -> IO Config
+matchType s = case map toLower s of
+                "prefix" -> return mempty { cfgMatchType = ljust Prefix }
+                "glob" -> return mempty { cfgMatchType = ljust Glob }
+                _ -> parseError "match type is not 'glob' or 'prefix'"
 
 -- | Parse a positive number.
 pos :: (Num a, Ord a, Read a) =>
@@ -96,6 +107,8 @@ defaultOptions = [
           "bootstrap confidence interval"
  , Option ['l'] ["list"] (noArg mempty { cfgPrintExit = List })
           "print only a list of benchmark names"
+ , Option ['m'] ["match"] (ReqArg matchType "MATCH")
+          "how to match benchmark names (prefix|glob)"
  , Option ['o'] ["output"]
           (ReqArg (\t -> return $ mempty { cfgReport = ljust t }) "FILENAME")
           "report file to write to"
@@ -113,9 +126,10 @@ defaultOptions = [
  , Option ['u'] ["summary"] (ReqArg (\s -> return $ mempty { cfgSummaryFile = ljust s }) "FILENAME")
           "produce a summary CSV file of all results"
  , Option ['r'] ["compare"] (ReqArg (\s -> return $ mempty { cfgCompareFile = ljust s }) "FILENAME")
-          "produce a CSV file of comparisons\nagainst reference benchmarks.\nSee the bcompare combinator"
+          "produce a CSV file of comparisons\nagainst reference benchmarks\n\
+          \(see the bcompare combinator)"
  , Option ['n'] ["no-measurements"] (noArg mempty { cfgMeasure = ljust False })
-          "Don't do any measurements"
+          "don't do any measurements"
  , Option ['V'] ["version"] (noArg mempty { cfgPrintExit = Version })
           "display version, then exit"
  , Option ['v'] ["verbose"] (noArg mempty { cfgVerbosity = ljust Verbose })
@@ -135,7 +149,9 @@ printUsage options exitCode = do
   p <- getProgName
   putStr (usageInfo ("Usage: " ++ p ++ " [OPTIONS] [BENCHMARKS]") options)
   putStrLn "If no benchmark names are given, all are run\n\
-           \Otherwise, benchmarks are run by prefix match"
+           \Otherwise, benchmarks are chosen by prefix or zsh-style pattern \
+           \match\n\
+           \(use --match to specify how to match the benchmarks to run)"
   exitWith exitCode
 
 -- | Parse command line options.
@@ -169,6 +185,17 @@ parseArgs defCfg options args =
 defaultMain :: [Benchmark] -> IO ()
 defaultMain = defaultMainWith defaultConfig (return ())
 
+makeMatcher :: MatchType -> [String] -> Either String (String -> Bool)
+makeMatcher matchKind args =
+  case matchKind of
+    Prefix -> Right $ \b -> null args || any (`isPrefixOf` b) args
+    Glob ->
+      let compOptions = compDefault { errorRecovery = False }
+      in case mapM (tryCompileWith compOptions) args of
+           Left errMsg -> Left . fromMaybe errMsg . stripPrefix "compile :: " $
+                          errMsg
+           Right ps -> Right $ \b -> null ps || any (`match` b) ps
+
 -- | An entry point that can be used as a @main@ function, with
 -- configurable defaults.
 --
@@ -199,7 +226,11 @@ defaultMainWith :: Config
                 -> IO ()
 defaultMainWith defCfg prep bs = do
   (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
-  let shouldRun b = null args || any (`isPrefixOf` b) args
+  shouldRun <- either parseError return .
+               makeMatcher (fromMaybe Prefix . getLast . cfgMatchType $ cfg) $
+               args
+  unless (null args || any shouldRun (names bsgroup)) $
+    parseError "none of the specified names matches a benchmark"
   withConfig cfg $
    if not $ fromLJ cfgMeasure cfg
      then runNotAnalyse shouldRun bsgroup
@@ -217,12 +248,16 @@ defaultMainWith defCfg prep bs = do
           runAndAnalyse shouldRun env bsgroup
   where
   bsgroup = BenchGroup "" bs
+  names = go ""
+    where go pfx (BenchGroup pfx' bms) = concatMap (go (prefix pfx pfx')) bms
+          go pfx (Benchmark desc _)    = [prefix pfx desc]
+          go _   (BenchCompare _)      = []
 
 -- | Display an error message from a command line parsing failure, and
 -- exit.
 parseError :: String -> IO a
 parseError msg = do
-  _ <- printError "Error: %s" msg
+  _ <- printError "Error: %s\n" msg
   _ <- printError "Run \"%s --help\" for usage information\n" =<< getProgName
   exitWith (ExitFailure 64)
 

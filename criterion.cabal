@@ -51,6 +51,7 @@ library
     Criterion.Types
 
   other-modules:
+    Criterion.Internal
     Paths_criterion
 
   build-depends:
@@ -61,6 +62,7 @@ library
     deepseq >= 1.1.0.0,
     directory,
     filepath,
+    Glob >= 0.7.2,
     hastache >= 0.5.0,
     mtl >= 2,
     mwc-random >= 0.8.0.3,

@@ -15,6 +15,7 @@ module Criterion.Config
     (
       Config(..)
     , PrintExit(..)
+    , MatchType(..)
     , Verbosity(..)
     , defaultConfig
     , fromLJ
@@ -25,6 +26,9 @@ import Data.Data (Data)
 import Data.Function (on)
 import Data.Monoid (Monoid(..), Last(..))
 import Data.Typeable (Typeable)
+
+data MatchType = Prefix | Glob
+               deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable)
 
 -- | Control the amount of information displayed.
 data Verbosity = Quiet
@@ -47,6 +51,7 @@ instance Monoid PrintExit where
 data Config = Config {
       cfgBanner       :: Last String -- ^ The \"version\" banner to print.
     , cfgConfInterval :: Last Double -- ^ Confidence interval to use.
+    , cfgMatchType    :: Last MatchType -- ^ Kind of matching to use for benchmark names.
     , cfgPerformGC    :: Last Bool   -- ^ Whether to run the GC between passes.
     , cfgPrintExit    :: PrintExit   -- ^ Whether to print information and exit.
     , cfgResamples    :: Last Int    -- ^ Number of resamples to perform.
@@ -69,6 +74,7 @@ defaultConfig :: Config
 defaultConfig = Config {
                   cfgBanner       = ljust "I don't know what version I am."
                 , cfgConfInterval = ljust 0.95
+                , cfgMatchType    = ljust Prefix
                 , cfgPerformGC    = ljust False
                 , cfgPrintExit    = Nada
                 , cfgResamples    = ljust (100 * 1000)
@@ -98,6 +104,7 @@ emptyConfig :: Config
 emptyConfig = Config {
                 cfgBanner       = mempty
               , cfgConfInterval = mempty
+              , cfgMatchType    = mempty
               , cfgPerformGC    = mempty
               , cfgPrintExit    = mempty
               , cfgReport       = mempty
@@ -116,6 +123,7 @@ appendConfig a b =
     Config {
       cfgBanner       = app cfgBanner a b
     , cfgConfInterval = app cfgConfInterval a b
+    , cfgMatchType    = app cfgMatchType a b
     , cfgPerformGC    = app cfgPerformGC a b
     , cfgPrintExit    = app cfgPrintExit a b
     , cfgReport       = app cfgReport a b
