@@ -102,7 +102,7 @@ defaultOptions = [
  , Option ['G'] ["no-gc"] (noArg mempty { cfgPerformGC = ljust False })
           "do not collect garbage between iterations"
  , Option ['g'] ["gc"] (noArg mempty { cfgPerformGC = ljust True })
-          "collect garbage between iterations"
+          "collect garbage between iterations (default)"
  , Option ['I'] ["ci"] (ReqArg ci "CI")
           "bootstrap confidence interval"
  , Option ['l'] ["list"] (noArg mempty { cfgPrintExit = List })
