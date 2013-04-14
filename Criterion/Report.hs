@@ -1,5 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, RecordWildCards,
-    ScopedTypeVariables #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, OverloadedStrings,
+    RecordWildCards, ScopedTypeVariables #-}
 
 -- |
 -- Module      : Criterion.Report
@@ -34,6 +34,7 @@ import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
 import Criterion.Monad (Criterion, getConfig)
 import Data.Data (Data, Typeable)
 import Data.Monoid (Last(..))
+import GHC.Generics (Generic)
 import Paths_criterion (getDataFileName)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Sample)
@@ -55,7 +56,7 @@ data Report = Report {
     , reportTimes :: Sample
     , reportAnalysis :: SampleAnalysis
     , reportOutliers :: Outliers
-    } deriving (Eq, Show, Typeable, Data)
+    } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 -- | The path to the template and other files used for generating
 -- reports.
@@ -163,7 +164,7 @@ includeFile searchPath name = liftIO $ foldr go (return B.empty) searchPath
 -- | A problem arose with a template.
 data TemplateException =
     TemplateNotFound FilePath   -- ^ The template could not be found.
-    deriving (Eq, Show, Typeable, Data)
+    deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance Exception TemplateException
 

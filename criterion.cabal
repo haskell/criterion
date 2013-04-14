@@ -1,5 +1,5 @@
 name:           criterion
-version:        0.7.0.0
+version:        0.7.1.0
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
@@ -67,7 +67,7 @@ library
     mtl >= 2,
     mwc-random >= 0.8.0.3,
     parsec >= 3.1.0,
-    statistics >= 0.10.0.0,
+    statistics >= 0.10.4.0,
     time,
     transformers,
     vector >= 0.7.1,

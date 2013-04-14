@@ -1,4 +1,4 @@
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, RecordWildCards #-}
 -- |
 -- Module      : Criterion
 -- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
@@ -29,6 +29,7 @@ module Criterion.Internal
 
 import Control.Monad (replicateM_, when, mplus)
 import Control.Monad.Trans (liftIO)
+import Data.Data (Data, Typeable)
 import Criterion.Analysis (Outliers(..), OutlierEffect(..), OutlierVariance(..),
                            SampleAnalysis(..), analyseSample,
                            classifyOutliers, noteOutliers)
@@ -42,6 +43,7 @@ import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
                         bench, bgroup, nf, nfIO, whnf, whnfIO)
 import qualified Data.Vector.Unboxed as U
 import Data.Monoid (getLast)
+import GHC.Generics (Generic)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import Statistics.Types (Sample)
 import System.Mem (performGC)
@@ -120,9 +122,11 @@ data Result = Result { description    :: String
                      , sampleAnalysis :: SampleAnalysis
                      , _outliers      :: Outliers
                      }
+            deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 type ResultForest = [ResultTree]
 data ResultTree = Single Result | Compare ResultForest
+                deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses

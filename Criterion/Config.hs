@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric #-}
 
 -- |
 -- Module      : Criterion.Config
@@ -22,26 +22,29 @@ module Criterion.Config
     , ljust
     ) where
 
-import Data.Data (Data)
+import Data.Data (Data, Typeable)
 import Data.Function (on)
 import Data.Monoid (Monoid(..), Last(..))
-import Data.Typeable (Typeable)
+import GHC.Generics (Generic)
 
 data MatchType = Prefix | Glob
-               deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable)
+               deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data,
+                         Generic)
 
 -- | Control the amount of information displayed.
 data Verbosity = Quiet
                | Normal
                | Verbose
-                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable)
+                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data,
+                           Generic)
 
 -- | Print some information and exit, without running any benchmarks.
 data PrintExit = Nada           -- ^ Do not actually print-and-exit. (Default.)
                | List           -- ^ Print a list of known benchmarks.
                | Version        -- ^ Print version information (if known).
                | Help           -- ^ Print a help\/usaage message.
-                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data)
+                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data,
+                           Generic)
 
 instance Monoid PrintExit where
     mempty  = Nada
@@ -63,7 +66,7 @@ data Config = Config {
     , cfgVerbosity    :: Last Verbosity -- ^ Whether to run verbosely.
     , cfgJUnitFile    :: Last FilePath -- ^ Filename of JUnit report.
     , cfgMeasure      :: Last Bool   -- ^ Whether to do any measurement.
-    } deriving (Eq, Read, Show, Typeable)
+    } deriving (Eq, Read, Show, Typeable, Generic)
 
 instance Monoid Config where
     mempty  = emptyConfig

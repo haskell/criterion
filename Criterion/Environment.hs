@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, TypeOperators #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, TypeOperators #-}
 
 -- |
 -- Module      : Criterion.Environment
@@ -24,7 +24,8 @@ import Criterion.IO (note)
 import Criterion.Measurement (getTime, runForAtLeast, time_)
 import Criterion.Monad (Criterion)
 import qualified Data.Vector.Unboxed as U
-import Data.Typeable (Typeable)
+import Data.Data (Data, Typeable)
+import GHC.Generics (Generic)
 
 -- | Measured aspects of the execution environment.
 data Environment = Environment {
@@ -32,7 +33,7 @@ data Environment = Environment {
     -- ^ Clock resolution (in seconds).
     , envClockCost       :: {-# UNPACK #-} !Double
     -- ^ The cost of a single clock call (in seconds).
-    } deriving (Eq, Read, Show, Typeable)
+    } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 -- | Measure the execution environment.
 measureEnvironment :: Criterion Environment

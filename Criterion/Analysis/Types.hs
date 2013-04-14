@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, OverloadedStrings, RecordWildCards #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, OverloadedStrings,
+    RecordWildCards #-}
 -- |
 -- Module      : Criterion.Analysis.Types
 -- Copyright   : (c) 2011 Bryan O'Sullivan
@@ -19,10 +20,10 @@ module Criterion.Analysis.Types
     ) where
 
 import Control.DeepSeq (NFData(rnf))
-import Data.Data (Data)
+import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
-import Data.Typeable (Typeable)
+import GHC.Generics (Generic)
 import qualified Statistics.Resampling.Bootstrap as B
 
 -- | Outliers from sample data, calculated using the boxplot
@@ -38,7 +39,7 @@ data Outliers = Outliers {
     -- ^ Between 1.5 and 3 times the IQR above the third quartile.
     , highSevere  :: {-# UNPACK #-} !Int64
     -- ^ More than 3 times the IQR above the third quartile.
-    } deriving (Eq, Read, Show, Typeable, Data)
+    } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance NFData Outliers
 
@@ -49,7 +50,7 @@ data OutlierEffect = Unaffected -- ^ Less than 1% effect.
                    | Moderate   -- ^ Between 10% and 50%.
                    | Severe     -- ^ Above 50% (i.e. measurements
                                 -- are useless).
-                     deriving (Eq, Ord, Read, Show, Typeable, Data)
+                     deriving (Eq, Ord, Read, Show, Typeable, Data, Generic)
 
 instance NFData OutlierEffect
 
@@ -71,7 +72,7 @@ data OutlierVariance = OutlierVariance {
     -- ^ Brief textual description of effect.
     , ovFraction :: Double
     -- ^ Quantitative description of effect (a fraction between 0 and 1).
-    } deriving (Eq, Read, Show, Typeable, Data)
+    } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance NFData OutlierVariance where
     rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovDesc `seq` rnf ovFraction
@@ -81,7 +82,7 @@ data SampleAnalysis = SampleAnalysis {
       anMean :: B.Estimate
     , anStdDev :: B.Estimate
     , anOutlierVar :: OutlierVariance
-    } deriving (Eq, Show, Typeable, Data)
+    } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance NFData SampleAnalysis where
     rnf SampleAnalysis{..} =
