@@ -20,7 +20,7 @@ module Criterion.Environment
 import Control.Monad (replicateM_)
 import Control.Monad.Trans (liftIO)
 import Criterion.Analysis (analyseMean)
-import Criterion.IO (note)
+import Criterion.IO.Printf (note)
 import Criterion.Measurement (getTime, runForAtLeast, time_)
 import Criterion.Monad (Criterion)
 import qualified Data.Vector.Unboxed as U

@@ -1,4 +1,5 @@
-{-# LANGUAGE ExistentialQuantification, FlexibleInstances, GADTs #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, ExistentialQuantification,
+    FlexibleInstances, GADTs #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 
 -- |
@@ -26,6 +27,7 @@
 
 module Criterion.Types
     (
+    -- * Benchmark descriptions
       Benchmarkable(..)
     , Benchmark(..)
     , Pure
@@ -37,10 +39,19 @@ module Criterion.Types
     , bgroup
     , bcompare
     , benchNames
+    -- * Result types
+    , Result(..)
+    , ResultForest
+    , ResultTree(..)
     ) where
 
 import Control.DeepSeq (NFData, rnf)
 import Control.Exception (evaluate)
+import Criterion.Analysis.Types (Outliers(..), SampleAnalysis(..))
+import Data.Binary (Binary)
+import Data.Data (Data, Typeable)
+import GHC.Generics (Generic)
+import Statistics.Types (Sample)
 
 -- | A benchmarkable function or action.
 class Benchmarkable a where
@@ -142,3 +153,19 @@ instance Show Benchmark where
     show (Benchmark d _)  = ("Benchmark " ++ show d)
     show (BenchGroup d _) = ("BenchGroup " ++ show d)
     show (BenchCompare _) = ("BenchCompare")
+
+data Result = Result {
+      description    :: String
+    , sample         :: Sample
+    , sampleAnalysis :: SampleAnalysis
+    , outliers       :: Outliers
+    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance Binary Result
+
+type ResultForest = [ResultTree]
+data ResultTree = Single Result
+                | Compare !Int ResultForest
+                  deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance Binary ResultTree

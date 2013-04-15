@@ -58,6 +58,7 @@ data Config = Config {
     , cfgPerformGC    :: Last Bool   -- ^ Whether to run the GC between passes.
     , cfgPrintExit    :: PrintExit   -- ^ Whether to print information and exit.
     , cfgResamples    :: Last Int    -- ^ Number of resamples to perform.
+    , cfgResults      :: Last FilePath -- ^ File to write raw results to.
     , cfgReport       :: Last FilePath -- ^ Filename of report.
     , cfgSamples      :: Last Int    -- ^ Number of samples to collect.
     , cfgSummaryFile  :: Last FilePath -- ^ Filename of summary CSV.
@@ -81,6 +82,7 @@ defaultConfig = Config {
                 , cfgPerformGC    = ljust True
                 , cfgPrintExit    = Nada
                 , cfgResamples    = ljust (100 * 1000)
+                , cfgResults      = mempty
                 , cfgReport       = mempty
                 , cfgSamples      = ljust 100
                 , cfgSummaryFile  = mempty
@@ -112,6 +114,7 @@ emptyConfig = Config {
               , cfgPrintExit    = mempty
               , cfgReport       = mempty
               , cfgResamples    = mempty
+              , cfgResults      = mempty
               , cfgSamples      = mempty
               , cfgSummaryFile  = mempty
               , cfgCompareFile  = mempty
@@ -131,6 +134,7 @@ appendConfig a b =
     , cfgPrintExit    = app cfgPrintExit a b
     , cfgReport       = app cfgReport a b
     , cfgResamples    = app cfgResamples a b
+    , cfgResults      = app cfgResults a b
     , cfgSamples      = app cfgSamples a b
     , cfgSummaryFile  = app cfgSummaryFile a b
     , cfgCompareFile  = app cfgCompareFile a b

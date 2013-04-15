@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, RecordWildCards #-}
+{-# LANGUAGE BangPatterns, RecordWildCards #-}
 -- |
 -- Module      : Criterion
 -- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
@@ -12,40 +12,35 @@
 
 module Criterion.Internal
     (
-      Benchmarkable(..)
-    , Benchmark
-    , Pure
-    , nf
-    , whnf
-    , nfIO
-    , whnfIO
-    , bench
-    , bgroup
-    , runBenchmark
+      runBenchmark
     , runAndAnalyse
     , runNotAnalyse
     , prefix
     ) where
 
-import Control.Monad (replicateM_, when, mplus)
+import Control.Monad (foldM, replicateM_, when, mplus)
 import Control.Monad.Trans (liftIO)
-import Data.Data (Data, Typeable)
+import Data.Binary (encode)
+import qualified Data.ByteString.Lazy as L
 import Criterion.Analysis (Outliers(..), OutlierEffect(..), OutlierVariance(..),
                            SampleAnalysis(..), analyseSample,
                            classifyOutliers, noteOutliers)
 import Criterion.Config (Config(..), Verbosity(..), fromLJ)
 import Criterion.Environment (Environment(..))
-import Criterion.IO (note, prolix, summary)
+import Criterion.IO (header, hGetResults)
+import Criterion.IO.Printf (note, prolix, summary)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Report (Report(..), report)
-import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure,
-                        bench, bgroup, nf, nfIO, whnf, whnfIO)
+import Criterion.Types (Benchmark(..), Benchmarkable(..),
+                        Result(..), ResultForest, ResultTree(..))
 import qualified Data.Vector.Unboxed as U
 import Data.Monoid (getLast)
-import GHC.Generics (Generic)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import Statistics.Types (Sample)
+import System.Directory (getTemporaryDirectory, removeFile)
+import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
+                  openBinaryTempFile)
 import System.Mem (performGC)
 import Text.Printf (printf)
 
@@ -117,17 +112,6 @@ plotAll :: [Result] -> Criterion ()
 plotAll descTimes = do
   report (zipWith (\n (Result d t a o) -> Report n d t a o) [0..] descTimes)
 
-data Result = Result { description    :: String
-                     , _sample        :: Sample
-                     , sampleAnalysis :: SampleAnalysis
-                     , _outliers      :: Outliers
-                     }
-            deriving (Eq, Read, Show, Typeable, Data, Generic)
-
-type ResultForest = [ResultTree]
-data ResultTree = Single Result | Compare ResultForest
-                deriving (Eq, Read, Show, Typeable, Data, Generic)
-
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
@@ -136,7 +120,42 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Benchmark
               -> Criterion ()
 runAndAnalyse p env bs' = do
-  rts <- go "" bs'
+  mbResultFile <- getConfigItem $ getLast . cfgResults
+  (resultFile, handle) <- liftIO $
+    case mbResultFile of
+      Nothing -> do
+        tmpDir <- getTemporaryDirectory
+        openBinaryTempFile tmpDir "criterion.dat"
+      Just file -> do
+        handle <- openBinaryFile file ReadWriteMode
+        return (file, handle)
+  liftIO $ L.hPut handle header
+
+  let go !k (pfx, Benchmark desc b)
+          | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
+                           summary (show desc' ++ ",") -- String will be quoted
+                           (x,an,out) <- runAndAnalyseOne env desc' b
+                           let result = Single $ Result desc' x an out
+                           liftIO $ L.hPut handle (encode result)
+                           return $! k + 1
+          | otherwise = return (k :: Int)
+          where desc' = prefix pfx desc
+      go !k (pfx, BenchGroup desc bs) =
+          foldM go k [(prefix pfx desc, b) | b <- bs]
+      go !k (pfx, BenchCompare bs) = do
+                          l <- foldM go 0 [(pfx, b) | b <- bs]
+                          let result = Compare l []
+                          liftIO $ L.hPut handle (encode result)
+                          return $! l + k
+  _ <- go 0 ("", bs')
+
+  rts <- (either fail return =<<) . liftIO $ do
+    hSeek handle AbsoluteSeek 0
+    rs <- hGetResults handle
+    hClose handle
+    case mbResultFile of
+      Just _ -> return rs
+      _      -> removeFile resultFile >> return rs
 
   mbCompareFile <- getConfigItem $ getLast . cfgCompareFile
   case mbCompareFile of
@@ -147,19 +166,6 @@ runAndAnalyse p env bs' = do
   let rs = flatten rts
   plotAll rs
   junit rs
-
-  where go :: String -> Benchmark -> Criterion ResultForest
-        go pfx (Benchmark desc b)
-            | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
-                             summary (show desc' ++ ",") -- String will be quoted
-                             (x,an,out) <- runAndAnalyseOne env desc' b
-                             let result = Result desc' x an out
-                             return [Single result]
-            | otherwise = return []
-            where desc' = prefix pfx desc
-        go pfx (BenchGroup desc bs) =
-            concat `fmap` mapM (go (prefix pfx desc)) bs
-        go pfx (BenchCompare bs) = ((:[]) . Compare . concat) `fmap` mapM (go pfx) bs
 
 runNotAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
@@ -188,7 +194,7 @@ prefix pfx desc = pfx ++ '/' : desc
 flatten :: ResultForest -> [Result]
 flatten [] = []
 flatten (Single r    : rs) = r : flatten rs
-flatten (Compare crs : rs) = flatten crs ++ flatten rs
+flatten (Compare _ crs : rs) = flatten crs ++ flatten rs
 
 resultForestToCSV :: ResultForest -> String
 resultForestToCSV = unlines
@@ -199,26 +205,26 @@ resultForestToCSV = unlines
           top :: ResultForest -> [(String, String, Double)]
           top [] = []
           top (Single _     : rts) = top rts
-          top (Compare rts' : rts) = cmpRT rts' ++ top rts
+          top (Compare _ rts' : rts) = cmpRT rts' ++ top rts
 
           cmpRT :: ResultForest -> [(String, String, Double)]
           cmpRT [] = []
           cmpRT (Single r     : rts) = cmpWith r rts
-          cmpRT (Compare rts' : rts) = case getReference rts' of
+          cmpRT (Compare _ rts' : rts) = case getReference rts' of
                                          Nothing -> cmpRT rts
                                          Just r  -> cmpRT rts' ++ cmpWith r rts
 
           cmpWith :: Result -> ResultForest -> [(String, String, Double)]
           cmpWith _   [] = []
           cmpWith ref (Single r     : rts) = cmp ref r : cmpWith ref rts
-          cmpWith ref (Compare rts' : rts) = cmpRT rts'       ++
+          cmpWith ref (Compare _ rts' : rts) = cmpRT rts'       ++
                                              cmpWith ref rts' ++
                                              cmpWith ref rts
 
           getReference :: ResultForest -> Maybe Result
           getReference []                   = Nothing
           getReference (Single r     : _)   = Just r
-          getReference (Compare rts' : rts) = getReference rts' `mplus`
+          getReference (Compare _ rts' : rts) = getReference rts' `mplus`
                                               getReference rts
 
 cmp :: Result -> Result -> (String, String, Double)

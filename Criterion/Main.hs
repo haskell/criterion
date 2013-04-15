@@ -50,7 +50,7 @@ import Control.Monad.Trans (liftIO)
 import Criterion.Internal (runAndAnalyse, runNotAnalyse, prefix)
 import Criterion.Config
 import Criterion.Environment (measureEnvironment)
-import Criterion.IO (note, printError)
+import Criterion.IO.Printf (note, printError)
 import Criterion.Monad (Criterion, withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure, bench,
                         benchNames, bgroup, bcompare, nf, nfIO, whnf, whnfIO)
@@ -117,6 +117,9 @@ defaultOptions = [
  , Option [] ["resamples"]
           (ReqArg (pos "resample count"$ \n -> mempty { cfgResamples = n }) "N")
           "number of bootstrap resamples to perform"
+ , Option [] ["results"]
+          (ReqArg (\n -> return $ mempty { cfgResults = ljust n }) "FILENAME")
+          "file to write raw results to"
  , Option ['s'] ["samples"]
           (ReqArg (pos "sample count" $ \n -> mempty { cfgSamples = n }) "N")
           "number of samples to collect"

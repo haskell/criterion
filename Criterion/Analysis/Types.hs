@@ -20,6 +20,7 @@ module Criterion.Analysis.Types
     ) where
 
 import Control.DeepSeq (NFData(rnf))
+import Data.Binary (Binary)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
@@ -41,6 +42,7 @@ data Outliers = Outliers {
     -- ^ More than 3 times the IQR above the third quartile.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
+instance Binary Outliers
 instance NFData Outliers
 
 -- | A description of the extent to which outliers in the sample data
@@ -52,6 +54,7 @@ data OutlierEffect = Unaffected -- ^ Less than 1% effect.
                                 -- are useless).
                      deriving (Eq, Ord, Read, Show, Typeable, Data, Generic)
 
+instance Binary OutlierEffect
 instance NFData OutlierEffect
 
 instance Monoid Outliers where
@@ -74,6 +77,8 @@ data OutlierVariance = OutlierVariance {
     -- ^ Quantitative description of effect (a fraction between 0 and 1).
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
+instance Binary OutlierVariance
+
 instance NFData OutlierVariance where
     rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovDesc `seq` rnf ovFraction
 
@@ -83,6 +88,8 @@ data SampleAnalysis = SampleAnalysis {
     , anStdDev :: B.Estimate
     , anOutlierVar :: OutlierVariance
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance Binary SampleAnalysis
 
 instance NFData SampleAnalysis where
     rnf SampleAnalysis{..} =

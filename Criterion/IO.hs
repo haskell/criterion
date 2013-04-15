@@ -1,3 +1,4 @@
+{-# LANGUAGE OverloadedStrings #-}
 -- |
 -- Module      : Criterion.IO
 -- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
@@ -9,92 +10,57 @@
 --
 -- Input and output actions.
 
-{-# LANGUAGE FlexibleInstances, Rank2Types, TypeSynonymInstances #-}
 module Criterion.IO
     (
-      CritHPrintfType
-    , note
-    , printError
-    , prolix
-    , summary
+      header
+    , hGetResults
+    , hPutResults
+    , readResults
+    , writeResults
     ) where
 
-import Control.Monad (when)
-import Control.Monad.Trans (liftIO)
-import Criterion.Config (Config, Verbosity(..), cfgSummaryFile, cfgVerbosity, fromLJ)
-import Criterion.Monad (Criterion, getConfig, getConfigItem)
-import Data.Monoid (getLast)
-import System.IO (Handle, stderr, stdout)
-import qualified Text.Printf (HPrintfType, hPrintf)
-import Text.Printf (PrintfArg)
+import Criterion.Types (ResultForest, ResultTree(..))
+import Data.Binary (Binary(..), encode)
+import Data.Binary.Get (runGetOrFail)
+import Data.Binary.Put (putByteString, putWord16be, runPut)
+import Data.Version (Version(..))
+import Paths_criterion (version)
+import System.IO (Handle, IOMode(..), withFile)
+import qualified Data.ByteString.Lazy as L
 
--- First item is the action to print now, given all the arguments
--- gathered together so far.  The second item is the function that
--- will take a further argument and give back a new PrintfCont.
-data PrintfCont = PrintfCont (IO ()) (PrintfArg a => a -> PrintfCont)
+header :: L.ByteString
+header = runPut $ do
+  putByteString "criterio"
+  mapM_ (putWord16be . fromIntegral) (versionBranch version)
 
--- | An internal class that acts like Printf/HPrintf.
---
--- The implementation is visible to the rest of the program, but the
--- details of the class are not.
-class CritHPrintfType a where
-  chPrintfImpl :: (Config -> Bool) -> PrintfCont -> a
+hGetResults :: Handle -> IO (Either String ResultForest)
+hGetResults handle = do
+  let fixup = reverse . nukem . reverse
+      nukem (Compare k _ : rs) = let (cs, rs') = splitAt k rs
+                                 in Compare k (fixup (reverse cs)) : nukem rs'
+      nukem (r : rs)           = r : nukem rs
+      nukem _                  = []
+  bs <- L.hGet handle (fromIntegral (L.length header))
+  if bs == header
+    then (Right . fixup) `fmap` readAll handle
+    else return $ Left "unexpected header"
 
+hPutResults :: Handle -> ResultForest -> IO ()
+hPutResults handle rs = do
+  L.hPut handle header
+  mapM_ (L.hPut handle . encode) rs
 
-instance CritHPrintfType (Criterion a) where
-  chPrintfImpl check (PrintfCont final _)
-    = do x <- getConfig
-         when (check x) (liftIO final)
-         return undefined
+readResults :: FilePath -> IO (Either String ResultForest)
+readResults path = withFile path ReadMode hGetResults
 
-instance CritHPrintfType (IO a) where
-  chPrintfImpl _ (PrintfCont final _)
-    = final >> return undefined
+writeResults :: FilePath -> ResultForest -> IO ()
+writeResults path rs = withFile path WriteMode (flip hPutResults rs)
 
-instance (CritHPrintfType r, PrintfArg a) => CritHPrintfType (a -> r) where
-  chPrintfImpl check (PrintfCont _ anotherArg) x
-    = chPrintfImpl check (anotherArg x)
-
-chPrintf :: CritHPrintfType r => (Config -> Bool) -> Handle -> String -> r
-chPrintf shouldPrint h s
-  = chPrintfImpl shouldPrint (make (Text.Printf.hPrintf h s)
-                                   (Text.Printf.hPrintf h s))
-  where
-    make :: IO () -> (forall a r. (PrintfArg a, Text.Printf.HPrintfType r) =>
-                      a -> r) -> PrintfCont
-    make curCall curCall' = PrintfCont curCall (\x -> make (curCall' x)
-                                                      (curCall' x))
-
-{- A demonstration of how to write printf in this style, in case it is
-ever needed
-  in fututre:
-
-cPrintf :: CritHPrintfType r => (Config -> Bool) -> String -> r
-cPrintf shouldPrint s
-  = chPrintfImpl shouldPrint (make (Text.Printf.printf s)
-  (Text.Printf.printf s))
-  where
-    make :: IO () -> (forall a r. (PrintfArg a, Text.Printf.PrintfType r) => a -> r) -> PrintfCont
-    make curCall curCall' = PrintfCont curCall (\x -> make (curCall' x) (curCall' x))
--}
-
--- | Print a \"normal\" note.
-note :: (CritHPrintfType r) => String -> r
-note = chPrintf ((> Quiet) . fromLJ cfgVerbosity) stdout
-
--- | Print verbose output.
-prolix :: (CritHPrintfType r) => String -> r
-prolix = chPrintf ((== Verbose) . fromLJ cfgVerbosity) stdout
-
--- | Print an error message.
-printError :: (CritHPrintfType r) => String -> r
-printError = chPrintf (const True) stderr
-
--- | Add to summary CSV (if applicable)
-summary :: String -> Criterion ()
-summary msg
-  = do sumOpt <- getConfigItem (getLast . cfgSummaryFile)
-       case sumOpt of
-         Just fn -> liftIO $ appendFile fn msg
-         Nothing -> return ()
-
+readAll :: Binary a => Handle -> IO [a]
+readAll handle = do
+  let go bs
+         | L.null bs = return []
+         | otherwise = case runGetOrFail get bs of
+                         Left (_, _, err) -> fail err
+                         Right (bs', _, a) -> (a:) `fmap` go bs'
+  go =<< L.hGetContents handle

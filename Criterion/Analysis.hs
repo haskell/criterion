@@ -27,7 +27,7 @@ module Criterion.Analysis
 
 import Control.Monad (when)
 import Criterion.Analysis.Types
-import Criterion.IO (note)
+import Criterion.IO.Printf (note)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion)
 import Data.Int (Int64)

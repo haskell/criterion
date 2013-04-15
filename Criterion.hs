@@ -20,6 +20,7 @@ module Criterion
     , nfIO
     , whnfIO
     , bench
+    , bcompare
     , bgroup
     , runBenchmark
     , runAndAnalyse
@@ -27,3 +28,4 @@ module Criterion
     ) where
 
 import Criterion.Internal
+import Criterion.Types
