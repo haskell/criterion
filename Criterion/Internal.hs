@@ -43,6 +43,7 @@ import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
                   openBinaryTempFile)
 import System.Mem (performGC)
 import Text.Printf (printf)
+import Data.List (intercalate)
 
 -- | Run a single benchmark, and return timings measured when
 -- executing it.
@@ -89,7 +90,7 @@ runAndAnalyseOne env _desc b = do
   bs "mean" anMean
   summary ","
   bs "std dev" anStdDev
-  summary "\n"
+  summary "\r\n"
   vrb <- getConfigItem $ fromLJ cfgVerbosity
   let out = classifyOutliers times
   when (vrb == Verbose || (ovEffect > Unaffected && vrb > Quiet)) $ do
@@ -133,7 +134,7 @@ runAndAnalyse p env bs' = do
 
   let go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
-                           summary (show desc' ++ ",") -- String will be quoted
+                           summary ("\"" ++ escapeCsvChars desc' ++ "\",")
                            (x,an,out) <- runAndAnalyseOne env desc' b
                            let result = Single $ Result desc' x an out
                            liftIO $ L.hPut handle (encode result)
@@ -197,9 +198,12 @@ flatten (Single r    : rs) = r : flatten rs
 flatten (Compare _ crs : rs) = flatten crs ++ flatten rs
 
 resultForestToCSV :: ResultForest -> String
-resultForestToCSV = unlines
+resultForestToCSV = intercalate "\r\n"
                   . ("Reference,Name,% faster than reference" :)
-                  . map (\(ref, n, p) -> printf "%s,%s,%.0f" ref n p)
+                  . map (\(ref, n, p) ->
+                        printf "%s,%s,%.0f" (escapeCsvString ref)
+                                            (escapeCsvString n)
+                                            p)
                   . top
         where
           top :: ResultForest -> [(String, String, Double)]
@@ -226,6 +230,16 @@ resultForestToCSV = unlines
           getReference (Single r     : _)   = Just r
           getReference (Compare _ rts' : rts) = getReference rts' `mplus`
                                               getReference rts
+
+escapeCsvString :: String -> String
+escapeCsvString s
+    | any (`elem` "\",\r\n") s = '"' : escapeCsvChars s ++ "\""
+    | otherwise = s
+
+escapeCsvChars :: String -> String
+escapeCsvChars [] = []
+escapeCsvChars ('"':cs) = '"' : '"' : escapeCsvChars cs
+escapeCsvChars (c:cs) = c : escapeCsvChars cs
 
 cmp :: Result -> Result -> (String, String, Double)
 cmp ref r = (description ref, description r, percentFaster)

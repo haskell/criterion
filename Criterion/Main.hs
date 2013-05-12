@@ -244,7 +244,7 @@ defaultMainWith defCfg prep bs = do
           mapM_ (note "  %s\n") (sort $ concatMap benchNames bs)
         else do
           case getLast $ cfgSummaryFile cfg of
-            Just fn -> liftIO $ writeFile fn "Name,Mean,MeanLB,MeanUB,Stddev,StddevLB,StddevUB\n"
+            Just fn -> liftIO $ writeFile fn "Name,Mean,MeanLB,MeanUB,Stddev,StddevLB,StddevUB\r\n"
             Nothing -> return ()
           env <- measureEnvironment
           prep
