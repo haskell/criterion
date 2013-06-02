@@ -14,7 +14,6 @@ module Criterion
     (
       Benchmarkable(..)
     , Benchmark
-    , Pure
     , nf
     , whnf
     , nfIO

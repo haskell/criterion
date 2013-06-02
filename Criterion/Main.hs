@@ -27,7 +27,6 @@ module Criterion.Main
     -- * Types
       Benchmarkable(..)
     , Benchmark
-    , Pure
     -- * Constructing benchmarks
     , bench
     , bgroup
@@ -52,7 +51,7 @@ import Criterion.Config
 import Criterion.Environment (measureEnvironment)
 import Criterion.IO.Printf (note, printError)
 import Criterion.Monad (Criterion, withConfig)
-import Criterion.Types (Benchmarkable(..), Benchmark(..), Pure, bench,
+import Criterion.Types (Benchmarkable(..), Benchmark(..), bench,
                         benchNames, bgroup, bcompare, nf, nfIO, whnf, whnfIO)
 import Data.Char (toLower)
 import Data.List (isPrefixOf, sort, stripPrefix)

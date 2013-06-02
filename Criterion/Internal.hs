@@ -46,11 +46,11 @@ import Text.Printf (printf)
 
 -- | Run a single benchmark, and return timings measured when
 -- executing it.
-runBenchmark :: Benchmarkable b => Environment -> b -> Criterion Sample
-runBenchmark env b = do
+runBenchmark :: Environment -> Benchmarkable -> Criterion Sample
+runBenchmark env (Benchmarkable run) = do
   _ <- liftIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
   let minTime = envClockResolution env * 1000
-  (testTime, testIters, _) <- liftIO $ runForAtLeast (min minTime 0.1) 1 (run b)
+  (testTime, testIters, _) <- liftIO $ runForAtLeast (min minTime 0.1) 1 run
   _ <- prolix "ran %d iterations in %s\n" testIters (secs testTime)
   cfg <- getConfig
   let newIters    = ceiling $ minTime * testItersD / testTime
@@ -68,11 +68,11 @@ runBenchmark env b = do
   times <- liftIO . fmap (U.map ((/ newItersD) . subtract (envClockCost env))) .
            U.replicateM sampleCount $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
-             time_ (run b newIters)
+             time_ (run newIters)
   return times
 
 -- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: Benchmarkable b => Environment -> String -> b
+runAndAnalyseOne :: Environment -> String -> Benchmarkable
                  -> Criterion (Sample,SampleAnalysis,Outliers)
 runAndAnalyseOne env _desc b = do
   times <- runBenchmark env b
@@ -183,9 +183,9 @@ runNotAnalyse p bs' = goQuickly "" bs'
             mapM_ (goQuickly (prefix pfx desc)) bs
         goQuickly pfx (BenchCompare bs) = mapM_ (goQuickly pfx) bs
 
-        runOne b = do
+        runOne (Benchmarkable run) = do
             samples <- getConfigItem $ fromLJ cfgSamples
-            liftIO $ run b samples
+            liftIO $ run samples
 
 prefix :: String -> String -> String
 prefix ""  desc = desc

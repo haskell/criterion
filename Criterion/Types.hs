@@ -30,7 +30,6 @@ module Criterion.Types
     -- * Benchmark descriptions
       Benchmarkable(..)
     , Benchmark(..)
-    , Pure
     , whnf
     , nf
     , nfIO
@@ -53,76 +52,62 @@ import Data.Data (Data, Typeable)
 import GHC.Generics (Generic)
 import Statistics.Types (Sample)
 
--- | A benchmarkable function or action.
-class Benchmarkable a where
-    -- | Run a function or action the specified number of times.
-    run :: a                    -- ^ The function or action to benchmark.
-        -> Int                  -- ^ The number of times to run or evaluate it.
-        -> IO ()
-
--- | A container for a pure function to benchmark, and an argument to
--- supply to it each time it is evaluated.
-data Pure where
-    WHNF :: (a -> b) -> a -> Pure
-    NF :: NFData b => (a -> b) -> a -> Pure
+-- | A pure function or impure action that can be benchmarked. The
+-- 'Int' parameter indicates the number of times to run the given
+-- function or action.
+newtype Benchmarkable = Benchmarkable (Int -> IO ())
 
 -- | Apply an argument to a function, and evaluate the result to weak
 -- head normal form (WHNF).
-whnf :: (a -> b) -> a -> Pure
-whnf = WHNF
+whnf :: (a -> b) -> a -> Benchmarkable
+whnf = pure id
 {-# INLINE whnf #-}
 
 -- | Apply an argument to a function, and evaluate the result to head
 -- normal form (NF).
-nf :: NFData b => (a -> b) -> a -> Pure
-nf = NF
+nf :: NFData b => (a -> b) -> a -> Benchmarkable
+nf = pure rnf
 {-# INLINE nf #-}
+
+pure :: (b -> c) -> (a -> b) -> a -> Benchmarkable
+pure reduce f0 x0 = Benchmarkable $ go f0 x0
+  where go f x n
+          | n <= 0    = return ()
+          | otherwise = evaluate (reduce (f x)) >> go f x (n-1)
+{-# INLINE pure #-}
 
 -- | Perform an action, then evaluate its result to head normal form.
 -- This is particularly useful for forcing a lazy IO action to be
 -- completely performed.
-nfIO :: NFData a => IO a -> IO ()
-nfIO a = evaluate . rnf =<< a
+nfIO :: NFData a => IO a -> Benchmarkable
+nfIO = impure rnf
 {-# INLINE nfIO #-}
 
 -- | Perform an action, then evaluate its result to weak head normal
 -- form (WHNF).  This is useful for forcing an IO action whose result
 -- is an expression to be evaluated down to a more useful value.
-whnfIO :: IO a -> IO ()
-whnfIO a = a >>= evaluate >> return ()
+whnfIO :: IO a -> Benchmarkable
+whnfIO = impure id
 {-# INLINE whnfIO #-}
 
-instance Benchmarkable Pure where
-    run p@(WHNF _ _) = go p
-      where
-        go fx@(WHNF f x) n
-            | n <= 0    = return ()
-            | otherwise = evaluate (f x) >> go fx (n-1)
-    run p@(NF _ _) = go p
-      where
-        go fx@(NF f x) n
-            | n <= 0    = return ()
-            | otherwise = evaluate (rnf (f x)) >> go fx (n-1)
-    {-# INLINE run #-}
-
-instance Benchmarkable (IO a) where
-    run a n
-        | n <= 0    = return ()
-        | otherwise = a >> run a (n-1)
-    {-# INLINE run #-}
+impure :: (a -> b) -> IO a -> Benchmarkable
+impure strategy a = Benchmarkable go
+  where go n
+          | n <= 0    = return ()
+          | otherwise = a >>= (evaluate . strategy) >> go (n-1)
+{-# INLINE impure #-}
 
 -- | A benchmark may consist of either a single 'Benchmarkable' item
 -- with a name, created with 'bench', or a (possibly nested) group of
 -- 'Benchmark's, created with 'bgroup'.
 data Benchmark where
-    Benchmark    :: Benchmarkable b => String -> b -> Benchmark
+    Benchmark    :: String -> Benchmarkable -> Benchmark
     BenchGroup   :: String -> [Benchmark] -> Benchmark
     BenchCompare :: [Benchmark] -> Benchmark
 
 -- | Create a single benchmark.
-bench :: Benchmarkable b =>
-         String                 -- ^ A name to identify the benchmark.
-      -> b
+bench :: String                 -- ^ A name to identify the benchmark.
+      -> Benchmarkable
       -> Benchmark
 bench = Benchmark
 
