@@ -19,7 +19,7 @@ module Criterion.IO
     , writeResults
     ) where
 
-import Criterion.Types (ResultForest, ResultTree(..))
+import Criterion.Types (Result(..))
 import Data.Binary (Binary(..), encode)
 import Data.Binary.Get (runGetOrFail)
 import Data.Binary.Put (putByteString, putWord16be, runPut)
@@ -33,27 +33,22 @@ header = runPut $ do
   putByteString "criterio"
   mapM_ (putWord16be . fromIntegral) (versionBranch version)
 
-hGetResults :: Handle -> IO (Either String ResultForest)
+hGetResults :: Handle -> IO (Either String [Result])
 hGetResults handle = do
-  let fixup = reverse . nukem . reverse
-      nukem (Compare k _ : rs) = let (cs, rs') = splitAt k rs
-                                 in Compare k (fixup (reverse cs)) : nukem rs'
-      nukem (r : rs)           = r : nukem rs
-      nukem _                  = []
   bs <- L.hGet handle (fromIntegral (L.length header))
   if bs == header
-    then (Right . fixup) `fmap` readAll handle
+    then Right `fmap` readAll handle
     else return $ Left "unexpected header"
 
-hPutResults :: Handle -> ResultForest -> IO ()
+hPutResults :: Handle -> [Result] -> IO ()
 hPutResults handle rs = do
   L.hPut handle header
   mapM_ (L.hPut handle . encode) rs
 
-readResults :: FilePath -> IO (Either String ResultForest)
+readResults :: FilePath -> IO (Either String [Result])
 readResults path = withFile path ReadMode hGetResults
 
-writeResults :: FilePath -> ResultForest -> IO ()
+writeResults :: FilePath -> [Result] -> IO ()
 writeResults path rs = withFile path WriteMode (flip hPutResults rs)
 
 readAll :: Binary a => Handle -> IO [a]

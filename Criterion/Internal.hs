@@ -18,7 +18,7 @@ module Criterion.Internal
     , prefix
     ) where
 
-import Control.Monad (foldM, replicateM_, when, mplus)
+import Control.Monad (foldM, replicateM_, when)
 import Control.Monad.Trans (liftIO)
 import Data.Binary (encode)
 import qualified Data.ByteString.Lazy as L
@@ -32,8 +32,8 @@ import Criterion.IO.Printf (note, prolix, summary)
 import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Report (Report(..), report)
-import Criterion.Types (Benchmark(..), Benchmarkable(..),
-                        Result(..), ResultForest, ResultTree(..))
+import Criterion.Types (Benchmark(..), Benchmarkable(..), Payload(..),
+                        Result(..))
 import qualified Data.Vector.Unboxed as U
 import Data.Monoid (getLast)
 import Statistics.Resampling.Bootstrap (Estimate(..))
@@ -110,7 +110,7 @@ runAndAnalyseOne env _desc b = do
 
 plotAll :: [Result] -> Criterion ()
 plotAll descTimes = do
-  report (zipWith (\n (Result d t a o) -> Report n d t a o) [0..] descTimes)
+  report (zipWith (\n (Single d (Payload t a o)) -> Report n d t a o) [0..] descTimes)
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
@@ -135,18 +135,13 @@ runAndAnalyse p env bs' = do
           | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
                            summary (show desc' ++ ",") -- String will be quoted
                            (x,an,out) <- runAndAnalyseOne env desc' b
-                           let result = Single $ Result desc' x an out
+                           let result = Single desc' $ Payload x an out
                            liftIO $ L.hPut handle (encode result)
                            return $! k + 1
           | otherwise = return (k :: Int)
           where desc' = prefix pfx desc
       go !k (pfx, BenchGroup desc bs) =
           foldM go k [(prefix pfx desc, b) | b <- bs]
-      go !k (pfx, BenchCompare bs) = do
-                          l <- foldM go 0 [(pfx, b) | b <- bs]
-                          let result = Compare l []
-                          liftIO $ L.hPut handle (encode result)
-                          return $! l + k
   _ <- go 0 ("", bs')
 
   rts <- (either fail return =<<) . liftIO $ do
@@ -157,15 +152,8 @@ runAndAnalyse p env bs' = do
       Just _ -> return rs
       _      -> removeFile resultFile >> return rs
 
-  mbCompareFile <- getConfigItem $ getLast . cfgCompareFile
-  case mbCompareFile of
-    Nothing -> return ()
-    Just compareFile -> do
-      liftIO $ writeFile compareFile $ resultForestToCSV rts
-
-  let rs = flatten rts
-  plotAll rs
-  junit rs
+  plotAll rts
+  junit rts
 
 runNotAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
@@ -181,7 +169,6 @@ runNotAnalyse p bs' = goQuickly "" bs'
             where desc' = prefix pfx desc
         goQuickly pfx (BenchGroup desc bs) =
             mapM_ (goQuickly (prefix pfx desc)) bs
-        goQuickly pfx (BenchCompare bs) = mapM_ (goQuickly pfx) bs
 
         runOne (Benchmarkable run) = do
             samples <- getConfigItem $ fromLJ cfgSamples
@@ -190,52 +177,6 @@ runNotAnalyse p bs' = goQuickly "" bs'
 prefix :: String -> String -> String
 prefix ""  desc = desc
 prefix pfx desc = pfx ++ '/' : desc
-
-flatten :: ResultForest -> [Result]
-flatten [] = []
-flatten (Single r    : rs) = r : flatten rs
-flatten (Compare _ crs : rs) = flatten crs ++ flatten rs
-
-resultForestToCSV :: ResultForest -> String
-resultForestToCSV = unlines
-                  . ("Reference,Name,% faster than reference" :)
-                  . map (\(ref, n, p) -> printf "%s,%s,%.0f" ref n p)
-                  . top
-        where
-          top :: ResultForest -> [(String, String, Double)]
-          top [] = []
-          top (Single _     : rts) = top rts
-          top (Compare _ rts' : rts) = cmpRT rts' ++ top rts
-
-          cmpRT :: ResultForest -> [(String, String, Double)]
-          cmpRT [] = []
-          cmpRT (Single r     : rts) = cmpWith r rts
-          cmpRT (Compare _ rts' : rts) = case getReference rts' of
-                                         Nothing -> cmpRT rts
-                                         Just r  -> cmpRT rts' ++ cmpWith r rts
-
-          cmpWith :: Result -> ResultForest -> [(String, String, Double)]
-          cmpWith _   [] = []
-          cmpWith ref (Single r     : rts) = cmp ref r : cmpWith ref rts
-          cmpWith ref (Compare _ rts' : rts) = cmpRT rts'       ++
-                                             cmpWith ref rts' ++
-                                             cmpWith ref rts
-
-          getReference :: ResultForest -> Maybe Result
-          getReference []                   = Nothing
-          getReference (Single r     : _)   = Just r
-          getReference (Compare _ rts' : rts) = getReference rts' `mplus`
-                                              getReference rts
-
-cmp :: Result -> Result -> (String, String, Double)
-cmp ref r = (description ref, description r, percentFaster)
-    where
-      percentFaster = (meanRef - meanR) / meanRef * 100
-
-      meanRef = mean ref
-      meanR   = mean r
-
-      mean = estPoint . anMean . sampleAnalysis
 
 -- | Write summary JUnit file (if applicable)
 junit :: [Result] -> Criterion ()
@@ -250,8 +191,8 @@ junit rs
           (length rs) ++
           concatMap single rs ++
           "</testsuite>\n"
-    single r = printf "  <testcase name=\"%s\" time=\"%f\" />\n"
-               (attrEsc $ description r) (estPoint $ anMean $ sampleAnalysis r)
+    single (Single d r) = printf "  <testcase name=\"%s\" time=\"%f\" />\n"
+               (attrEsc d) (estPoint $ anMean $ sampleAnalysis r)
     attrEsc = concatMap esc
       where
         esc '\'' = "&apos;"

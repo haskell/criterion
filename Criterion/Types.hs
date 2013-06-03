@@ -36,12 +36,10 @@ module Criterion.Types
     , whnfIO
     , bench
     , bgroup
-    , bcompare
     , benchNames
     -- * Result types
     , Result(..)
-    , ResultForest
-    , ResultTree(..)
+    , Payload(..)
     ) where
 
 import Control.DeepSeq (NFData, rnf)
@@ -103,7 +101,6 @@ impure strategy a = Benchmarkable go
 data Benchmark where
     Benchmark    :: String -> Benchmarkable -> Benchmark
     BenchGroup   :: String -> [Benchmark] -> Benchmark
-    BenchCompare :: [Benchmark] -> Benchmark
 
 -- | Create a single benchmark.
 bench :: String                 -- ^ A name to identify the benchmark.
@@ -117,40 +114,25 @@ bgroup :: String                -- ^ A name to identify the group of benchmarks.
        -> Benchmark
 bgroup = BenchGroup
 
--- | Compare benchmarks against a reference benchmark
--- (The first 'bench' in the given list).
---
--- The results of the comparisons are written to a CSV file specified using the
--- @-r@ command line flag. The CSV file uses the following format:
---
--- @Reference,Name,% faster than the reference@
-bcompare :: [Benchmark] -> Benchmark
-bcompare = BenchCompare
-
 -- | Retrieve the names of all benchmarks.  Grouped benchmarks are
 -- prefixed with the name of the group they're in.
 benchNames :: Benchmark -> [String]
 benchNames (Benchmark d _)   = [d]
 benchNames (BenchGroup d bs) = map ((d ++ "/") ++) . concatMap benchNames $ bs
-benchNames (BenchCompare bs) =                       concatMap benchNames $ bs
 
 instance Show Benchmark where
     show (Benchmark d _)  = ("Benchmark " ++ show d)
     show (BenchGroup d _) = ("BenchGroup " ++ show d)
-    show (BenchCompare _) = ("BenchCompare")
 
-data Result = Result {
-      description    :: String
-    , sample         :: Sample
+data Payload = Payload {
+      sample         :: Sample
     , sampleAnalysis :: SampleAnalysis
     , outliers       :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
+instance Binary Payload
+
+data Result = Single String Payload
+              deriving (Eq, Read, Show, Typeable, Data, Generic)
+
 instance Binary Result
-
-type ResultForest = [ResultTree]
-data ResultTree = Single Result
-                | Compare !Int ResultForest
-                  deriving (Eq, Read, Show, Typeable, Data, Generic)
-
-instance Binary ResultTree

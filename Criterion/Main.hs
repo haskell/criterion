@@ -30,7 +30,6 @@ module Criterion.Main
     -- * Constructing benchmarks
     , bench
     , bgroup
-    , bcompare
     , nf
     , whnf
     , nfIO
@@ -52,7 +51,7 @@ import Criterion.Environment (measureEnvironment)
 import Criterion.IO.Printf (note, printError)
 import Criterion.Monad (Criterion, withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench,
-                        benchNames, bgroup, bcompare, nf, nfIO, whnf, whnfIO)
+                        benchNames, bgroup, nf, nfIO, whnf, whnfIO)
 import Data.Char (toLower)
 import Data.List (isPrefixOf, sort, stripPrefix)
 import Data.Maybe (fromMaybe)
@@ -127,9 +126,6 @@ defaultOptions = [
           "template file to use"
  , Option ['u'] ["summary"] (ReqArg (\s -> return $ mempty { cfgSummaryFile = ljust s }) "FILENAME")
           "produce a summary CSV file of all results"
- , Option ['r'] ["compare"] (ReqArg (\s -> return $ mempty { cfgCompareFile = ljust s }) "FILENAME")
-          "produce a CSV file of comparisons\nagainst reference benchmarks\n\
-          \(see the bcompare combinator)"
  , Option ['n'] ["no-measurements"] (noArg mempty { cfgMeasure = ljust False })
           "don't do any measurements"
  , Option ['V'] ["version"] (noArg mempty { cfgPrintExit = Version })
@@ -253,7 +249,6 @@ defaultMainWith defCfg prep bs = do
   names = go ""
     where go pfx (BenchGroup pfx' bms) = concatMap (go (prefix pfx pfx')) bms
           go pfx (Benchmark desc _)    = [prefix pfx desc]
-          go _   (BenchCompare _)      = []
 
 -- | Display an error message from a command line parsing failure, and
 -- exit.

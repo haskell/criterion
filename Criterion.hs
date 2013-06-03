@@ -19,7 +19,6 @@ module Criterion
     , nfIO
     , whnfIO
     , bench
-    , bcompare
     , bgroup
     , runBenchmark
     , runAndAnalyse

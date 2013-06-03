@@ -62,7 +62,6 @@ data Config = Config {
     , cfgReport       :: Last FilePath -- ^ Filename of report.
     , cfgSamples      :: Last Int    -- ^ Number of samples to collect.
     , cfgSummaryFile  :: Last FilePath -- ^ Filename of summary CSV.
-    , cfgCompareFile  :: Last FilePath -- ^ Filename of the comparison CSV.
     , cfgTemplate     :: Last FilePath -- ^ Filename of report template.
     , cfgVerbosity    :: Last Verbosity -- ^ Whether to run verbosely.
     , cfgJUnitFile    :: Last FilePath -- ^ Filename of JUnit report.
@@ -86,7 +85,6 @@ defaultConfig = Config {
                 , cfgReport       = mempty
                 , cfgSamples      = ljust 100
                 , cfgSummaryFile  = mempty
-                , cfgCompareFile  = mempty
                 , cfgTemplate     = ljust "report.tpl"
                 , cfgVerbosity    = ljust Normal
                 , cfgJUnitFile    = mempty
@@ -117,7 +115,6 @@ emptyConfig = Config {
               , cfgResults      = mempty
               , cfgSamples      = mempty
               , cfgSummaryFile  = mempty
-              , cfgCompareFile  = mempty
               , cfgTemplate     = mempty
               , cfgVerbosity    = mempty
               , cfgJUnitFile    = mempty
@@ -137,7 +134,6 @@ appendConfig a b =
     , cfgResults      = app cfgResults a b
     , cfgSamples      = app cfgSamples a b
     , cfgSummaryFile  = app cfgSummaryFile a b
-    , cfgCompareFile  = app cfgCompareFile a b
     , cfgTemplate     = app cfgTemplate a b
     , cfgVerbosity    = app cfgVerbosity a b
     , cfgJUnitFile    = app cfgJUnitFile a b
