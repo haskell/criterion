@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns, RecordWildCards #-}
 -- |
 -- Module      : Criterion
--- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
+-- Copyright   : (c) 2009-2013 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
@@ -29,7 +29,8 @@ import Criterion.Config (Config(..), Verbosity(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (header, hGetResults)
 import Criterion.IO.Printf (note, prolix, summary)
-import Criterion.Measurement (getTime, runForAtLeast, secs, time_)
+import Criterion.Measurement (getTime, runForAtLeast, secs,
+                              time_)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Report (Report(..), report)
 import Criterion.Types (Benchmark(..), Benchmarkable(..), Payload(..),

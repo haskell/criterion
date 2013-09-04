@@ -1,8 +1,9 @@
-{-# LANGUAGE BangPatterns, ScopedTypeVariables, TypeOperators #-}
+{-# LANGUAGE BangPatterns, ForeignFunctionInterface, ScopedTypeVariables,
+    TypeOperators #-}
 
 -- |
 -- Module      : Criterion.Measurement
--- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
+-- Copyright   : (c) 2009-2013 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com
@@ -13,7 +14,8 @@
 
 module Criterion.Measurement
     (
-      getTime
+      initializeTime
+    , getTime
     , runForAtLeast
     , secs
     , time
@@ -21,7 +23,6 @@ module Criterion.Measurement
     ) where
 
 import Control.Monad (when)
-import Data.Time.Clock.POSIX (getPOSIXTime)
 import Text.Printf (printf)
 
 time :: IO a -> IO (Double, a)
@@ -38,9 +39,6 @@ time_ act = do
   _ <- act
   end <- getTime
   return $! end - start
-
-getTime :: IO Double
-getTime = realToFrac `fmap` getPOSIXTime
 
 runForAtLeast :: Double -> Int -> (Int -> IO a) -> IO (Double, Int, a)
 runForAtLeast howLong initSeed act = loop initSeed (0::Int) =<< getTime
@@ -72,3 +70,11 @@ secs k
                | t >= 1e2  = printf "%.4f %s" t u
                | t >= 1e1  = printf "%.5f %s" t u
                | otherwise = printf "%.6f %s" t u
+
+foreign import ccall unsafe "criterion_inittime" initializeTime :: IO ()
+
+-- | Return the current wallclock time, in seconds since some
+-- arbitrary time.
+--
+-- You /must/ call 'initializeTime' once before calling this function!
+foreign import ccall unsafe "criterion_gettime" getTime :: IO Double

@@ -21,7 +21,7 @@ import Control.Monad (replicateM_)
 import Control.Monad.Trans (liftIO)
 import Criterion.Analysis (analyseMean)
 import Criterion.IO.Printf (note)
-import Criterion.Measurement (getTime, runForAtLeast, time_)
+import Criterion.Measurement (getTime, initializeTime, runForAtLeast, time_)
 import Criterion.Monad (Criterion)
 import qualified Data.Vector.Unboxed as U
 import Data.Data (Data, Typeable)
@@ -39,6 +39,7 @@ data Environment = Environment {
 measureEnvironment :: Criterion Environment
 measureEnvironment = do
   _ <- note "warming up\n"
+  liftIO initializeTime
   (_, seed, _) <- liftIO $ runForAtLeast 0.1 10000 resolution
   _ <- note "estimating clock resolution...\n"
   clockRes <- thd3 `fmap` liftIO (runForAtLeast 0.5 seed resolution) >>=

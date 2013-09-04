@@ -51,6 +51,15 @@ library
     Criterion.Report
     Criterion.Types
 
+  if os(darwin)
+    c-sources: cbits/time-osx.c
+  else {
+    if os(windows)
+      c-sources: cbits/time-windows.c
+    else
+      c-sources: cbits/time-posix.c
+  }
+
   other-modules:
     Criterion.Internal
     Paths_criterion
