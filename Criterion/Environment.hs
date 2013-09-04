@@ -52,7 +52,7 @@ measureEnvironment = do
   where
     resolution k = do
       times <- U.replicateM (k+1) getTime
-      return (U.tail . U.filter (>=0) . U.zipWith (-) (U.tail times) $ times,
+      return (U.tail . U.filter (>0) . U.zipWith (-) (U.tail times) $ times,
               U.length times)
     cost timeLimit = liftIO $ do
       let timeClock k = time_ (replicateM_ k getTime)
