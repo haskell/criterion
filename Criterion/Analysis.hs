@@ -46,10 +46,10 @@ classifyOutliers :: Sample -> Outliers
 classifyOutliers sa = U.foldl' ((. outlier) . mappend) mempty ssa
     where outlier e = Outliers {
                         samplesSeen = 1
-                      , lowSevere = if e <= loS then 1 else 0
+                      , lowSevere = if e <= loS && e < hiM then 1 else 0
                       , lowMild = if e > loS && e <= loM then 1 else 0
                       , highMild = if e >= hiM && e < hiS then 1 else 0
-                      , highSevere = if e >= hiS then 1 else 0
+                      , highSevere = if e >= hiS && e > loM then 1 else 0
                       }
           loS = q1 - (iqr * 3)
           loM = q1 - (iqr * 1.5)
