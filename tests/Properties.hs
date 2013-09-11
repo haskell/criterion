@@ -1,16 +1,26 @@
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 module Properties (tests) where
 
 import Control.Applicative ((<$>))
 import Criterion.Analysis
-import Data.Monoid ((<>))
 import Statistics.Types (Sample)
 import Test.Framework (Test, testGroup)
 import Test.Framework.Providers.QuickCheck2 (testProperty)
 import Test.QuickCheck
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
+
+#if __GLASGOW_HASKELL__ >= 704
+import Data.Monoid ((<>))
+#else
+import Data.Monoid
+
+(<>) :: Monoid m => m -> m -> m
+<> = mappend
+infixr 6 <>
+#endif
 
 instance (Arbitrary a, U.Unbox a) => Arbitrary (U.Vector a) where
   arbitrary = U.fromList <$> arbitrary
