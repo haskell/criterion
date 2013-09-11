@@ -18,7 +18,7 @@ import Data.Monoid ((<>))
 import Data.Monoid
 
 (<>) :: Monoid m => m -> m -> m
-<> = mappend
+(<>) = mappend
 infixr 6 <>
 #endif
 
