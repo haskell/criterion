@@ -290,8 +290,8 @@ parseError msg = do
 -- benchmarking pure code.  Values of this type are constructed using
 -- one of two functions.
 --
--- The first is a function which will cause results to be evaluated to
--- head normal form (NF):
+-- The first is a function which will cause results to be fully
+-- evaluated to normal form (NF):
 --
 -- @
 -- 'nf' :: 'NFData' b => (a -> b) -> a -> 'Pure'
