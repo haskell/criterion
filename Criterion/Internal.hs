@@ -28,7 +28,7 @@ import Criterion.Analysis (Outliers(..), OutlierEffect(..), OutlierVariance(..),
 import Criterion.Config (Config(..), Verbosity(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (header, hGetResults)
-import Criterion.IO.Printf (note, prolix, summary)
+import Criterion.IO.Printf (note, prolix, writeCsv)
 import Criterion.Measurement (getTime, runForAtLeast, secs,
                               time_)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
@@ -73,10 +73,10 @@ runBenchmark env (Benchmarkable run) = do
   return times
 
 -- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: Environment -> String -> Benchmarkable
+runAndAnalyseOne :: Environment -> Maybe String -> Benchmarkable
                  -> Criterion (Sample,SampleAnalysis,Outliers)
-runAndAnalyseOne env _desc b = do
-  times <- runBenchmark env b
+runAndAnalyseOne env mdesc bm = do
+  times <- runBenchmark env bm
   ci <- getConfigItem $ fromLJ cfgConfInterval
   numResamples <- getConfigItem $ fromLJ cfgResamples
   _ <- prolix "analysing with %d resamples\n" numResamples
@@ -87,10 +87,11 @@ runAndAnalyseOne env _desc b = do
                  Slight -> "slightly inflated"
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
-  bs "mean" anMean
-  summary ","
-  bs "std dev" anStdDev
-  summary "\n"
+  (a,b,c) <- bs "mean" anMean
+  (d,e,f) <- bs "std dev" anStdDev
+  case mdesc of
+    Just desc -> writeCsv (desc,a,b,c,d,e,f)
+    Nothing   -> writeCsv (a,b,c,d,e,f)
   vrb <- getConfigItem $ fromLJ cfgVerbosity
   let out = classifyOutliers times
   when (vrb == Verbose || (ovEffect > Unaffected && vrb > Quiet)) $ do
@@ -99,14 +100,13 @@ runAndAnalyseOne env _desc b = do
     _ <- note "variance is %s by outliers\n" wibble
     return ()
   return (times,an,out)
-  where bs :: String -> Estimate -> Criterion ()
-        bs d e = do _ <- note "%s: %s, lb %s, ub %s, ci %.3f\n" d
-                      (secs $ estPoint e)
-                      (secs $ estLowerBound e) (secs $ estUpperBound e)
-                      (estConfidenceLevel e)
-                    summary $ printf "%g,%g,%g"
-                      (estPoint e)
-                      (estLowerBound e) (estUpperBound e)
+  where bs :: String -> Estimate -> Criterion (Double,Double,Double)
+        bs d e = do
+          _ <- note "%s: %s, lb %s, ub %s, ci %.3f\n" d
+               (secs $ estPoint e)
+               (secs $ estLowerBound e) (secs $ estUpperBound e)
+               (estConfidenceLevel e)
+          return (estPoint e, estLowerBound e, estUpperBound e)
 
 
 plotAll :: [Result] -> Criterion ()
@@ -134,8 +134,7 @@ runAndAnalyse p env bs' = do
 
   let go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
-                           summary (show desc' ++ ",") -- String will be quoted
-                           (x,an,out) <- runAndAnalyseOne env desc' b
+                           (x,an,out) <- runAndAnalyseOne env (Just desc') b
                            let result = Single desc' $ Payload x an out
                            liftIO $ L.hPut handle (encode result)
                            return $! k + 1

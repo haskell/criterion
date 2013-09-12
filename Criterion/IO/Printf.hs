@@ -16,17 +16,21 @@ module Criterion.IO.Printf
     , note
     , printError
     , prolix
-    , summary
+    , writeCsv
     ) where
 
 import Control.Monad (when)
 import Control.Monad.Trans (liftIO)
-import Criterion.Config (Config, Verbosity(..), cfgSummaryFile, cfgVerbosity, fromLJ)
+import Criterion.Config (Config, Verbosity(..), cfgSummaryFile, cfgVerbosity,
+                         fromLJ)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Data.Monoid (getLast)
 import System.IO (Handle, stderr, stdout)
-import qualified Text.Printf (HPrintfType, hPrintf)
 import Text.Printf (PrintfArg)
+import qualified Data.ByteString.Lazy as B
+import qualified Data.Csv as Csv
+import qualified Data.Vector.Generic as G
+import qualified Text.Printf (HPrintfType, hPrintf)
 
 -- First item is the action to print now, given all the arguments
 -- gathered together so far.  The second item is the function that
@@ -90,10 +94,10 @@ prolix = chPrintf ((== Verbose) . fromLJ cfgVerbosity) stdout
 printError :: (CritHPrintfType r) => String -> r
 printError = chPrintf (const True) stderr
 
--- | Add to summary CSV (if applicable)
-summary :: String -> Criterion ()
-summary msg
-  = do sumOpt <- getConfigItem (getLast . cfgSummaryFile)
-       case sumOpt of
-         Just fn -> liftIO $ appendFile fn msg
-         Nothing -> return ()
+-- | Write a record to a CSV file.
+writeCsv :: Csv.ToRecord a => a -> Criterion ()
+writeCsv val = do
+  sumOpt <- getConfigItem (getLast . cfgSummaryFile)
+  case sumOpt of
+    Just fn -> liftIO . B.appendFile fn . Csv.encode . G.singleton $ val
+    Nothing -> return ()

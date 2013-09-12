@@ -44,11 +44,10 @@ module Criterion.Main
     ) where
 
 import Control.Monad (unless)
-import Control.Monad.Trans (liftIO)
 import Criterion.Internal (runAndAnalyse, runNotAnalyse, prefix)
 import Criterion.Config
 import Criterion.Environment (measureEnvironment)
-import Criterion.IO.Printf (note, printError)
+import Criterion.IO.Printf (note, printError, writeCsv)
 import Criterion.Monad (Criterion, withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench,
                         benchNames, bgroup, nf, nfIO, whnf, whnfIO)
@@ -238,9 +237,8 @@ defaultMainWith defCfg prep bs = do
           _ <- note "Benchmarks:\n"
           mapM_ (note "  %s\n") (sort $ concatMap benchNames bs)
         else do
-          case getLast $ cfgSummaryFile cfg of
-            Just fn -> liftIO $ writeFile fn "Name,Mean,MeanLB,MeanUB,Stddev,StddevLB,StddevUB\n"
-            Nothing -> return ()
+          writeCsv ("Name","Mean","MeanLB","MeanUB","Stddev","StddevLB",
+                    "StddevUB")
           env <- measureEnvironment
           prep
           runAndAnalyse shouldRun env bsgroup
