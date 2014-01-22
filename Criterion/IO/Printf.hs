@@ -29,7 +29,6 @@ import System.IO (Handle, stderr, stdout)
 import Text.Printf (PrintfArg)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.Csv as Csv
-import qualified Data.Vector.Generic as G
 import qualified Text.Printf (HPrintfType, hPrintf)
 
 -- First item is the action to print now, given all the arguments
@@ -99,5 +98,5 @@ writeCsv :: Csv.ToRecord a => a -> Criterion ()
 writeCsv val = do
   sumOpt <- getConfigItem (getLast . cfgSummaryFile)
   case sumOpt of
-    Just fn -> liftIO . B.appendFile fn . Csv.encode . G.singleton $ val
+    Just fn -> liftIO . B.appendFile fn . Csv.encode $ [val]
     Nothing -> return ()
