@@ -1,4 +1,5 @@
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE CPP #-}
 -- |
 -- Module      : Criterion.IO
 -- Copyright   : (c) 2009, 2010 Bryan O'Sullivan
@@ -21,7 +22,11 @@ module Criterion.IO
 
 import Criterion.Types (ResultForest, ResultTree(..))
 import Data.Binary (Binary(..), encode)
+#if MIN_VERSION_binary(0, 6, 3)
 import Data.Binary.Get (runGetOrFail)
+#else
+import Data.Binary.Get (runGetState)
+#endif
 import Data.Binary.Put (putByteString, putWord16be, runPut)
 import Data.Version (Version(..))
 import Paths_criterion (version)
@@ -56,6 +61,7 @@ readResults path = withFile path ReadMode hGetResults
 writeResults :: FilePath -> ResultForest -> IO ()
 writeResults path rs = withFile path WriteMode (flip hPutResults rs)
 
+#if MIN_VERSION_binary(0, 6, 3)
 readAll :: Binary a => Handle -> IO [a]
 readAll handle = do
   let go bs
@@ -64,3 +70,13 @@ readAll handle = do
                          Left (_, _, err) -> fail err
                          Right (bs', _, a) -> (a:) `fmap` go bs'
   go =<< L.hGetContents handle
+#else
+readAll :: Binary a => Handle -> IO [a]
+readAll handle = do
+  let go i bs
+         | L.null bs = return []
+         | otherwise =
+            let (a, bs', i') = runGetState get bs i
+             in (a:) `fmap` go i' bs'
+  go 0 =<< L.hGetContents handle
+#endif
