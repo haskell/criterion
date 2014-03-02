@@ -42,10 +42,11 @@ module Criterion.Types
     , Payload(..)
     ) where
 
+import Control.Applicative ((<$>), (<*>))
 import Control.DeepSeq (NFData, rnf)
 import Control.Exception (evaluate)
 import Criterion.Analysis.Types (Outliers(..), SampleAnalysis(..))
-import Data.Binary (Binary)
+import Data.Binary (Binary (..))
 import Data.Data (Data, Typeable)
 import GHC.Generics (Generic)
 import Statistics.Types (Sample)
@@ -130,9 +131,13 @@ data Payload = Payload {
     , outliers       :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-instance Binary Payload
+instance Binary Payload where
+    put (Payload x y z) = put x >> put y >> put z
+    get = Payload <$> get <*> get <*> get
 
 data Result = Single String Payload
               deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-instance Binary Result
+instance Binary Result where
+    put (Single x y) = put x >> put y
+    get = Single <$> get <*> get
