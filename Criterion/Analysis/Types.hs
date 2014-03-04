@@ -13,7 +13,7 @@
 
 module Criterion.Analysis.Types
     (
-      Outliers (..)
+      Outliers(..)
     , OutlierEffect(..)
     , OutlierVariance(..)
     , SampleAnalysis(..)
@@ -21,7 +21,7 @@ module Criterion.Analysis.Types
 
 import Control.Applicative ((<$>), (<*>))
 import Control.DeepSeq (NFData(rnf))
-import Data.Binary (Binary (..), putWord8, getWord8)
+import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))

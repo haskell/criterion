@@ -1,5 +1,4 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE CPP #-}
+{-# LANGUAGE CPP, OverloadedStrings #-}
 -- |
 -- Module      : Criterion.IO
 -- Copyright   : (c) 2009, 2010 Bryan O'Sullivan

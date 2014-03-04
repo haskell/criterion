@@ -12,7 +12,7 @@
 
 module Criterion.Analysis
     (
-      Outliers (..)
+      Outliers(..)
     , OutlierEffect(..)
     , OutlierVariance(..)
     , SampleAnalysis(..)
