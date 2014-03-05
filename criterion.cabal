@@ -15,6 +15,9 @@ extra-source-files:
   README.markdown
   examples/*.hs
   examples/*.html
+  js-src/jquery-1.6.4.js
+  js-src/excanvas_r3.zip
+  js-src/flot-0.7.zip
 
 data-files:
   templates/js/excanvas-r3.min.js
