@@ -2,9 +2,9 @@
 
 import Criterion.Main
 
-fib :: Int -> Int
-fib n | n < 0     = error "negative!"
-      | otherwise = go (fromIntegral n)
+fib :: Int -> Integer
+fib m | m < 0     = error "negative!"
+      | otherwise = go (fromIntegral m :: Integer)
   where
     go 0 = 0
     go 1 = 1
@@ -24,6 +24,7 @@ fio n | n < 0     = error "negative!"
             j <- go (i-1)
             return $! i * j
 
+main :: IO ()
 main = defaultMain [
         bgroup "tiny" [ bench "fib 10" $ whnf fib 10
                       , bench "fib 15" $ whnf fib 15
@@ -38,8 +39,8 @@ main = defaultMain [
                       , bench "fact 1000" $ whnf fact 1000
                       , bench "fact 3000" $ whnf fact 3000
                       ],
-        bgroup "fio" [ bench "fio 100"  (fio 100)
-                     , bench "fio 1000" (fio 1000)
-                     , bench "fio 3000" (fio 3000)
+        bgroup "fio" [ bench "fio 100"  $ whnfIO (fio 100)
+                     , bench "fio 1000" $ whnfIO (fio 1000)
+                     , bench "fio 3000" $ whnfIO (fio 3000)
                      ]
        ]

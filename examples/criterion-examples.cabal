@@ -1,0 +1,20 @@
+name:          criterion-examples
+version:       0
+synopsis:      Examples for the criterion benchmarking system
+description:   Examples for the criterion benchmarking system
+homepage:      https://github.com/bos/criterion
+license:       BSD3
+license-file:  ../LICENSE
+author:        Bryan O'Sullivan <bos@serpentine.com>
+maintainer:    Bryan O'Sullivan <bos@serpentine.com>
+category:      Benchmarks
+build-type:    Simple
+cabal-version: >=1.8
+
+executable fibber
+  main-is: Fibber.hs
+
+  ghc-options: -Wall -rtsopts
+  build-depends:
+    base == 4.*,
+    criterion

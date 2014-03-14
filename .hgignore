@@ -1,4 +1,4 @@
-^(?:\.cabal-sandbox|cabal\.sandbox\.config|dist)$
+^(?:examples/)?(?:\.cabal-sandbox|cabal\.sandbox\.config|dist)$
 \.(?:aux|eventlog|h[ip]|log|[oa]|orig|prof|png|ps|swp)$
 ~$
 syntax: glob
