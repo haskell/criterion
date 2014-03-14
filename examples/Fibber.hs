@@ -16,9 +16,9 @@ fact n | n < 0     = error "negative!"
     where go 0 = 1
           go i = i * go (i-1)
 
-fio :: Int -> IO Integer
-fio n | n < 0     = error "negative!"
-      | otherwise = go (fromIntegral n)
+factIO :: Int -> IO Integer
+factIO n | n < 0     = error "negative!"
+         | otherwise = go (fromIntegral n)
     where go i | i == 0    = return 1
                | otherwise = do
             j <- go (i-1)
@@ -35,12 +35,14 @@ main = defaultMain [
                      , bench "fib 35" $ whnf fib 35
                      , bench "fib 37" $ whnf fib 37
                      ],
-        bgroup "fact" [ bench "fact 100"  $ whnf fact 100
-                      , bench "fact 1000" $ whnf fact 1000
-                      , bench "fact 3000" $ whnf fact 3000
-                      ],
-        bgroup "fio" [ bench "fio 100"  $ whnfIO (fio 100)
-                     , bench "fio 1000" $ whnfIO (fio 1000)
-                     , bench "fio 3000" $ whnfIO (fio 3000)
-                     ]
+        bgroup "fact" [
+          bgroup "pure" [ bench "100"  $ whnf fact 100
+                        , bench "1000" $ whnf fact 1000
+                        , bench "3000" $ whnf fact 3000
+                        ],
+          bgroup "IO" [ bench "100"  $ whnfIO (factIO 100)
+                      , bench "1000" $ whnfIO (factIO 1000)
+                      , bench "3000" $ whnfIO (factIO 3000)
+                      ]
+        ]
        ]
