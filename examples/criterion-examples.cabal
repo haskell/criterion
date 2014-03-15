@@ -18,3 +18,26 @@ executable fibber
   build-depends:
     base == 4.*,
     criterion
+
+executable conduit-vs-pipes
+  main-is: ConduitVsPipes.hs
+
+  ghc-options: -Wall -rtsopts
+  build-depends:
+    base == 4.*,
+    conduit == 1.0.*,
+    criterion,
+    pipes == 4.1.*,
+    transformers
+
+-- Cannot uncomment due to https://github.com/haskell/cabal/issues/1725
+--
+-- executable judy
+--   main-is: Judy.hs
+--
+--   buildable: False
+--   ghc-options: -Wall -rtsopts
+--   build-depends:
+--     base == 4.*,
+--     criterion,
+--     judy
