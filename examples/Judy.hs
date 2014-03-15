@@ -13,8 +13,7 @@ import qualified Data.Map as M
 import qualified Data.IntMap as I
 import Data.List (foldl')
 
--- Work around the fact that the GC won't run finalizers aggressively
--- enough for us.
+-- An example of how to specify a configuration value.
 myConfig = defaultConfig { cfgPerformGC = ljust True }
 
 main = defaultMainWith myConfig (return ()) [
