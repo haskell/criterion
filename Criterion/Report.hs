@@ -44,10 +44,10 @@ import System.IO.Unsafe (unsafePerformIO)
 import Text.Hastache (MuType(..))
 import Text.Hastache.Context (mkGenericContext, mkStrContext, mkStrContextM)
 import qualified Control.Exception as E
-import qualified Data.Text as TS
-import qualified Data.Text.IO as TSIO
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.IO as TLIO
+import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Text.Hastache as H
@@ -75,12 +75,12 @@ report reports = do
     Last Nothing -> return ()
     Last (Just name) -> liftIO $ do
       tpl <- loadTemplate [".",templateDir] (fromLJ cfgTemplate cfg)
-      TLIO.writeFile name =<< formatReport reports tpl
+      TL.writeFile name =<< formatReport reports tpl
 
 -- | Format a series of 'Report' values using the given Hastache
 -- template.
 formatReport :: [Report]
-             -> TS.Text    -- ^ Hastache template.
+             -> T.Text    -- ^ Hastache template.
              -> IO TL.Text
 formatReport reports template = do
   let context "report"  = return $ MuList $ map inner reports
@@ -155,13 +155,13 @@ vector2 name1 name2 v1 v2 = MuList $ zipWith val (G.toList v1) (G.toList v2)
 -- \"@/etc/passwd@\".
 includeFile :: (MonadIO m) =>
                [FilePath]       -- ^ Directories to search.
-            -> TS.Text          -- ^ Name of the file to search for.
-            -> m TS.Text
-{-# SPECIALIZE includeFile :: [FilePath] -> TS.Text -> IO TS.Text #-}
-includeFile searchPath name = liftIO $ foldr go (return TS.empty) searchPath
+            -> T.Text          -- ^ Name of the file to search for.
+            -> m T.Text
+{-# SPECIALIZE includeFile :: [FilePath] -> T.Text -> IO T.Text #-}
+includeFile searchPath name = liftIO $ foldr go (return T.empty) searchPath
     where go dir next = do
             let path = dir </> H.decodeStr name
-            TSIO.readFile path `E.catch` \(_::IOException) -> next
+            T.readFile path `E.catch` \(_::IOException) -> next
 
 -- | A problem arose with a template.
 data TemplateException =
@@ -179,15 +179,15 @@ instance Exception TemplateException
 -- not be found, or an 'IOException' if no template could be loaded.
 loadTemplate :: [FilePath]      -- ^ Search path.
              -> FilePath        -- ^ Name of template file.
-             -> IO TS.Text
+             -> IO T.Text
 loadTemplate paths name
-    | any isPathSeparator name = TSIO.readFile name
+    | any isPathSeparator name = T.readFile name
     | otherwise                = go Nothing paths
   where go me (p:ps) = do
           let cur = p </> name
           x <- doesFileExist cur
           if x
-            then TSIO.readFile cur `E.catch` \e -> go (me `mplus` Just e) ps
+            then T.readFile cur `E.catch` \e -> go (me `mplus` Just e) ps
             else go me ps
         go (Just e) _ = throwIO (e::IOException)
         go _        _ = throwIO . TemplateNotFound $ name
