@@ -27,6 +27,7 @@ import Data.Binary.Get (runGetOrFail)
 import Data.Binary.Get (runGetState)
 #endif
 import Data.Binary.Put (putByteString, putWord16be, runPut)
+import Data.ByteString.Char8 ()
 import Data.Version (Version(..))
 import Paths_criterion (version)
 import System.IO (Handle, IOMode(..), withFile)
