@@ -45,11 +45,13 @@ module Criterion.Types
     , ResultTree(..)
     ) where
 
+import Control.Applicative ((<$>), (<*>))
 import Control.DeepSeq (NFData, rnf)
 import Control.Exception (evaluate)
 import Criterion.Analysis.Types (Outliers(..), SampleAnalysis(..))
-import Data.Binary (Binary)
+import Data.Binary (Binary (get, put))
 import Data.Data (Data, Typeable)
+import Data.Word (Word8)
 import GHC.Generics (Generic)
 import Statistics.Types (Sample)
 
@@ -161,11 +163,21 @@ data Result = Result {
     , outliers       :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-instance Binary Result
+instance Binary Result where
+    put (Result a b c d) = put a >> put b >> put c >> put d
+    get = Result <$> get <*> get <*> get <*> get
 
 type ResultForest = [ResultTree]
 data ResultTree = Single Result
                 | Compare !Int ResultForest
                   deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-instance Binary ResultTree
+instance Binary ResultTree where
+    put (Single x) = put (0 :: Word8) >> put x
+    put (Compare x y) = put (1 :: Word8) >> put x >> put y
+    get = do
+        w <- get
+        case w :: Word8 of
+            0 -> Single <$> get
+            1 -> Compare <$> get <*> get
+            _ -> error "Binary.get for ResultTree failed"

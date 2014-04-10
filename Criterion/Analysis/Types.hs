@@ -19,10 +19,12 @@ module Criterion.Analysis.Types
     , SampleAnalysis(..)
     ) where
 
+import Control.Applicative ((<$>), (<*>))
 import Control.DeepSeq (NFData(rnf))
-import Data.Binary (Binary)
+import Data.Binary (Binary, put, get)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
+import Data.Word (Word8)
 import Data.Monoid (Monoid(..))
 import GHC.Generics (Generic)
 import qualified Statistics.Resampling.Bootstrap as B
@@ -42,7 +44,14 @@ data Outliers = Outliers {
     -- ^ More than 3 times the IQR above the third quartile.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-instance Binary Outliers
+instance Binary Outliers where
+    put (Outliers a b c d e) = do
+        put a
+        put b
+        put c
+        put d
+        put e
+    get = Outliers <$> get <*> get <*> get <*> get <*> get
 instance NFData Outliers
 
 -- | A description of the extent to which outliers in the sample data
@@ -54,7 +63,19 @@ data OutlierEffect = Unaffected -- ^ Less than 1% effect.
                                 -- are useless).
                      deriving (Eq, Ord, Read, Show, Typeable, Data, Generic)
 
-instance Binary OutlierEffect
+instance Binary OutlierEffect where
+    put Unaffected = put (0 :: Word8)
+    put Slight = put (1 :: Word8)
+    put Moderate = put (2 :: Word8)
+    put Severe = put (3 :: Word8)
+    get = do
+        w <- get
+        case w :: Word8 of
+            0 -> return Unaffected
+            1 -> return Slight
+            2 -> return Moderate
+            3 -> return Severe
+            _ -> error "Binary.get for OutlierEffect failed"
 instance NFData OutlierEffect
 
 instance Monoid Outliers where
@@ -77,7 +98,9 @@ data OutlierVariance = OutlierVariance {
     -- ^ Quantitative description of effect (a fraction between 0 and 1).
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-instance Binary OutlierVariance
+instance Binary OutlierVariance where
+    put (OutlierVariance a b c) = put a >> put b >> put c
+    get = OutlierVariance <$> get <*> get <*> get
 
 instance NFData OutlierVariance where
     rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovDesc `seq` rnf ovFraction
@@ -89,7 +112,9 @@ data SampleAnalysis = SampleAnalysis {
     , anOutlierVar :: OutlierVariance
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-instance Binary SampleAnalysis
+instance Binary SampleAnalysis where
+    put (SampleAnalysis a b c) = put a >> put b >> put c
+    get = SampleAnalysis <$> get <*> get <*> get
 
 instance NFData SampleAnalysis where
     rnf SampleAnalysis{..} =
