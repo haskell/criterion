@@ -35,8 +35,8 @@ import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
 import Statistics.Resampling (Resample, resample)
-import Statistics.Sample (mean, stdDev)
-import Statistics.Types (Sample)
+import Statistics.Sample (mean)
+import Statistics.Types (Estimator(..), Sample)
 import System.Random.MWC (withSystemRandom)
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Resampling.Bootstrap as B
@@ -124,7 +124,7 @@ analyseSample :: Double         -- ^ Confidence interval (between 0 and 1).
                                 -- when bootstrapping.
               -> IO SampleAnalysis
 analyseSample ci samples numResamples = do
-  let ests = [mean,stdDev]
+  let ests = [Mean,StdDev]
   resamples <- withSystemRandom $ \gen ->
                resample gen ests numResamples samples :: IO [Resample]
   let [estMean,estStdDev] = B.bootstrapBCA ci samples ests resamples

@@ -69,7 +69,7 @@ library
     mtl >= 2,
     mwc-random >= 0.8.0.3,
     parsec >= 3.1.0,
-    statistics >= 0.10.4.0 && < 0.11.0.0,
+    statistics >= 0.11,
     text >= 0.11,
     time,
     transformers,
