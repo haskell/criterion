@@ -59,21 +59,21 @@ newtype Benchmarkable = Benchmarkable (Int -> IO ())
 -- | Apply an argument to a function, and evaluate the result to weak
 -- head normal form (WHNF).
 whnf :: (a -> b) -> a -> Benchmarkable
-whnf = pure id
+whnf = pureFunc id
 {-# INLINE whnf #-}
 
 -- | Apply an argument to a function, and evaluate the result to head
 -- normal form (NF).
 nf :: NFData b => (a -> b) -> a -> Benchmarkable
-nf = pure rnf
+nf = pureFunc rnf
 {-# INLINE nf #-}
 
-pure :: (b -> c) -> (a -> b) -> a -> Benchmarkable
-pure reduce f0 x0 = Benchmarkable $ go f0 x0
+pureFunc :: (b -> c) -> (a -> b) -> a -> Benchmarkable
+pureFunc reduce f0 x0 = Benchmarkable $ go f0 x0
   where go f x n
           | n <= 0    = return ()
           | otherwise = evaluate (reduce (f x)) >> go f x (n-1)
-{-# INLINE pure #-}
+{-# INLINE pureFunc #-}
 
 -- | Perform an action, then evaluate its result to head normal form.
 -- This is particularly useful for forcing a lazy IO action to be
