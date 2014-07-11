@@ -113,7 +113,7 @@ test-suite sanity
   type:           exitcode-stdio-1.0
   hs-source-dirs: tests
   main-is:        Sanity.hs
-  ghc-options:    -Wall -rtsopts
+  ghc-options:    -O2 -Wall -rtsopts
   build-depends:  base, criterion
 
 test-suite tests
