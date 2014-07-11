@@ -1,4 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, RecordWildCards, UnboxedTuples #-}
+{-# LANGUAGE BangPatterns, DeriveDataTypeable, RecordWildCards,
+    UnboxedTuples #-}
 -- |
 -- Module      : Criterion.Analysis
 -- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
@@ -51,15 +52,14 @@ classifyOutliers sa = U.foldl' ((. outlier) . mappend) mempty ssa
                       , highMild = if e >= hiM && e < hiS then 1 else 0
                       , highSevere = if e >= hiS && e > loM then 1 else 0
                       }
-          loS = q1 - (iqr * 3)
-          loM = q1 - (iqr * 1.5)
-          hiM = q3 + (iqr * 1.5)
-          hiS = q3 + (iqr * 3)
-          q1  = weightedAvg 1 4 ssa
-          q3  = weightedAvg 3 4 ssa
-          ssa = sort sa
-          iqr = q3 - q1
-{-# INLINE classifyOutliers #-}
+          !loS = q1 - (iqr * 3)
+          !loM = q1 - (iqr * 1.5)
+          !hiM = q3 + (iqr * 1.5)
+          !hiS = q3 + (iqr * 3)
+          q1   = weightedAvg 1 4 ssa
+          q3   = weightedAvg 3 4 ssa
+          ssa  = sort sa
+          iqr  = q3 - q1
 
 -- | Compute the extent to which outliers in the sample data affect
 -- the sample mean and standard deviation.
