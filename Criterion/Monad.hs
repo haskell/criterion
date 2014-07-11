@@ -17,6 +17,7 @@ module Criterion.Monad
     , withConfig
     ) where
 
+import Control.Applicative (Applicative)
 import Control.Monad.Reader (MonadReader, ReaderT, ask, runReaderT)
 import Control.Monad.Trans (MonadIO)
 import Criterion.Config (Config)
@@ -24,7 +25,7 @@ import Criterion.Config (Config)
 -- | The monad in which most criterion code executes.
 newtype Criterion a = Criterion {
       runCriterion :: ReaderT Config IO a
-    } deriving (Functor, Monad, MonadReader Config, MonadIO)
+    } deriving (Functor, Applicative, Monad, MonadReader Config, MonadIO)
 
 getConfig :: Criterion Config
 getConfig = ask
