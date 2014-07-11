@@ -1,3 +1,5 @@
+{-# LANGUAGE ForeignFunctionInterface #-}
+
 -- |
 -- Module      : Criterion.Main
 -- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
@@ -55,6 +57,7 @@ import Data.Char (toLower)
 import Data.List (isPrefixOf, sort, stripPrefix)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Monoid(..), Last(..))
+import Foreign.Ptr (Ptr)
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
 import System.Exit (ExitCode(..), exitWith)
@@ -222,6 +225,7 @@ defaultMainWith :: Config
                 -> [Benchmark]
                 -> IO ()
 defaultMainWith defCfg prep bs = do
+  _ <- use_rts_opts
   (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
   shouldRun <- either parseError return .
                makeMatcher (fromMaybe Prefix . getLast . cfgMatchType $ cfg) $
@@ -255,6 +259,9 @@ parseError msg = do
   _ <- printError "Error: %s\n" msg
   _ <- printError "Run \"%s --help\" for usage information\n" =<< getProgName
   exitWith (ExitFailure 64)
+
+foreign import ccall unsafe "criterion_use_ghc_rts_opts"
+    use_rts_opts :: IO (Ptr a)
 
 -- $bench
 --
