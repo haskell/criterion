@@ -55,7 +55,7 @@ import qualified Text.Hastache as H
 data Report = Report {
       reportNumber :: Int
     , reportName :: String
-    , reportTimes :: U.Vector Measured
+    , reportMeasured :: U.Vector Measured
     , reportAnalysis :: SampleAnalysis
     , reportOutliers :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
@@ -91,6 +91,7 @@ formatReport reports template = do
                            "name"     -> return $ MuVariable reportName
                            "number"   -> return $ MuVariable reportNumber
                            "times"    -> return $ vector "x" times
+                           "cycles"   -> return $ vector "x" cycles
                            "kdetimes" -> return $ vector "x" kdeTimes
                            "kdepdf"   -> return $ vector "x" kdePDF
                            "kde"      -> return $ vector2 "time" "pdf" kdeTimes kdePDF
@@ -99,7 +100,8 @@ formatReport reports template = do
                            _          -> mkGenericContext reportOutliers $
                                          H.encodeStr nym
           where (kdeTimes,kdePDF) = kde 128 times
-                times = U.map measTime reportTimes
+                times  = U.map measTime reportMeasured
+                cycles = U.map measCycles reportMeasured
   H.hastacheStr H.defaultConfig template context
 
 -- | Render the elements of a vector.
