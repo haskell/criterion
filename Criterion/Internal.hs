@@ -37,7 +37,6 @@ import Criterion.Types (Benchmark(..), Benchmarkable(..), Payload(..),
                         Result(..))
 import qualified Data.Vector.Unboxed as U
 import Data.Monoid (getLast)
-import GHC.Stats (GCStats(..), getGCStats)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import Statistics.Types (Sample)
 import System.Directory (getTemporaryDirectory, removeFile)
@@ -70,11 +69,7 @@ runBenchmark env (Benchmarkable run) = do
   times <- liftIO . fmap (U.map ((/ newItersD) . subtract (envClockCost env))) .
            U.replicateM sampleCount $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
-             gc0 <- getGCStats
-             r <- time_ (run newIters)
-             gc1 <- getGCStats
-             print (bytesAllocated gc1 - bytesAllocated gc0)
-             return r
+             time_ (run newIters)
   return times
 
 -- | Run a single benchmark and analyse its performance.

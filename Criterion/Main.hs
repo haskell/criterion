@@ -1,5 +1,3 @@
-{-# LANGUAGE CPP, ForeignFunctionInterface #-}
-
 -- |
 -- Module      : Criterion.Main
 -- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
@@ -226,7 +224,6 @@ defaultMainWith :: Config
                 -> [Benchmark]
                 -> IO ()
 defaultMainWith defCfg prep bs = do
-  _ <- initGCStatistics
   (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
   shouldRun <- either parseError return .
                makeMatcher (fromMaybe Prefix . getLast . cfgMatchType $ cfg) $
@@ -260,18 +257,6 @@ parseError msg = do
   _ <- printError "Error: %s\n" msg
   _ <- printError "Run \"%s --help\" for usage information\n" =<< getProgName
   exitWith (ExitFailure 64)
-
-#if __GLASGOW_HASKELL__ >= 708
-
-foreign import ccall safe "criterion_initGCStatistics"
-  initGCStatistics :: IO ()
-
-#else
-
-initGCStatistics :: IO ()
-initGCStatistics = return ()
-
-#endif
 
 -- $bench
 --
