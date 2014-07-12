@@ -32,7 +32,7 @@
 
   $.scaleTimes = function(ary) {
     var s = $.timeUnits($.mean(ary));
-    return [$.scaleBy(s[0], ary), s[1]];
+    return [$.scaleBy(s[0], ary), s[0]];
   };
 
   $.prepareTime = function(secs) {

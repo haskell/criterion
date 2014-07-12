@@ -193,7 +193,7 @@ $(function () {
 
   var benches = [{{#report}}"{{name}}",{{/report}}];
   var ylabels = [{{#report}}[-{{number}},'<a href="#b{{number}}">{{name}}</a>'],{{/report}}];
-  var means = [{{#report}}{{anMean.estPoint}},{{/report}}];
+  var means = $.scaleTimes([{{#report}}{{anMean.estPoint}},{{/report}}]);
   var xs = [];
   var prev = null;
   for (var i = 0; i < means[0].length; i++) {
@@ -212,13 +212,14 @@ $(function () {
                                barWidth: 0.75, align: "center" },
                        grid: { borderColor: "#777", hoverable: true },
                        legend: { show: xs.length > 1 },
+                       xaxis: { max: Math.max.apply(undefined,means[0]) * 1.02 },
                        yaxis: { ticks: ylabels, tickColor: '#ffffff' } });
   if (benches.length > 3)
     o.getPlaceholder().height(28*benches.length);
   o.resize();
   o.setupGrid();
   o.draw();
-  $.addTooltip("#overview", function(x,y) { return x + ' ' + means[1]; });
+  $.addTooltip("#overview", function(x,y) { return $.renderTime(x / means[1]); });
 });
 $(document).ready(function () {
     $(".time").text(function(_, text) {
