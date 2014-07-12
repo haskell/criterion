@@ -46,6 +46,10 @@
              style="width:450px;height:278px;"></div></td>
     <td><div id="time{{number}}" class="timechart"
              style="width:450px;height:278px;"></div></td>
+<!--
+    <td><div id="cycle{{number}}" class="cyclechart"
+             style="width:300px;height:278px;"></div></td>
+-->
    </tr>
   </tbody>
  </table>
@@ -102,7 +106,7 @@
      density estimate is built.  Measurements are displayed on
      the <i>y</i> axis in the order in which they occurred.</li>
  </ul>
-   
+
  <p>Under the charts is a small table displaying the mean and standard
    deviation of the measurements.  We use a statistical technique
    called
@@ -112,7 +116,7 @@
    standard deviation let you see how accurate we believe those
    estimates to be.  (Hover the mouse over the table headers to see
    the confidence levels.)</p>
-   
+
  <p>A noisy benchmarking environment can cause some or many
    measurements to fall far from the mean.  These outlying
    measurements can have a significant inflationary effect on the
@@ -122,7 +126,7 @@
 
 <script type="text/javascript">
 $(function () {
-  function mangulate(number, name, mean, times, kdetimes, kdepdf) {
+  function mangulate(number, name, mean, times, cycles, kdetimes, kdepdf) {
     var meanSecs = mean;
     var units = $.timeUnits(mean);
     var scale = units[0];
@@ -145,6 +149,7 @@ $(function () {
     kq.append('<div class="meanlegend" title="' + $.renderTime(meanSecs) +
               '" style="position:absolute;left:' + (o.left + 4) +
               'px;bottom:139px;">mean</div>');
+    $.addTooltip("#kde" + number, function(x,y) { return x + ' ' + units; });
     var timepairs = new Array(ts.length);
     for (var i = 0; i < ts.length; i++)
       timepairs[i] = [ts[i],i];
@@ -157,13 +162,27 @@ $(function () {
                       tickFormatter: $.unitFormatter(units) },
              yaxis: { ticks: false },
            });
-    $.addTooltip("#kde" + number, function(x,y) { return x + ' ' + units; });
     $.addTooltip("#time" + number, function(x,y) { return x + ' ' + units; });
+    if (0) {
+      var cyclepairs = new Array(cycles.length);
+      for (var i = 0; i < cycles.length; i++)
+	cyclepairs[i] = [cycles[i],i];
+      $.plot($("#cycle" + number),
+	     [{ label: name + " cycles",
+		data: cyclepairs }],
+	     { points: { show: true },
+	       grid: { borderColor: "#777", hoverable: true },
+	       xaxis: { tickFormatter: $.unitFormatter('cycles') },
+	       yaxis: { ticks: false },
+	     });
+      $.addTooltip("#cycles" + number, function(x,y) { return x + ' cycles'; });
+    }
   };
   {{#report}}
   mangulate({{number}}, "{{name}}",
             {{anMean.estPoint}},
             [{{#times}}{{x}},{{/times}}],
+            [{{#cycles}}{{x}},{{/cycles}}],
             [{{#kdetimes}}{{x}},{{/kdetimes}}],
             [{{#kdepdf}}{{x}},{{/kdepdf}}]);
   {{/report}}
