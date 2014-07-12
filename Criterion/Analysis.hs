@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns, DeriveDataTypeable, RecordWildCards #-}
 -- |
 -- Module      : Criterion.Analysis
--- Copyright   : (c) 2009, 2010, 2011 Bryan O'Sullivan
+-- Copyright   : (c) 2009-2014 Bryan O'Sullivan
 --
 -- License     : BSD-style
 -- Maintainer  : bos@serpentine.com

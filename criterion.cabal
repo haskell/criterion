@@ -5,7 +5,7 @@ license:        BSD3
 license-file:   LICENSE
 author:         Bryan O'Sullivan <bos@serpentine.com>
 maintainer:     Bryan O'Sullivan <bos@serpentine.com>
-copyright:      2009-2013 Bryan O'Sullivan
+copyright:      2009-2014 Bryan O'Sullivan
 category:       Development, Performance, Testing, Benchmarking
 homepage:       https://github.com/bos/criterion
 bug-reports:    https://github.com/bos/criterion/issues
