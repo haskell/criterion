@@ -20,10 +20,61 @@ module Criterion.Measurement
     , secs
     , time
     , time_
+    , getGCStats
+    , gcStats
+    , diffGCStats
     ) where
 
 import Control.Monad (when)
+import GHC.Stats (GCStats(..))
 import Text.Printf (printf)
+import qualified Control.Exception as Exc
+import qualified GHC.Stats as Stats
+
+getGCStats :: IO (Maybe GCStats)
+getGCStats =
+  (Just `fmap` Stats.getGCStats) `Exc.catch` \(_::Exc.SomeException) ->
+  return Nothing
+
+gcStats :: IO a -> IO (Maybe GCStats, a)
+gcStats act = do
+  start <- getGCStats
+  result <- act
+  end <- getGCStats
+  let delta = do old <- start
+                 new <- end
+                 return $! diffGCStats old new
+  return (delta, result)
+
+-- | A not-very-principled \"difference\" of two sets of GC
+-- statistics.
+diffGCStats :: GCStats          -- ^ \"old\" stats
+            -> GCStats          -- ^ \"new\" stats
+            -> GCStats
+diffGCStats old new =
+  GCStats {
+      bytesAllocated = bytesAllocated new - bytesAllocated old
+    , numGcs = numGcs new - numGcs old
+    , maxBytesUsed = maxBytesUsed new `max` maxBytesUsed old
+    , numByteUsageSamples = numByteUsageSamples new `max`
+                            numByteUsageSamples old
+    , cumulativeBytesUsed = cumulativeBytesUsed new `max`
+                            cumulativeBytesUsed old
+    , bytesCopied = bytesCopied new - bytesCopied old
+    , currentBytesUsed = currentBytesUsed new
+    , currentBytesSlop = currentBytesSlop new
+    , maxBytesSlop = maxBytesSlop new `max` maxBytesSlop old
+    , peakMegabytesAllocated = peakMegabytesAllocated new `max`
+                               peakMegabytesAllocated old
+    , mutatorCpuSeconds = mutatorCpuSeconds new - mutatorCpuSeconds old
+    , mutatorWallSeconds = mutatorWallSeconds new - mutatorWallSeconds old
+    , gcCpuSeconds = gcCpuSeconds new - gcCpuSeconds old
+    , gcWallSeconds = gcWallSeconds new - gcWallSeconds old
+    , cpuSeconds = cpuSeconds new - cpuSeconds old
+    , wallSeconds = wallSeconds new - wallSeconds old
+    , parTotBytesCopied = parTotBytesCopied new - parTotBytesCopied old
+    , parMaxBytesCopied = parMaxBytesCopied new - parMaxBytesCopied old
+    }
 
 time :: IO a -> IO (Double, a)
 time act = do
