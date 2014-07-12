@@ -2,4 +2,5 @@
 \.(?:aux|eventlog|h[ip]|log|[oa]|orig|prof|png|ps|rej|swp)$
 ~$
 syntax: glob
+js-src/flot
 .\#*

@@ -27,11 +27,20 @@
     else if (secs >= 1e-6)  return [1e6,  "\u03bcs"];
     else if (secs >= 1e-9)  return [1e9,  "ns"];
     else if (secs >= 1e-12) return [1e12, "ps"];
+    return [1, "s"];
   };
 
   $.scaleTimes = function(ary) {
     var s = $.timeUnits($.mean(ary));
     return [$.scaleBy(s[0], ary), s[1]];
+  };
+
+  $.prepareTime = function(secs) {
+    var units = $.timeUnits(secs);
+    var scaled = secs * units[0];
+    var s = scaled.toPrecision(3);
+    var t = scaled.toString();
+    return [t.length < s.length ? t : s, units[1]];
   };
 
   $.scaleBy = function(x, ary) {
@@ -41,27 +50,21 @@
     return nary;
   };
 
-  $.renderTime = function(text) {
-    var x = parseFloat(text);
-    var t = $.timeUnits(x);
-    x *= t[0];
-    if (x >= 1000 || x <= -1000) return x.toFixed() + " " + t[1];
-    var prec = 5;
-    if (x < 0) prec++;
-
-    return x.toString().substring(0,prec) + " " + t[1];
+  $.renderTime = function(secs) {
+    var x = $.prepareTime(secs);
+    return x[0] + ' ' + x[1];
   };
 
-  $.unitFormatter = function(units) {
-    var ticked = 0;
-    return function(val,axis) {
-        var s = val.toFixed(axis.tickDecimals);
-	if (ticked > 1)
-	  return s;
+  $.unitFormatter = function(scale) {
+    var labelname;
+    return function(secs,axis) {
+        var x = $.prepareTime(secs / scale);
+        if (labelname === x[1])
+          return x[0];
         else {
-          ticked++;
-	  return s + ' ' + units;
-	}
+          labelname = x[1];
+          return x[0] + ' ' + x[1];
+        }
     };
   };
 
@@ -88,15 +91,15 @@
 		pp = item.dataIndex;
 
 		$("#tooltip").remove();
-		var x = item.datapoint[0].toFixed(2),
-		    y = item.datapoint[1].toFixed(2);
+		var x = item.datapoint[0],
+		    y = item.datapoint[1];
 
 		showTooltip(item.pageX, item.pageY, renderText(x,y));
 	    }
 	}
 	else {
 	    $("#tooltip").remove();
-	    pp = null;            
+	    pp = null;
 	}
     });
   };

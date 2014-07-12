@@ -126,20 +126,19 @@
 
 <script type="text/javascript">
 $(function () {
-  function mangulate(number, name, mean, times, cycles, kdetimes, kdepdf) {
+  function mangulate(number, name, mean, iters, times, cycles,
+                     kdetimes, kdepdf) {
     var meanSecs = mean;
     var units = $.timeUnits(mean);
     var scale = units[0];
-    units = units[1];
     mean *= scale;
     kdetimes = $.scaleBy(scale, kdetimes);
-    var ts = $.scaleBy(scale, times);
     var kq = $("#kde" + number);
     var k = $.plot(kq,
            [{ label: name + " time densities",
               data: $.zip(kdetimes, kdepdf),
               }],
-           { xaxis: { tickFormatter: $.unitFormatter(units) },
+           { xaxis: { tickFormatter: $.unitFormatter(scale) },
              yaxis: { ticks: false },
              grid: { borderColor: "#777",
                      hoverable: true, markings: [ { color: '#6fd3fb',
@@ -149,20 +148,23 @@ $(function () {
     kq.append('<div class="meanlegend" title="' + $.renderTime(meanSecs) +
               '" style="position:absolute;left:' + (o.left + 4) +
               'px;bottom:139px;">mean</div>');
-    $.addTooltip("#kde" + number, function(x,y) { return x + ' ' + units; });
-    var timepairs = new Array(ts.length);
-    for (var i = 0; i < ts.length; i++)
-      timepairs[i] = [ts[i],i];
+    $.addTooltip("#kde" + number,
+                 function(secs) { return $.renderTime(secs / scale); });
+    var timepairs = new Array(times.length);
+    for (var i = 0; i < times.length; i++)
+      timepairs[i] = [times[i]*scale,iters[i]];
     $.plot($("#time" + number),
            [{ label: name + " times",
               data: timepairs }],
            { points: { show: true },
              grid: { borderColor: "#777", hoverable: true },
-             xaxis: { min: kdetimes[0], max: kdetimes[kdetimes.length-1],
-                      tickFormatter: $.unitFormatter(units) },
-             yaxis: { ticks: false },
+             xaxis: { tickFormatter: $.unitFormatter(scale) },
            });
-    $.addTooltip("#time" + number, function(x,y) { return x + ' ' + units; });
+    $.addTooltip("#time" + number,
+		 function(secs,iters) {
+		   return ($.renderTime(secs / scale) + ', ' + iters +
+		           ' iters');
+		 });
     if (0) {
       var cyclepairs = new Array(cycles.length);
       for (var i = 0; i < cycles.length; i++)
@@ -172,7 +174,8 @@ $(function () {
 		data: cyclepairs }],
 	     { points: { show: true },
 	       grid: { borderColor: "#777", hoverable: true },
-	       xaxis: { tickFormatter: $.unitFormatter('cycles') },
+	       xaxis: { tickFormatter:
+			function(cycles,axis) { return cycles + ' cycles'; }},
 	       yaxis: { ticks: false },
 	     });
       $.addTooltip("#cycles" + number, function(x,y) { return x + ' cycles'; });
@@ -181,6 +184,7 @@ $(function () {
   {{#report}}
   mangulate({{number}}, "{{name}}",
             {{anMean.estPoint}},
+            [{{#iters}}{{x}},{{/iters}}],
             [{{#times}}{{x}},{{/times}}],
             [{{#cycles}}{{x}},{{/cycles}}],
             [{{#kdetimes}}{{x}},{{/kdetimes}}],
@@ -189,7 +193,7 @@ $(function () {
 
   var benches = [{{#report}}"{{name}}",{{/report}}];
   var ylabels = [{{#report}}[-{{number}},'<a href="#b{{number}}">{{name}}</a>'],{{/report}}];
-  var means = $.scaleTimes([{{#report}}{{anMean.estPoint}},{{/report}}]);
+  var means = [{{#report}}{{anMean.estPoint}},{{/report}}];
   var xs = [];
   var prev = null;
   for (var i = 0; i < means[0].length; i++) {
@@ -208,7 +212,6 @@ $(function () {
                                barWidth: 0.75, align: "center" },
                        grid: { borderColor: "#777", hoverable: true },
                        legend: { show: xs.length > 1 },
-                       xaxis: { max: Math.max.apply(undefined,means[0]) * 1.02 },
                        yaxis: { ticks: ylabels, tickColor: '#ffffff' } });
   if (benches.length > 3)
     o.getPlaceholder().height(28*benches.length);

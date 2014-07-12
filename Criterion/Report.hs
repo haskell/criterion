@@ -32,7 +32,7 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
 import Criterion.Monad (Criterion, getConfig)
-import Criterion.Types (Measured(..))
+import Criterion.Types (Measured(..), rescale)
 import Data.Data (Data, Typeable)
 import Data.Monoid (Last(..))
 import GHC.Generics (Generic)
@@ -90,6 +90,7 @@ formatReport reports template = do
                          case nym of
                            "name"     -> return $ MuVariable reportName
                            "number"   -> return $ MuVariable reportNumber
+                           "iters"    -> return $ vector "x" iters
                            "times"    -> return $ vector "x" times
                            "cycles"   -> return $ vector "x" cycles
                            "kdetimes" -> return $ vector "x" kdeTimes
@@ -99,9 +100,11 @@ formatReport reports template = do
                                          H.encodeStr nym
                            _          -> mkGenericContext reportOutliers $
                                          H.encodeStr nym
-          where (kdeTimes,kdePDF) = kde 128 times
-                times  = U.map measTime reportMeasured
-                cycles = U.map measCycles reportMeasured
+          where (kdeTimes,kdePDF) = kde 128 scaledTimes
+                iters       = U.map measIters reportMeasured
+                times       = U.map measTime reportMeasured
+                scaledTimes = U.map (measTime . rescale) reportMeasured
+                cycles      = U.map measCycles reportMeasured
   H.hastacheStr H.defaultConfig template context
 
 -- | Render the elements of a vector.

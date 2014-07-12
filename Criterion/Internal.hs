@@ -18,9 +18,10 @@ module Criterion.Internal
     , prefix
     ) where
 
-import Control.Monad (foldM, replicateM_, when)
+import Control.Monad (foldM, when)
 import Control.Monad.Trans (liftIO)
 import Data.Binary (encode)
+import Data.List (unfoldr)
 import qualified Data.ByteString.Lazy as L
 import Criterion.Analysis (Outliers(..), OutlierEffect(..), OutlierVariance(..),
                            SampleAnalysis(..), analyseSample,
@@ -29,11 +30,11 @@ import Criterion.Config (Config(..), Verbosity(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (header, hGetResults)
 import Criterion.IO.Printf (note, prolix, writeCsv)
-import Criterion.Measurement (getCycles, getTime, runForAtLeast, secs)
+import Criterion.Measurement (getCycles, getTime, secs)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Report (Report(..), report)
 import Criterion.Types (Benchmark(..), Benchmarkable(..), Measured(..),
-                        Payload(..), Result(..))
+                        Payload(..), Result(..), rescale)
 import qualified Data.Vector.Unboxed as U
 import Data.Monoid (getLast)
 import Statistics.Resampling.Bootstrap (Estimate(..))
@@ -43,52 +44,41 @@ import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
 import System.Mem (performGC)
 import Text.Printf (printf)
 
-scale :: Double -> Measured -> Measured
-scale k Measured{..} =
-  Measured {
-    measTime   = measTime / k
-  , measCycles = round $ fromIntegral measCycles / k
-  , measIters  = round $ fromIntegral measIters / k
-  }
+-- Our series starts its growth very slowly when we begin at 1, so we
+-- eliminate repeated values.
+squish :: (Eq a) => [a] -> [a]
+squish ys = foldr go [] ys
+  where go x xs = x : dropWhile (==x) xs
 
-clockAdjust :: Double -> Measured -> Measured
-clockAdjust k m = m { measTime = measTime m - k }
+series :: Double -> Maybe (Int, Double)
+series k = Just (truncate l, l)
+  where l = k * 1.05
 
 -- | Run a single benchmark, and return measurements collected while
 -- executing it.
 runBenchmark :: Environment -> Benchmarkable -> Criterion (U.Vector Measured)
-runBenchmark env (Benchmarkable run) = do
-  _ <- liftIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
-  let minTime = envClockResolution env * 1000
-  (testTime, testIters, _) <- liftIO $ runForAtLeast (min minTime 0.1) 1 run
-  _ <- prolix "ran %d iterations in %s\n" testIters (secs testTime)
+runBenchmark _env (Benchmarkable run) = do
+  liftIO $ run 1
   cfg <- getConfig
-  let newIters    = ceiling $ minTime * testItersD / testTime
-      sampleCount = fromLJ cfgSamples cfg
-      newItersD   = fromIntegral newIters
-      testItersD  = fromIntegral testIters
-      estTime     = (fromIntegral sampleCount * newItersD *
-                     testTime / testItersD)
-  when (fromLJ cfgVerbosity cfg > Normal || estTime > 5) $
-    note "collecting %d samples, %d iterations each, in estimated %s\n"
-       sampleCount newIters (secs estTime)
-  -- Run the GC to make sure garbage created by previous benchmarks
-  -- don't affect this benchmark.
-  liftIO performGC
-  times <- liftIO . fmap (U.map ((scale newItersD) . clockAdjust (envClockCost env))) .
-           U.replicateM sampleCount $ do
-             when (fromLJ cfgPerformGC cfg) $ performGC
-             startTime <- getTime
-             startCycles <- getCycles
-             run newIters
-             endTime <- getTime
-             endCycles <- getCycles
-             return Measured {
-                 measTime   = endTime - startTime
-               , measCycles = endCycles - startCycles
-               , measIters  = newIters
-               }
-  return times
+  start <- liftIO $ performGC >> getTime
+  let budget = 5
+      loop [] _ = error "unpossible!"
+      loop (iters:niters) acc = do
+        when (fromLJ cfgPerformGC cfg) $ performGC
+        startTime <- getTime
+        startCycles <- getCycles
+        run iters
+        endTime <- getTime
+        endCycles <- getCycles
+        let m = Measured {
+                  measTime   = max 0 (endTime - startTime)
+                , measCycles = max 0 (endCycles - startCycles)
+                , measIters  = iters
+                }
+        if endTime - start >= budget
+          then return $! U.reverse (U.fromList acc)
+          else loop niters (m:acc)
+  liftIO $ loop (squish (unfoldr series 1)) []
 
 -- | Run a single benchmark and analyse its performance.
 runAndAnalyseOne :: Environment -> Maybe String -> Benchmarkable
@@ -98,7 +88,7 @@ runAndAnalyseOne env mdesc bm = do
   ci <- getConfigItem $ fromLJ cfgConfInterval
   numResamples <- getConfigItem $ fromLJ cfgResamples
   _ <- prolix "analysing with %d resamples\n" numResamples
-  let times = U.map measTime meas
+  let times = U.map (measTime . rescale) meas
   an@SampleAnalysis{..} <- liftIO $ analyseSample ci times numResamples
   let OutlierVariance{..} = anOutlierVar
   let wibble = case ovEffect of

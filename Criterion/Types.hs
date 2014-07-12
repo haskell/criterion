@@ -32,6 +32,7 @@ module Criterion.Types
       Benchmarkable(..)
     , Benchmark(..)
     , Measured(..)
+    , rescale
     , whnf
     , nf
     , nfIO
@@ -66,6 +67,12 @@ data Measured = Measured {
     , measCycles :: {-# UNPACK #-} !Word64
     , measIters  :: {-# UNPACK #-} !Int
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+rescale :: Measured -> Measured
+rescale m = m {
+    measTime   = measTime m / i
+  , measCycles = round $ fromIntegral (measCycles m) / i
+  } where i    = fromIntegral (measIters m) :: Double
 
 derivingUnbox "Measured"
   [t| Measured -> (Double, Word64, Int) |]
