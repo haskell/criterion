@@ -48,6 +48,7 @@ scale k Measured{..} =
   Measured {
     measTime   = measTime / k
   , measCycles = round $ fromIntegral measCycles / k
+  , measIters  = round $ fromIntegral measIters / k
   }
 
 clockAdjust :: Double -> Measured -> Measured
@@ -83,8 +84,9 @@ runBenchmark env (Benchmarkable run) = do
              endTime <- getTime
              endCycles <- getCycles
              return Measured {
-                 measTime = endTime - startTime
+                 measTime   = endTime - startTime
                , measCycles = endCycles - startCycles
+               , measIters  = newIters
                }
   return times
 

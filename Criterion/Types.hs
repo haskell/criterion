@@ -64,16 +64,17 @@ newtype Benchmarkable = Benchmarkable (Int -> IO ())
 data Measured = Measured {
       measTime   :: {-# UNPACK #-} !Double
     , measCycles :: {-# UNPACK #-} !Word64
+    , measIters  :: {-# UNPACK #-} !Int
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 derivingUnbox "Measured"
-  [t| Measured -> (Double, Word64) |]
-  [| \(Measured t c) -> (t,c) |]
-  [| \(t,c) -> Measured t c |]
+  [t| Measured -> (Double, Word64, Int) |]
+  [| \(Measured t c i) -> (t,c,i) |]
+  [| \(t,c,i) -> Measured t c i |]
 
 instance Binary Measured where
-    put (Measured t c) = put t >> put c
-    get = Measured <$> get <*> get
+    put (Measured t c i) = put t >> put c >> put i
+    get = Measured <$> get <*> get <*> get
 
 -- | Apply an argument to a function, and evaluate the result to weak
 -- head normal form (WHNF).
