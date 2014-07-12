@@ -13,7 +13,8 @@ main :: IO ()
 main = do
   let tooLong = 30
   wat <- timeout (tooLong * 1000000) $
-         defaultMain [ bench "fib 10" $ whnf fib 10 ]
+         defaultMain [ bench "fib 10" $ whnf fib 10
+                     , bench "fib 22" $ whnf fib 22 ]
   case wat of
     Just () -> return ()
     Nothing -> do
