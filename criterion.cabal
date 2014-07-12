@@ -55,6 +55,7 @@ library
     Criterion.Report
     Criterion.Types
 
+  c-sources: cbits/cycles.c
   if os(darwin)
     c-sources: cbits/time-osx.c
   else {

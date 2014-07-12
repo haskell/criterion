@@ -17,15 +17,18 @@ module Criterion.Measurement
       initializeTime
     , getTime
     , runForAtLeast
+    , rdtsc
     , secs
     , time
     , time_
+    , cycles
     , getGCStats
     , gcStats
     , diffGCStats
     ) where
 
 import Control.Monad (when)
+import Data.Word (Word64)
 import GHC.Stats (GCStats(..))
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
@@ -91,6 +94,14 @@ time_ act = do
   end <- getTime
   return $! end - start
 
+cycles :: IO a -> IO (Word64, a)
+cycles act = do
+  start <- rdtsc
+  result <- act
+  end <- rdtsc
+  let !delta = end - start
+  return (delta, result)
+
 runForAtLeast :: Double -> Int -> (Int -> IO a) -> IO (Double, Int, a)
 runForAtLeast howLong initSeed act = loop initSeed (0::Int) =<< getTime
   where
@@ -123,6 +134,8 @@ secs k
                | otherwise = printf "%.6f %s" t u
 
 foreign import ccall unsafe "criterion_inittime" initializeTime :: IO ()
+
+foreign import ccall unsafe "criterion_rdtsc" rdtsc :: IO Word64
 
 -- | Return the current wallclock time, in seconds since some
 -- arbitrary time.
