@@ -27,7 +27,6 @@ import Criterion.Analysis (Outliers(..), OutlierEffect(..), OutlierVariance(..),
                            SampleAnalysis(..), analyseSample,
                            classifyOutliers, noteOutliers)
 import Criterion.Config (Config(..), Verbosity(..), fromLJ)
-import Criterion.Environment (Environment(..))
 import Criterion.IO (header, hGetResults)
 import Criterion.IO.Printf (note, prolix, writeCsv)
 import Criterion.Measurement (getCycles, getTime, secs)
@@ -56,8 +55,8 @@ series k = Just (truncate l, l)
 
 -- | Run a single benchmark, and return measurements collected while
 -- executing it.
-runBenchmark :: Environment -> Benchmarkable -> Criterion (U.Vector Measured)
-runBenchmark _env (Benchmarkable run) = do
+runBenchmark :: Benchmarkable -> Criterion (U.Vector Measured)
+runBenchmark (Benchmarkable run) = do
   liftIO $ run 1
   cfg <- getConfig
   start <- liftIO $ performGC >> getTime
@@ -81,10 +80,10 @@ runBenchmark _env (Benchmarkable run) = do
   liftIO $ loop (squish (unfoldr series 1)) []
 
 -- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: Environment -> Maybe String -> Benchmarkable
+runAndAnalyseOne :: Maybe String -> Benchmarkable
                  -> Criterion (U.Vector Measured, SampleAnalysis, Outliers)
-runAndAnalyseOne env mdesc bm = do
-  meas <- runBenchmark env bm
+runAndAnalyseOne mdesc bm = do
+  meas <- runBenchmark bm
   ci <- getConfigItem $ fromLJ cfgConfInterval
   numResamples <- getConfigItem $ fromLJ cfgResamples
   _ <- prolix "analysing with %d resamples\n" numResamples
@@ -126,10 +125,9 @@ plotAll descTimes = do
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
                                   -- name.
-              -> Environment
               -> Benchmark
               -> Criterion ()
-runAndAnalyse p env bs' = do
+runAndAnalyse p bs' = do
   mbResultFile <- getConfigItem $ getLast . cfgResults
   (resultFile, handle) <- liftIO $
     case mbResultFile of
@@ -143,7 +141,7 @@ runAndAnalyse p env bs' = do
 
   let go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
-                           (x,an,out) <- runAndAnalyseOne env (Just desc') b
+                           (x,an,out) <- runAndAnalyseOne (Just desc') b
                            let result = Single desc' $ Payload x an out
                            liftIO $ L.hPut handle (encode result)
                            return $! k + 1

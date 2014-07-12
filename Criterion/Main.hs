@@ -44,10 +44,11 @@ module Criterion.Main
     ) where
 
 import Control.Monad (unless)
-import Criterion.Internal (runAndAnalyse, runNotAnalyse, prefix)
+import Control.Monad.Trans (liftIO)
 import Criterion.Config
-import Criterion.Environment (measureEnvironment)
 import Criterion.IO.Printf (note, printError, writeCsv)
+import Criterion.Internal (runAndAnalyse, runNotAnalyse, prefix)
+import Criterion.Measurement (initializeTime)
 import Criterion.Monad (Criterion, withConfig)
 import Criterion.Types (Benchmarkable(..), Benchmark(..), bench,
                         benchNames, bgroup, nf, nfIO, whnf, whnfIO)
@@ -241,9 +242,9 @@ defaultMainWith defCfg prep bs = do
         else do
           writeCsv ("Name","Mean","MeanLB","MeanUB","Stddev","StddevLB",
                     "StddevUB")
-          env <- measureEnvironment
+          liftIO initializeTime
           prep
-          runAndAnalyse shouldRun env bsgroup
+          runAndAnalyse shouldRun bsgroup
   where
   bsgroup = BenchGroup "" bs
   names = go ""

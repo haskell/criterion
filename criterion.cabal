@@ -46,7 +46,6 @@ library
     Criterion.Analysis
     Criterion.Analysis.Types
     Criterion.Config
-    Criterion.Environment
     Criterion.IO
     Criterion.IO.Printf
     Criterion.Main
