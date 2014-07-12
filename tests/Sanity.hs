@@ -4,9 +4,10 @@ import System.IO (hPutStrLn, stderr)
 import System.Timeout (timeout)
 
 fib :: Int -> Int
-fib 0 = 0
-fib 1 = 1
-fib n = fib (n-1) + fib (n-2)
+fib = sum . go
+  where go 0 = [0]
+        go 1 = [1]
+        go n = go (n-1) ++ go (n-2)
 
 main :: IO ()
 main = do

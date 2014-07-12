@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface #-}
+{-# LANGUAGE CPP, ForeignFunctionInterface #-}
 
 -- |
 -- Module      : Criterion.Main
@@ -57,7 +57,6 @@ import Data.Char (toLower)
 import Data.List (isPrefixOf, sort, stripPrefix)
 import Data.Maybe (fromMaybe)
 import Data.Monoid (Monoid(..), Last(..))
-import Foreign.Ptr (Ptr)
 import System.Console.GetOpt
 import System.Environment (getArgs, getProgName)
 import System.Exit (ExitCode(..), exitWith)
@@ -148,10 +147,12 @@ printUsage :: [OptDescr (IO Config)] -> ExitCode -> IO a
 printUsage options exitCode = do
   p <- getProgName
   putStr (usageInfo ("Usage: " ++ p ++ " [OPTIONS] [BENCHMARKS]") options)
-  putStrLn "If no benchmark names are given, all are run\n\
-           \Otherwise, benchmarks are chosen by prefix or zsh-style pattern \
-           \match\n\
-           \(use --match to specify how to match the benchmarks to run)"
+  putStrLn $ concat [
+    "If no benchmark names are given, all are run\n",
+    "Otherwise, benchmarks are chosen by prefix or zsh-style pattern ",
+    "match\n",
+    "(use --match to specify how to match the benchmarks to run)"
+    ]
   exitWith exitCode
 
 -- | Parse command line options.
@@ -225,7 +226,7 @@ defaultMainWith :: Config
                 -> [Benchmark]
                 -> IO ()
 defaultMainWith defCfg prep bs = do
-  _ <- use_rts_opts
+  _ <- initGCStatistics
   (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
   shouldRun <- either parseError return .
                makeMatcher (fromMaybe Prefix . getLast . cfgMatchType $ cfg) $
@@ -260,8 +261,17 @@ parseError msg = do
   _ <- printError "Run \"%s --help\" for usage information\n" =<< getProgName
   exitWith (ExitFailure 64)
 
-foreign import ccall unsafe "criterion_use_ghc_rts_opts"
-    use_rts_opts :: IO (Ptr a)
+#if __GLASGOW_HASKELL__ >= 708
+
+foreign import ccall safe "criterion_initGCStatistics"
+  initGCStatistics :: IO ()
+
+#else
+
+initGCStatistics :: IO ()
+initGCStatistics = return ()
+
+#endif
 
 -- $bench
 --

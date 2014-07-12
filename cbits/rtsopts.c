@@ -1,29 +1,17 @@
 /*
- * Try to set up the RTS to enable GC statistics collection, using a
- * weak symbol that can be overridden.
-
- * (Collecting stats has no apparent effect on performance; I'm a bit
- * mystified why it's not enabled by default.)
+ * Try to set up the RTS to enable GC statistics collection.
  */
 
 #include "Rts.h"
 
-#if defined(__GNUC__) || defined(__clang__)
-
-char *ghc_rts_opts __attribute__((weak));
-
-char *ghc_rts_opts = "-T";
-
-#elif defined(_MSC_VER)
-
-extern const char *criterion_ghc_rts_opts = "-T";
-extern const char *ghc_rts_opts;
-
-#pragma comment(linker, "/alternatename:_ghc_rts_opts=_criterion_ghc_rts_opts")
-
-#endif
-
-char *criterion_use_ghc_rts_opts(void)
+void
+criterion_initGCStatistics(void)
 {
-    return ghc_rts_opts;
+  /* Workaround for GHC #8754: if the GC stats aren't enabled because
+   the compiler couldn't use -Bsymbolic to link the default hooks,
+   then initialize them sensibly. See Note [-Bsymbolic and hooks] in
+   Main.hs. */
+  if (RtsFlags.GcFlags.giveStats == NO_GC_STATS) {
+    RtsFlags.GcFlags.giveStats = COLLECT_GC_STATS;
+  }
 }
