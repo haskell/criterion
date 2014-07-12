@@ -17,7 +17,7 @@ module Criterion.Measurement
       initializeTime
     , getTime
     , runForAtLeast
-    , rdtsc
+    , getCycles
     , secs
     , time
     , time_
@@ -96,9 +96,9 @@ time_ act = do
 
 cycles :: IO a -> IO (Word64, a)
 cycles act = do
-  start <- rdtsc
+  start <- getCycles
   result <- act
-  end <- rdtsc
+  end <- getCycles
   let !delta = end - start
   return (delta, result)
 
@@ -135,7 +135,7 @@ secs k
 
 foreign import ccall unsafe "criterion_inittime" initializeTime :: IO ()
 
-foreign import ccall unsafe "criterion_rdtsc" rdtsc :: IO Word64
+foreign import ccall unsafe "criterion_rdtsc" getCycles :: IO Word64
 
 -- | Return the current wallclock time, in seconds since some
 -- arbitrary time.
