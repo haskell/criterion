@@ -32,12 +32,12 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
 import Criterion.Monad (Criterion, getConfig)
+import Criterion.Types (Measured(..))
 import Data.Data (Data, Typeable)
 import Data.Monoid (Last(..))
 import GHC.Generics (Generic)
 import Paths_criterion (getDataFileName)
 import Statistics.Sample.KernelDensity (kde)
-import Statistics.Types (Sample)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>), isPathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
@@ -55,7 +55,7 @@ import qualified Text.Hastache as H
 data Report = Report {
       reportNumber :: Int
     , reportName :: String
-    , reportTimes :: Sample
+    , reportTimes :: U.Vector Measured
     , reportAnalysis :: SampleAnalysis
     , reportOutliers :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
@@ -90,7 +90,7 @@ formatReport reports template = do
                          case nym of
                            "name"     -> return $ MuVariable reportName
                            "number"   -> return $ MuVariable reportNumber
-                           "times"    -> return $ vector "x" reportTimes
+                           "times"    -> return $ vector "x" times
                            "kdetimes" -> return $ vector "x" kdeTimes
                            "kdepdf"   -> return $ vector "x" kdePDF
                            "kde"      -> return $ vector2 "time" "pdf" kdeTimes kdePDF
@@ -98,7 +98,8 @@ formatReport reports template = do
                                          H.encodeStr nym
                            _          -> mkGenericContext reportOutliers $
                                          H.encodeStr nym
-          where (kdeTimes,kdePDF) = kde 128 reportTimes
+          where (kdeTimes,kdePDF) = kde 128 times
+                times = U.map measTime reportTimes
   H.hastacheStr H.defaultConfig template context
 
 -- | Render the elements of a vector.

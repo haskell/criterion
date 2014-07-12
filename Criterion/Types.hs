@@ -1,5 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, ExistentialQuantification,
-    FlexibleInstances, GADTs #-}
+    FlexibleInstances, GADTs, MultiParamTypeClasses, TemplateHaskell,
+    TypeFamilies #-}
 {-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
 
 -- |
@@ -30,6 +31,7 @@ module Criterion.Types
     -- * Benchmark descriptions
       Benchmarkable(..)
     , Benchmark(..)
+    , Measured(..)
     , whnf
     , nf
     , nfIO
@@ -48,13 +50,30 @@ import Control.Exception (evaluate)
 import Criterion.Analysis.Types (Outliers(..), SampleAnalysis(..))
 import Data.Binary (Binary(..))
 import Data.Data (Data, Typeable)
+import Data.Word (Word64)
+import Data.Vector.Unboxed.Deriving (derivingUnbox)
 import GHC.Generics (Generic)
-import Statistics.Types (Sample)
+import qualified Data.Vector.Unboxed as U
 
 -- | A pure function or impure action that can be benchmarked. The
 -- 'Int' parameter indicates the number of times to run the given
 -- function or action.
 newtype Benchmarkable = Benchmarkable (Int -> IO ())
+
+-- | A collection of measurements made while benchmarking.
+data Measured = Measured {
+      measTime   :: {-# UNPACK #-} !Double
+    , measCycles :: {-# UNPACK #-} !Word64
+    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+derivingUnbox "Measured"
+  [t| Measured -> (Double, Word64) |]
+  [| \(Measured t c) -> (t,c) |]
+  [| \(t,c) -> Measured t c |]
+
+instance Binary Measured where
+    put (Measured t c) = put t >> put c
+    get = Measured <$> get <*> get
 
 -- | Apply an argument to a function, and evaluate the result to weak
 -- head normal form (WHNF).
@@ -126,7 +145,7 @@ instance Show Benchmark where
     show (BenchGroup d _) = ("BenchGroup " ++ show d)
 
 data Payload = Payload {
-      sample         :: Sample
+      sample         :: U.Vector Measured
     , sampleAnalysis :: SampleAnalysis
     , outliers       :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)

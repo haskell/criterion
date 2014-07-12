@@ -89,7 +89,8 @@ library
     time,
     transformers,
     vector >= 0.7.1,
-    vector-algorithms >= 0.4
+    vector-algorithms >= 0.4,
+    vector-th-unbox
   if impl(ghc < 7.6)
     build-depends:
       ghc-prim

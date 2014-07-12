@@ -29,25 +29,33 @@ import Criterion.Config (Config(..), Verbosity(..), fromLJ)
 import Criterion.Environment (Environment(..))
 import Criterion.IO (header, hGetResults)
 import Criterion.IO.Printf (note, prolix, writeCsv)
-import Criterion.Measurement (getTime, runForAtLeast, secs,
-                              time_)
+import Criterion.Measurement (getCycles, getTime, runForAtLeast, secs)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Report (Report(..), report)
-import Criterion.Types (Benchmark(..), Benchmarkable(..), Payload(..),
-                        Result(..))
+import Criterion.Types (Benchmark(..), Benchmarkable(..), Measured(..),
+                        Payload(..), Result(..))
 import qualified Data.Vector.Unboxed as U
 import Data.Monoid (getLast)
 import Statistics.Resampling.Bootstrap (Estimate(..))
-import Statistics.Types (Sample)
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
                   openBinaryTempFile)
 import System.Mem (performGC)
 import Text.Printf (printf)
 
--- | Run a single benchmark, and return timings measured when
+scale :: Double -> Measured -> Measured
+scale k Measured{..} =
+  Measured {
+    measTime   = measTime / k
+  , measCycles = round $ fromIntegral measCycles / k
+  }
+
+clockAdjust :: Double -> Measured -> Measured
+clockAdjust k m = m { measTime = measTime m - k }
+
+-- | Run a single benchmark, and return measurements collected while
 -- executing it.
-runBenchmark :: Environment -> Benchmarkable -> Criterion Sample
+runBenchmark :: Environment -> Benchmarkable -> Criterion (U.Vector Measured)
 runBenchmark env (Benchmarkable run) = do
   _ <- liftIO $ runForAtLeast 0.1 10000 (`replicateM_` getTime)
   let minTime = envClockResolution env * 1000
@@ -66,20 +74,29 @@ runBenchmark env (Benchmarkable run) = do
   -- Run the GC to make sure garbage created by previous benchmarks
   -- don't affect this benchmark.
   liftIO performGC
-  times <- liftIO . fmap (U.map ((/ newItersD) . subtract (envClockCost env))) .
+  times <- liftIO . fmap (U.map ((scale newItersD) . clockAdjust (envClockCost env))) .
            U.replicateM sampleCount $ do
              when (fromLJ cfgPerformGC cfg) $ performGC
-             time_ (run newIters)
+             startTime <- getTime
+             startCycles <- getCycles
+             run newIters
+             endTime <- getTime
+             endCycles <- getCycles
+             return Measured {
+                 measTime = endTime - startTime
+               , measCycles = endCycles - startCycles
+               }
   return times
 
 -- | Run a single benchmark and analyse its performance.
 runAndAnalyseOne :: Environment -> Maybe String -> Benchmarkable
-                 -> Criterion (Sample,SampleAnalysis,Outliers)
+                 -> Criterion (U.Vector Measured, SampleAnalysis, Outliers)
 runAndAnalyseOne env mdesc bm = do
-  times <- runBenchmark env bm
+  meas <- runBenchmark env bm
   ci <- getConfigItem $ fromLJ cfgConfInterval
   numResamples <- getConfigItem $ fromLJ cfgResamples
   _ <- prolix "analysing with %d resamples\n" numResamples
+  let times = U.map measTime meas
   an@SampleAnalysis{..} <- liftIO $ analyseSample ci times numResamples
   let OutlierVariance{..} = anOutlierVar
   let wibble = case ovEffect of
@@ -99,7 +116,7 @@ runAndAnalyseOne env mdesc bm = do
     _ <- note "variance introduced by outliers: %.3f%%\n" (ovFraction * 100)
     _ <- note "variance is %s by outliers\n" wibble
     return ()
-  return (times,an,out)
+  return (meas,an,out)
   where bs :: String -> Estimate -> Criterion (Double,Double,Double)
         bs d e = do
           _ <- note "%s: %s, lb %s, ub %s, ci %.3f\n" d
