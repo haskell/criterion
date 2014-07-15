@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, ForeignFunctionInterface, ScopedTypeVariables,
+{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, ScopedTypeVariables,
     TypeOperators #-}
 
 -- |
@@ -75,7 +75,9 @@ diffGCStats old new =
     , gcWallSeconds = gcWallSeconds new - gcWallSeconds old
     , cpuSeconds = cpuSeconds new - cpuSeconds old
     , wallSeconds = wallSeconds new - wallSeconds old
+#if __GLASGOW_HASKELL__ > 704
     , parTotBytesCopied = parTotBytesCopied new - parTotBytesCopied old
+#endif
     , parMaxBytesCopied = parMaxBytesCopied new - parMaxBytesCopied old
     }
 
