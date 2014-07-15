@@ -54,8 +54,8 @@ import qualified Data.Vector.Unboxed as U
 import qualified Text.Hastache as H
 
 data Report = Report {
-      reportNumber :: Int
-    , reportName :: String
+      reportNumber   :: Int
+    , reportName     :: String
     , reportMeasured :: V.Vector Measured
     , reportAnalysis :: SampleAnalysis
     , reportOutliers :: Outliers

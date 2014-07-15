@@ -16,6 +16,7 @@ module Criterion.Analysis.Types
       Outliers(..)
     , OutlierEffect(..)
     , OutlierVariance(..)
+    , Regression(..)
     , SampleAnalysis(..)
     ) where
 
@@ -99,17 +100,36 @@ instance Binary OutlierVariance where
 instance NFData OutlierVariance where
     rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovDesc `seq` rnf ovFraction
 
+data Regression = Regression {
+    regPredictors :: [String]
+  , regResponder  :: String
+  , regCoeffs     :: [Double]
+  , regRSquare    :: Double
+  } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance Binary Regression where
+    put Regression{..} =
+      put regPredictors >> put regResponder >>
+      put regCoeffs >> put regRSquare
+
+instance NFData Regression where
+    rnf Regression{..} =
+      rnf regPredictors `seq` rnf regResponder `seq`
+      rnf regCoeffs `seq` rnf regRSquare
+
 -- | Result of a bootstrap analysis of a non-parametric sample.
 data SampleAnalysis = SampleAnalysis {
-      anMean :: B.Estimate
-    , anStdDev :: B.Estimate
+      anRegress    :: [Regression]
+    , anMean       :: B.Estimate
+    , anStdDev     :: B.Estimate
     , anOutlierVar :: OutlierVariance
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance Binary SampleAnalysis where
-    put (SampleAnalysis x y z) = put x >> put y >> put z
-    get = SampleAnalysis <$> get <*> get <*> get
+    put SampleAnalysis{..} =
+      put anRegress >> put anMean >> put anStdDev >> put anOutlierVar
+    get = SampleAnalysis <$> get <*> get <*> get <*> get
 
 instance NFData SampleAnalysis where
     rnf SampleAnalysis{..} =
-        rnf anMean `seq` rnf anStdDev `seq` rnf anOutlierVar
+        rnf anRegress `seq` rnf anMean `seq` rnf anStdDev `seq` rnf anOutlierVar

@@ -30,15 +30,20 @@ import Criterion.Analysis.Types
 import Criterion.IO.Printf (note)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion)
+import Criterion.Types (Measured(..), measure, rescale)
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
+import Statistics.Regression (ols, rSquare)
 import Statistics.Resampling (Resample, resample)
 import Statistics.Sample (mean)
 import Statistics.Types (Estimator(..), Sample)
 import System.Random.MWC (withSystemRandom)
+import qualified Data.Vector as V
+import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
+import qualified Statistics.Matrix as M
 import qualified Statistics.Resampling.Bootstrap as B
 
 -- | Classify outliers in a data set, using the boxplot technique.
@@ -116,20 +121,29 @@ scale f s@SampleAnalysis{..} = s {
                                , anStdDev = B.scale f anStdDev
                                }
 
--- | Perform a bootstrap analysis of a non-parametric sample.
+-- | Perform an analysis of a measurement.
 analyseSample :: Double         -- ^ Confidence interval (between 0 and 1).
-              -> Sample         -- ^ Sample data.
+              -> V.Vector Measured -- ^ Sample data.
               -> Int            -- ^ Number of resamples to perform
                                 -- when bootstrapping.
               -> IO SampleAnalysis
-analyseSample ci samples numResamples = do
-  let ests = [Mean,StdDev]
+analyseSample ci meas numResamples = do
+  let ests  = [Mean,StdDev]
+      times = measure measTime meas
+      stime = measure (measTime . rescale) meas
+      iters = measure (fromIntegral . measIters) meas
+      n     = G.length meas
+      preds = M.fromVector n 1 iters
+      coefs = ols preds times
+      r2    = rSquare preds times coefs
+      rgrs  = Regression ["iters"] "time" [G.head coefs] r2
   resamples <- withSystemRandom $ \gen ->
-               resample gen ests numResamples samples :: IO [Resample]
-  let [estMean,estStdDev] = B.bootstrapBCA ci samples ests resamples
-      ov = outlierVariance estMean estStdDev (fromIntegral $ U.length samples)
+               resample gen ests numResamples stime :: IO [Resample]
+  let [estMean,estStdDev] = B.bootstrapBCA ci stime ests resamples
+      ov = outlierVariance estMean estStdDev (fromIntegral n)
   return SampleAnalysis {
-               anMean = estMean
+               anRegress = [rgrs]
+             , anMean = estMean
              , anStdDev = estStdDev
              , anOutlierVar = ov
              }

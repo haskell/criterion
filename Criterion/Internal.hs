@@ -18,15 +18,14 @@ module Criterion.Internal
     , prefix
     ) where
 
-import Control.Monad (foldM, when)
+import Control.Monad (foldM, forM_, when)
 import Control.Monad.Trans (liftIO)
 import Data.Binary (encode)
 import Data.Int (Int64)
 import Data.List (unfoldr)
 import qualified Data.ByteString.Lazy as L
-import Criterion.Analysis (Outliers(..), OutlierEffect(..), OutlierVariance(..),
-                           SampleAnalysis(..), analyseSample,
-                           classifyOutliers, noteOutliers)
+import Criterion.Analysis (analyseSample, classifyOutliers, noteOutliers)
+import Criterion.Analysis.Types
 import Criterion.Config (Config(..), Verbosity(..), fromLJ)
 import Criterion.IO (header, hGetResults)
 import Criterion.IO.Printf (note, prolix, writeCsv)
@@ -38,8 +37,6 @@ import Criterion.Types (Benchmark(..), Benchmarkable(..), Measured(..),
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import Data.Monoid (getLast)
-import qualified Statistics.Matrix as M
-import Statistics.Regression (ols, rSquare)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
@@ -93,22 +90,23 @@ runAndAnalyseOne mdesc bm = do
   ci <- getConfigItem $ fromLJ cfgConfInterval
   numResamples <- getConfigItem $ fromLJ cfgResamples
   _ <- prolix "analysing with %d resamples\n" numResamples
-  let times = measure (measTime . rescale) meas
-  an@SampleAnalysis{..} <- liftIO $ analyseSample ci times numResamples
+  an@SampleAnalysis{..} <- liftIO $ analyseSample ci meas numResamples
   let OutlierVariance{..} = anOutlierVar
   let wibble = case ovEffect of
                  Unaffected -> "unaffected" :: String
                  Slight -> "slightly inflated"
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
-  regress meas
+  forM_ anRegress $ \Regression{..} ->
+    note "%-8s  %s   (R\178 %.4g)\n"
+         regResponder (secs (head regCoeffs)) regRSquare
   (a,b,c) <- bs "mean   " anMean
   (d,e,f) <- bs "std dev" anStdDev
   case mdesc of
     Just desc -> writeCsv (desc,a,b,c,d,e,f)
     Nothing   -> writeCsv (a,b,c,d,e,f)
   vrb <- getConfigItem $ fromLJ cfgVerbosity
-  let out = classifyOutliers times
+  let out = classifyOutliers $ measure (measTime . rescale) meas
   when (vrb == Verbose || (ovEffect > Slight && vrb > Quiet)) $ do
     when (vrb == Verbose) $ noteOutliers out
     _ <- note "variance introduced by outliers: %d%% (%s)\n"
@@ -169,16 +167,6 @@ runAndAnalyse p bs' = do
 
   plotAll rts
   junit rts
-
-regress :: V.Vector Measured -> Criterion ()
-regress meas = do
-  let times = measure measTime meas
-      iters = measure (fromIntegral . measIters) meas
-      n     = G.length meas
-      preds = M.fromVector n 1 iters
-      coefs = ols preds times
-      r2    = rSquare preds times coefs
-  note "time      %s   (R\178 %.4g)\n" (secs (G.head coefs)) r2
 
 runNotAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
