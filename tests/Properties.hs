@@ -26,13 +26,14 @@ instance (Arbitrary a, U.Unbox a) => Arbitrary (U.Vector a) where
   arbitrary = U.fromList <$> arbitrary
   shrink    = map U.fromList . shrink . U.toList
 
-outlier_bucketing :: Sample -> Bool
-outlier_bucketing xs =
+outlier_bucketing :: Double -> Sample -> Bool
+outlier_bucketing y ys =
   countOutliers (classifyOutliers xs) <= fromIntegral (G.length xs)
+  where xs = U.cons y ys
 
-outlier_bucketing_weighted :: Sample -> Bool
-outlier_bucketing_weighted xs =
-  outlier_bucketing (xs <> G.replicate (G.length xs * 10) 0)
+outlier_bucketing_weighted :: Double -> Sample -> Bool
+outlier_bucketing_weighted x xs =
+  outlier_bucketing x (xs <> G.replicate (G.length xs * 10) 0)
 
 tests :: Test
 tests = testGroup "Properties" [
