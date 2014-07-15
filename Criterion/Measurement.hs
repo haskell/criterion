@@ -18,6 +18,7 @@ module Criterion.Measurement
     , getTime
     , runForAtLeast
     , getCycles
+    , getCPUTime
     , secs
     , time
     , time_
@@ -34,6 +35,7 @@ import GHC.Stats (GCStats(..))
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
 import qualified GHC.Stats as Stats
+import qualified System.Clock as Clock
 
 getGCStats :: IO (Maybe GCStats)
 getGCStats =
@@ -43,6 +45,7 @@ getGCStats =
 measured :: Measured
 measured = Measured {
       measTime               = 0
+    , measCpuTime            = 0
     , measCycles             = 0
     , measIters              = 0
 
@@ -89,6 +92,11 @@ cycles act = do
   end <- getCycles
   let !delta = end - start
   return (delta, result)
+
+getCPUTime :: IO Double
+getCPUTime = do
+  t <- Clock.getTime Clock.ProcessCPUTime
+  return $! fromIntegral (Clock.sec t) + fromIntegral (Clock.nsec t) / 1e9
 
 runForAtLeast :: Double -> Int -> (Int -> IO a) -> IO (Double, Int, a)
 runForAtLeast howLong initSeed act = loop initSeed (0::Int) =<< getTime

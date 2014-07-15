@@ -63,6 +63,7 @@ newtype Benchmarkable = Benchmarkable (Int64 -> IO ())
 -- | A collection of measurements made while benchmarking.
 data Measured = Measured {
       measTime               :: !Double
+    , measCpuTime            :: !Double
     , measCycles             :: !Int64
     , measIters              :: !Int64
 
@@ -86,11 +87,11 @@ rescale m = m {
 
 instance Binary Measured where
     put Measured{..} = do
-      put measTime; put measCycles; put measIters
+      put measTime; put measCpuTime; put measCycles; put measIters
       put measAllocated; put measNumGcs; put measBytesCopied
       put measMutatorWallSeconds; put measMutatorCpuSeconds
       put measGcWallSeconds; put measGcCpuSeconds
-    get = Measured <$> get <*> get <*> get
+    get = Measured <$> get <*> get <*> get <*> get
                    <*> get <*> get <*> get <*> get <*> get <*> get <*> get
 
 -- | Apply an argument to a function, and evaluate the result to weak
