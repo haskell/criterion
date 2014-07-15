@@ -113,13 +113,10 @@ secs k
     | otherwise  = printf "%g s" k
      where with (t :: Double) (u :: String)
                | t >= 1e9  = printf "%.4g %s" t u
-               | t >= 1e6  = printf "%.0f %s" t u
-               | t >= 1e5  = printf "%.1f %s" t u
-               | t >= 1e4  = printf "%.2f %s" t u
-               | t >= 1e3  = printf "%.3f %s" t u
-               | t >= 1e2  = printf "%.4f %s" t u
-               | t >= 1e1  = printf "%.5f %s" t u
-               | otherwise = printf "%.6f %s" t u
+               | t >= 1e3  = printf "%.0f %s" t u
+               | t >= 1e2  = printf "%.1f %s" t u
+               | t >= 1e1  = printf "%.2f %s" t u
+               | otherwise = printf "%.3f %s" t u
 
 foreign import ccall unsafe "criterion_inittime" initializeTime :: IO ()
 
