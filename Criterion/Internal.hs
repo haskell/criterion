@@ -36,6 +36,8 @@ import Criterion.Types (Benchmark(..), Benchmarkable(..), Measured(..),
                         Payload(..), Result(..), rescale)
 import qualified Data.Vector.Unboxed as U
 import Data.Monoid (getLast)
+import qualified Statistics.Matrix as M
+import Statistics.Regression (ols, rSquare)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
@@ -95,6 +97,7 @@ runAndAnalyseOne mdesc bm = do
                  Slight -> "slightly inflated"
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
+  regress meas
   (a,b,c) <- bs "mean" anMean
   (d,e,f) <- bs "std dev" anStdDev
   case mdesc of
@@ -161,6 +164,16 @@ runAndAnalyse p bs' = do
 
   plotAll rts
   junit rts
+
+regress :: U.Vector Measured -> Criterion ()
+regress meas = do
+  let times = U.map measTime meas
+      iters = U.map (fromIntegral . measIters) meas
+      n     = U.length meas
+      preds = M.fromVector n 1 iters
+      coefs = ols preds times
+      r2    = rSquare preds times coefs
+  note "time: %s (R\178 %.4g)\n" (secs (U.head coefs)) r2
 
 runNotAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
