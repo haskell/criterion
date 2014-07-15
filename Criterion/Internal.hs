@@ -102,22 +102,23 @@ runAndAnalyseOne mdesc bm = do
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
   regress meas
-  (a,b,c) <- bs "mean" anMean
+  (a,b,c) <- bs "mean   " anMean
   (d,e,f) <- bs "std dev" anStdDev
   case mdesc of
     Just desc -> writeCsv (desc,a,b,c,d,e,f)
     Nothing   -> writeCsv (a,b,c,d,e,f)
   vrb <- getConfigItem $ fromLJ cfgVerbosity
   let out = classifyOutliers times
-  when (vrb == Verbose || (ovEffect > Unaffected && vrb > Quiet)) $ do
-    noteOutliers out
-    _ <- note "variance introduced by outliers: %.3f%%\n" (ovFraction * 100)
-    _ <- note "variance is %s by outliers\n" wibble
+  when (vrb == Verbose || (ovEffect > Slight && vrb > Quiet)) $ do
+    when (vrb == Verbose) $ noteOutliers out
+    _ <- note "variance introduced by outliers: %d%% (%s)\n"
+         (round (ovFraction * 100) :: Int) wibble
     return ()
+  _ <- note "\n"
   return (meas,an,out)
   where bs :: String -> Estimate -> Criterion (Double,Double,Double)
         bs d e = do
-          _ <- note "%s: %s, lb %s, ub %s, ci %.3f\n" d
+          _ <- note "%s   %s   (lb %s   ub %s   ci %.3f)\n" d
                (secs $ estPoint e)
                (secs $ estLowerBound e) (secs $ estUpperBound e)
                (estConfidenceLevel e)
@@ -147,7 +148,7 @@ runAndAnalyse p bs' = do
   liftIO $ L.hPut handle header
 
   let go !k (pfx, Benchmark desc b)
-          | p desc'   = do _ <- note "\nbenchmarking %s\n" desc'
+          | p desc'   = do _ <- note "benchmarking %s\n" desc'
                            (x,an,out) <- runAndAnalyseOne (Just desc') b
                            let result = Single desc' $ Payload x an out
                            liftIO $ L.hPut handle (encode result)
@@ -177,7 +178,7 @@ regress meas = do
       preds = M.fromVector n 1 iters
       coefs = ols preds times
       r2    = rSquare preds times coefs
-  note "time: %s (R\178 %.4g)\n" (secs (G.head coefs)) r2
+  note "time      %s   (R\178 %.4g)\n" (secs (G.head coefs)) r2
 
 runNotAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its

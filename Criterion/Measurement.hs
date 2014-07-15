@@ -107,7 +107,7 @@ secs k
     | k < 0      = '-' : secs (-k)
     | k >= 1     = k        `with` "s"
     | k >= 1e-3  = (k*1e3)  `with` "ms"
-    | k >= 1e-6  = (k*1e6)  `with` "us"
+    | k >= 1e-6  = (k*1e6)  `with` "μs"
     | k >= 1e-9  = (k*1e9)  `with` "ns"
     | k >= 1e-12 = (k*1e12) `with` "ps"
     | otherwise  = printf "%g s" k
