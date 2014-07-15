@@ -70,18 +70,15 @@ runBenchmark (Benchmarkable run) = do
         when (fromLJ cfgPerformGC cfg) $ performGC
         startStats <- getGCStats
         startTime <- getTime
-        startCpuTime <- getCPUTime
         startCycles <- getCycles
         run iters
         endTime <- getTime
-        endCpuTime <- getCPUTime
         endCycles <- getCycles
         endStats <- getGCStats
         let m = applyGCStats endStats startStats $ measured {
-                  measTime    = max 0 (endTime - startTime)
-                , measCpuTime = max 0 (endCpuTime - startCpuTime)
-                , measCycles  = max 0 (fromIntegral (endCycles - startCycles))
-                , measIters   = iters
+                  measTime   = max 0 (endTime - startTime)
+                , measCycles = max 0 (fromIntegral (endCycles - startCycles))
+                , measIters  = iters
                 }
         if endTime - start >= budget
           then return $! G.reverse (G.fromList acc)
