@@ -23,11 +23,12 @@ module Criterion.Measurement
     , time_
     , cycles
     , getGCStats
-    , gcStats
-    , diffGCStats
+    , measured
+    , applyGCStats
     ) where
 
 import Control.Monad (when)
+import Criterion.Types (Measured(..))
 import Data.Word (Word64)
 import GHC.Stats (GCStats(..))
 import Text.Printf (printf)
@@ -39,47 +40,32 @@ getGCStats =
   (Just `fmap` Stats.getGCStats) `Exc.catch` \(_::Exc.SomeException) ->
   return Nothing
 
-gcStats :: IO a -> IO (Maybe GCStats, a)
-gcStats act = do
-  start <- getGCStats
-  result <- act
-  end <- getGCStats
-  let delta = do old <- start
-                 new <- end
-                 return $! diffGCStats old new
-  return (delta, result)
+measured :: Measured
+measured = Measured {
+      measTime               = 0
+    , measCycles             = 0
+    , measIters              = 0
 
--- | A not-very-principled \"difference\" of two sets of GC
--- statistics.
-diffGCStats :: GCStats          -- ^ \"old\" stats
-            -> GCStats          -- ^ \"new\" stats
-            -> GCStats
-diffGCStats old new =
-  GCStats {
-      bytesAllocated = bytesAllocated new - bytesAllocated old
-    , numGcs = numGcs new - numGcs old
-    , maxBytesUsed = maxBytesUsed new `max` maxBytesUsed old
-    , numByteUsageSamples = numByteUsageSamples new `max`
-                            numByteUsageSamples old
-    , cumulativeBytesUsed = cumulativeBytesUsed new `max`
-                            cumulativeBytesUsed old
-    , bytesCopied = bytesCopied new - bytesCopied old
-    , currentBytesUsed = currentBytesUsed new
-    , currentBytesSlop = currentBytesSlop new
-    , maxBytesSlop = maxBytesSlop new `max` maxBytesSlop old
-    , peakMegabytesAllocated = peakMegabytesAllocated new `max`
-                               peakMegabytesAllocated old
-    , mutatorCpuSeconds = mutatorCpuSeconds new - mutatorCpuSeconds old
-    , mutatorWallSeconds = mutatorWallSeconds new - mutatorWallSeconds old
-    , gcCpuSeconds = gcCpuSeconds new - gcCpuSeconds old
-    , gcWallSeconds = gcWallSeconds new - gcWallSeconds old
-    , cpuSeconds = cpuSeconds new - cpuSeconds old
-    , wallSeconds = wallSeconds new - wallSeconds old
-#if __GLASGOW_HASKELL__ > 704
-    , parTotBytesCopied = parTotBytesCopied new - parTotBytesCopied old
-#endif
-    , parMaxBytesCopied = parMaxBytesCopied new - parMaxBytesCopied old
-    }
+    , measAllocated          = minBound
+    , measNumGcs             = minBound
+    , measBytesCopied        = minBound
+    , measMutatorWallSeconds = bad
+    , measMutatorCpuSeconds  = bad
+    , measGcWallSeconds      = bad
+    , measGcCpuSeconds       = bad
+    } where bad = -1/0
+
+applyGCStats :: Maybe GCStats -> Maybe GCStats -> Measured -> Measured
+applyGCStats (Just end) (Just start) m = m {
+    measAllocated          = diff bytesAllocated
+  , measNumGcs             = diff numGcs
+  , measBytesCopied        = diff bytesCopied
+  , measMutatorWallSeconds = diff mutatorWallSeconds
+  , measMutatorCpuSeconds  = diff mutatorCpuSeconds
+  , measGcWallSeconds      = diff gcWallSeconds
+  , measGcCpuSeconds       = diff gcCpuSeconds
+  } where diff f = f end - f start
+applyGCStats _ _ m = m
 
 time :: IO a -> IO (Double, a)
 time act = do

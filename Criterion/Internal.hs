@@ -21,6 +21,7 @@ module Criterion.Internal
 import Control.Monad (foldM, when)
 import Control.Monad.Trans (liftIO)
 import Data.Binary (encode)
+import Data.Int (Int64)
 import Data.List (unfoldr)
 import qualified Data.ByteString.Lazy as L
 import Criterion.Analysis (Outliers(..), OutlierEffect(..), OutlierVariance(..),
@@ -29,12 +30,13 @@ import Criterion.Analysis (Outliers(..), OutlierEffect(..), OutlierVariance(..),
 import Criterion.Config (Config(..), Verbosity(..), fromLJ)
 import Criterion.IO (header, hGetResults)
 import Criterion.IO.Printf (note, prolix, writeCsv)
-import Criterion.Measurement (getCycles, getTime, secs)
+import Criterion.Measurement
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Report (Report(..), report)
 import Criterion.Types (Benchmark(..), Benchmarkable(..), Measured(..),
-                        Payload(..), Result(..), rescale)
-import qualified Data.Vector.Unboxed as U
+                        Payload(..), Result(..), measure, rescale)
+import qualified Data.Vector as V
+import qualified Data.Vector.Generic as G
 import Data.Monoid (getLast)
 import qualified Statistics.Matrix as M
 import Statistics.Regression (ols, rSquare)
@@ -51,13 +53,13 @@ squish :: (Eq a) => [a] -> [a]
 squish ys = foldr go [] ys
   where go x xs = x : dropWhile (==x) xs
 
-series :: Double -> Maybe (Int, Double)
+series :: Double -> Maybe (Int64, Double)
 series k = Just (truncate l, l)
   where l = k * 1.05
 
 -- | Run a single benchmark, and return measurements collected while
 -- executing it.
-runBenchmark :: Benchmarkable -> Criterion (U.Vector Measured)
+runBenchmark :: Benchmarkable -> Criterion (V.Vector Measured)
 runBenchmark (Benchmarkable run) = do
   liftIO $ run 1
   cfg <- getConfig
@@ -66,30 +68,32 @@ runBenchmark (Benchmarkable run) = do
       loop [] _ = error "unpossible!"
       loop (iters:niters) acc = do
         when (fromLJ cfgPerformGC cfg) $ performGC
+        startStats <- getGCStats
         startTime <- getTime
         startCycles <- getCycles
         run iters
         endTime <- getTime
         endCycles <- getCycles
-        let m = Measured {
+        endStats <- getGCStats
+        let m = applyGCStats endStats startStats $ measured {
                   measTime   = max 0 (endTime - startTime)
-                , measCycles = max 0 (endCycles - startCycles)
+                , measCycles = max 0 (fromIntegral (endCycles - startCycles))
                 , measIters  = iters
                 }
         if endTime - start >= budget
-          then return $! U.reverse (U.fromList acc)
+          then return $! G.reverse (G.fromList acc)
           else loop niters (m:acc)
   liftIO $ loop (squish (unfoldr series 1)) []
 
 -- | Run a single benchmark and analyse its performance.
 runAndAnalyseOne :: Maybe String -> Benchmarkable
-                 -> Criterion (U.Vector Measured, SampleAnalysis, Outliers)
+                 -> Criterion (V.Vector Measured, SampleAnalysis, Outliers)
 runAndAnalyseOne mdesc bm = do
   meas <- runBenchmark bm
   ci <- getConfigItem $ fromLJ cfgConfInterval
   numResamples <- getConfigItem $ fromLJ cfgResamples
   _ <- prolix "analysing with %d resamples\n" numResamples
-  let times = U.map (measTime . rescale) meas
+  let times = measure (measTime . rescale) meas
   an@SampleAnalysis{..} <- liftIO $ analyseSample ci times numResamples
   let OutlierVariance{..} = anOutlierVar
   let wibble = case ovEffect of
@@ -165,15 +169,15 @@ runAndAnalyse p bs' = do
   plotAll rts
   junit rts
 
-regress :: U.Vector Measured -> Criterion ()
+regress :: V.Vector Measured -> Criterion ()
 regress meas = do
-  let times = U.map measTime meas
-      iters = U.map (fromIntegral . measIters) meas
-      n     = U.length meas
+  let times = measure measTime meas
+      iters = measure (fromIntegral . measIters) meas
+      n     = G.length meas
       preds = M.fromVector n 1 iters
       coefs = ols preds times
       r2    = rSquare preds times coefs
-  note "time: %s (R\178 %.4g)\n" (secs (U.head coefs)) r2
+  note "time: %s (R\178 %.4g)\n" (secs (G.head coefs)) r2
 
 runNotAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its

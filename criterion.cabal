@@ -88,8 +88,7 @@ library
     time,
     transformers,
     vector >= 0.7.1,
-    vector-algorithms >= 0.4,
-    vector-th-unbox
+    vector-algorithms >= 0.4
   if impl(ghc < 7.6)
     build-depends:
       ghc-prim
@@ -113,7 +112,7 @@ test-suite sanity
   type:           exitcode-stdio-1.0
   hs-source-dirs: tests
   main-is:        Sanity.hs
-  ghc-options:    -O2 -Wall -rtsopts -with-rtsopts=-T
+  ghc-options:    -O2 -Wall -rtsopts
   build-depends:
     HUnit,
     base,

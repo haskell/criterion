@@ -1,7 +1,5 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, ExistentialQuantification,
-    FlexibleInstances, GADTs, MultiParamTypeClasses, TemplateHaskell,
-    TypeFamilies #-}
-{-# OPTIONS_GHC -fno-warn-incomplete-patterns #-}
+{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GADTs, RecordWildCards #-}
+{-# OPTIONS_GHC -funbox-strict-fields #-}
 
 -- |
 -- Module      : Criterion.Types
@@ -32,6 +30,7 @@ module Criterion.Types
       Benchmarkable(..)
     , Benchmark(..)
     , Measured(..)
+    , measure
     , rescale
     , whnf
     , nf
@@ -51,21 +50,32 @@ import Control.Exception (evaluate)
 import Criterion.Analysis.Types (Outliers(..), SampleAnalysis(..))
 import Data.Binary (Binary(..))
 import Data.Data (Data, Typeable)
-import Data.Word (Word64)
-import Data.Vector.Unboxed.Deriving (derivingUnbox)
+import Data.Int (Int64)
 import GHC.Generics (Generic)
+import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 
 -- | A pure function or impure action that can be benchmarked. The
 -- 'Int' parameter indicates the number of times to run the given
 -- function or action.
-newtype Benchmarkable = Benchmarkable (Int -> IO ())
+newtype Benchmarkable = Benchmarkable (Int64 -> IO ())
 
 -- | A collection of measurements made while benchmarking.
 data Measured = Measured {
-      measTime   :: {-# UNPACK #-} !Double
-    , measCycles :: {-# UNPACK #-} !Word64
-    , measIters  :: {-# UNPACK #-} !Int
+      measTime               :: !Double
+    , measCycles             :: !Int64
+    , measIters              :: !Int64
+
+    -- GC statistics are only available if a benchmark was run with
+    -- "+RTS -T".  If not available, they're set to huge negative
+    -- values.
+    , measAllocated          :: !Int64
+    , measNumGcs             :: !Int64
+    , measBytesCopied        :: !Int64
+    , measMutatorWallSeconds :: !Double
+    , measMutatorCpuSeconds  :: !Double
+    , measGcWallSeconds      :: !Double
+    , measGcCpuSeconds       :: !Double
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 rescale :: Measured -> Measured
@@ -74,14 +84,14 @@ rescale m = m {
   , measCycles = round $ fromIntegral (measCycles m) / i
   } where i    = fromIntegral (measIters m) :: Double
 
-derivingUnbox "Measured"
-  [t| Measured -> (Double, Word64, Int) |]
-  [| \(Measured t c i) -> (t,c,i) |]
-  [| \(t,c,i) -> Measured t c i |]
-
 instance Binary Measured where
-    put (Measured t c i) = put t >> put c >> put i
+    put Measured{..} = do
+      put measTime; put measCycles; put measIters
+      put measAllocated; put measNumGcs; put measBytesCopied
+      put measMutatorWallSeconds; put measMutatorCpuSeconds
+      put measGcWallSeconds; put measGcCpuSeconds
     get = Measured <$> get <*> get <*> get
+                   <*> get <*> get <*> get <*> get <*> get <*> get <*> get
 
 -- | Apply an argument to a function, and evaluate the result to weak
 -- head normal form (WHNF).
@@ -153,10 +163,13 @@ instance Show Benchmark where
     show (BenchGroup d _) = ("BenchGroup " ++ show d)
 
 data Payload = Payload {
-      sample         :: U.Vector Measured
+      sample         :: V.Vector Measured
     , sampleAnalysis :: SampleAnalysis
     , outliers       :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+measure :: (U.Unbox a) => (Measured -> a) -> V.Vector Measured -> U.Vector a
+measure f v = U.convert . V.map f $ v
 
 instance Binary Payload where
     put (Payload x y z) = put x >> put y >> put z

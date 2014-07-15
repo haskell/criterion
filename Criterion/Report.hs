@@ -32,7 +32,7 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
 import Criterion.Monad (Criterion, getConfig)
-import Criterion.Types (Measured(..), rescale)
+import Criterion.Types (Measured(..), measure, rescale)
 import Data.Data (Data, Typeable)
 import Data.Monoid (Last(..))
 import GHC.Generics (Generic)
@@ -49,13 +49,14 @@ import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Vector.Generic as G
+import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import qualified Text.Hastache as H
 
 data Report = Report {
       reportNumber :: Int
     , reportName :: String
-    , reportMeasured :: U.Vector Measured
+    , reportMeasured :: V.Vector Measured
     , reportAnalysis :: SampleAnalysis
     , reportOutliers :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
@@ -101,10 +102,10 @@ formatReport reports template = do
                            _          -> mkGenericContext reportOutliers $
                                          H.encodeStr nym
           where (kdeTimes,kdePDF) = kde 128 scaledTimes
-                iters       = U.map measIters reportMeasured
-                times       = U.map measTime reportMeasured
-                scaledTimes = U.map (measTime . rescale) reportMeasured
-                cycles      = U.map measCycles reportMeasured
+                iters       = measure measIters reportMeasured
+                times       = measure measTime reportMeasured
+                scaledTimes = measure (measTime . rescale) reportMeasured
+                cycles      = measure measCycles reportMeasured
   H.hastacheStr H.defaultConfig template context
 
 -- | Render the elements of a vector.

@@ -24,6 +24,7 @@ module Criterion.Config
 
 import Data.Data (Data, Typeable)
 import Data.Function (on)
+import Data.Int (Int64)
 import Data.Monoid (Monoid(..), Last(..))
 import GHC.Generics (Generic)
 
@@ -60,7 +61,7 @@ data Config = Config {
     , cfgResamples    :: Last Int    -- ^ Number of resamples to perform.
     , cfgResults      :: Last FilePath -- ^ File to write raw results to.
     , cfgReport       :: Last FilePath -- ^ Filename of report.
-    , cfgSamples      :: Last Int    -- ^ Number of samples to collect.
+    , cfgSamples      :: Last Int64    -- ^ Number of samples to collect.
     , cfgSummaryFile  :: Last FilePath -- ^ Filename of summary CSV.
     , cfgTemplate     :: Last FilePath -- ^ Filename of report template.
     , cfgVerbosity    :: Last Verbosity -- ^ Whether to run verbosely.
