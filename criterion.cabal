@@ -70,7 +70,7 @@ library
 
   build-depends:
     aeson >= 0.3.2.12,
-    base < 5,
+    base >= 4.5 && < 5,
     binary >= 0.5.1.0,
     bytestring >= 0.9 && < 1.0,
     cassava >= 0.3.0.0,
