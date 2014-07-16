@@ -19,7 +19,7 @@
   };
 
   $.timeUnits = function(secs) {
-    if (secs < 0)           return timeUnits(-secs);
+    if (secs < 0)           return $.timeUnits(-secs);
     else if (secs >= 1e9)   return [1e-9, "Gs"];
     else if (secs >= 1e6)   return [1e-6, "Ms"];
     else if (secs >= 1)     return [1,    "s"];
