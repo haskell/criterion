@@ -182,13 +182,14 @@ $(function () {
     }
   };
   {{#report}}
-  mangulate({{number}}, "{{name}}",
-            {{anMean.estPoint}},
-            [{{#iters}}{{x}},{{/iters}}],
-            [{{#times}}{{x}},{{/times}}],
-            [{{#cycles}}{{x}},{{/cycles}}],
-            [{{#kdetimes}}{{x}},{{/kdetimes}}],
-            [{{#kdepdf}}{{x}},{{/kdepdf}}]);
+  mangulate(/* report number */ {{number}},
+            /* report name */ "{{name}}",
+            /* estimated mean */ {{anMean.estPoint}},
+            /* iterations */ [{{#iters}}{{x}},{{/iters}}],
+            /* measured times */ [{{#times}}{{x}},{{/times}}],
+            /* measured cycles */ [{{#cycles}}{{x}},{{/cycles}}],
+            /* kde times */ [{{#kdetimes}}{{x}},{{/kdetimes}}],
+            /* kde pdf */ [{{#kdepdf}}{{x}},{{/kdepdf}}]);
   {{/report}}
 
   var benches = [{{#report}}"{{name}}",{{/report}}];
