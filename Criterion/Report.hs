@@ -33,6 +33,7 @@ import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
 import Criterion.Monad (Criterion, getConfig)
 import Criterion.Types (Measured(..), measure, rescale)
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Data (Data, Typeable)
 import Data.Monoid (Last(..))
 import GHC.Generics (Generic)
@@ -60,6 +61,9 @@ data Report = Report {
     , reportAnalysis :: SampleAnalysis
     , reportOutliers :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance FromJSON Report
+instance ToJSON Report
 
 -- | The path to the template and other files used for generating
 -- reports.

@@ -48,6 +48,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.DeepSeq (NFData, rnf)
 import Control.Exception (evaluate)
 import Criterion.Analysis.Types (Outliers(..), SampleAnalysis(..))
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Binary (Binary(..))
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
@@ -77,6 +78,9 @@ data Measured = Measured {
     , measGcWallSeconds      :: !Double
     , measGcCpuSeconds       :: !Double
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance FromJSON Measured
+instance ToJSON Measured
 
 rescale :: Measured -> Measured
 rescale m@Measured{..} = m {
@@ -186,6 +190,9 @@ data Payload = Payload {
     , sampleAnalysis :: SampleAnalysis
     , outliers       :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance FromJSON Payload
+instance ToJSON Payload
 
 measure :: (U.Unbox a) => (Measured -> a) -> V.Vector Measured -> U.Vector a
 measure f v = U.convert . V.map f $ v

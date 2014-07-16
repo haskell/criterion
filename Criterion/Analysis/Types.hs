@@ -22,6 +22,7 @@ module Criterion.Analysis.Types
 
 import Control.Applicative ((<$>), (<*>))
 import Control.DeepSeq (NFData(rnf))
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
@@ -44,6 +45,9 @@ data Outliers = Outliers {
     -- ^ More than 3 times the IQR above the third quartile.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
+instance FromJSON Outliers
+instance ToJSON Outliers
+
 instance Binary Outliers where
     put (Outliers v w x y z) = put v >> put w >> put x >> put y >> put z
     get = Outliers <$> get <*> get <*> get <*> get <*> get
@@ -57,6 +61,9 @@ data OutlierEffect = Unaffected -- ^ Less than 1% effect.
                    | Severe     -- ^ Above 50% (i.e. measurements
                                 -- are useless).
                      deriving (Eq, Ord, Read, Show, Typeable, Data, Generic)
+
+instance FromJSON OutlierEffect
+instance ToJSON OutlierEffect
 
 instance Binary OutlierEffect where
     put Unaffected = putWord8 0
@@ -93,6 +100,9 @@ data OutlierVariance = OutlierVariance {
     -- ^ Quantitative description of effect (a fraction between 0 and 1).
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
+instance FromJSON OutlierVariance
+instance ToJSON OutlierVariance
+
 instance Binary OutlierVariance where
     put (OutlierVariance x y z) = put x >> put y >> put z
     get = OutlierVariance <$> get <*> get <*> get
@@ -106,6 +116,9 @@ data Regression = Regression {
   , regCoeffs     :: [Double]
   , regRSquare    :: Double
   } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance FromJSON Regression
+instance ToJSON Regression
 
 instance Binary Regression where
     put Regression{..} =
@@ -124,6 +137,9 @@ data SampleAnalysis = SampleAnalysis {
     , anStdDev     :: B.Estimate
     , anOutlierVar :: OutlierVariance
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance FromJSON SampleAnalysis
+instance ToJSON SampleAnalysis
 
 instance Binary SampleAnalysis where
     put SampleAnalysis{..} =
