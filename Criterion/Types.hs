@@ -79,10 +79,29 @@ data Measured = Measured {
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 rescale :: Measured -> Measured
-rescale m = m {
-    measTime   = measTime m / i
-  , measCycles = round $ fromIntegral (measCycles m) / i
-  } where i    = fromIntegral (measIters m) :: Double
+rescale m@Measured{..} = m {
+      measTime               = d measTime
+    , measCycles             = i measCycles
+    -- skip measIters
+    , measNumGcs             = i measNumGcs
+    , measBytesCopied        = i measBytesCopied
+    , measMutatorWallSeconds = d measMutatorWallSeconds
+    , measMutatorCpuSeconds  = d measMutatorCpuSeconds
+    , measGcWallSeconds      = d measGcWallSeconds
+    , measGcCpuSeconds       = d measGcCpuSeconds
+    } where
+        d k = maybe k (/ iters) (double k)
+        i k = maybe k (round . (/ iters)) (fromIntegral <$> int k)
+        iters               = fromIntegral measIters :: Double
+
+int :: Int64 -> Maybe Int64
+int i | i == minBound = Nothing
+      | otherwise     = Just i
+
+double :: Double -> Maybe Double
+double d | isInfinite d || isNaN d = Nothing
+         | otherwise               = Just d
+
 
 instance Binary Measured where
     put Measured{..} = do
