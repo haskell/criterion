@@ -33,7 +33,8 @@ import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
 import Criterion.Monad (Criterion, getConfig)
 import Criterion.Types (Measured(..), measure, rescale)
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson.Encode (encodeToTextBuilder)
+import Data.Aeson.Types (FromJSON, ToJSON(..))
 import Data.Data (Data, Typeable)
 import Data.Monoid (Last(..))
 import GHC.Generics (Generic)
@@ -48,6 +49,7 @@ import qualified Control.Exception as E
 import qualified Data.Text as T
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
+import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector as V
@@ -89,11 +91,15 @@ formatReport :: [Report]
              -> IO TL.Text
 formatReport reports template = do
   let context "report"  = return $ MuList $ map inner reports
+      context "json"    = return $ MuVariable (encode reports)
       context "include" = return $ MuLambdaM $ includeFile [templateDir]
       context _         = return $ MuNothing
-      inner Report{..} = mkStrContextM $ \nym ->
+      encode v = TL.toLazyText . encodeToTextBuilder . toJSON $ v
+      inner r@Report{..} = mkStrContextM $ \nym ->
                          case nym of
-                           "name"     -> return $ MuVariable reportName
+                           "name"     -> return . MuVariable . H.htmlEscape .
+                                         TL.pack $ reportName
+                           "json"     -> return $ MuVariable (encode r)
                            "number"   -> return $ MuVariable reportNumber
                            "iters"    -> return $ vector "x" iters
                            "times"    -> return $ vector "x" times
@@ -110,7 +116,10 @@ formatReport reports template = do
                 times       = measure measTime reportMeasured
                 scaledTimes = measure (measTime . rescale) reportMeasured
                 cycles      = measure measCycles reportMeasured
-  H.hastacheStr H.defaultConfig template context
+      config = H.defaultConfig {
+                 H.muEscapeFunc = H.emptyEscape
+               }
+  H.hastacheStr config template context
 
 -- | Render the elements of a vector.
 --
