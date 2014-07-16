@@ -33,7 +33,7 @@ import Criterion.Measurement
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Report (Report(..), report)
 import Criterion.Types (Benchmark(..), Benchmarkable(..), Measured(..),
-                        Payload(..), Result(..), measure, rescale)
+                        Payload(..), Result(..), measure, measureNames, rescale)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import Data.Monoid (getLast)
@@ -124,8 +124,8 @@ runAndAnalyseOne mdesc bm = do
 
 
 plotAll :: [Result] -> Criterion ()
-plotAll descTimes = do
-  report (zipWith (\n (Single d (Payload t a o)) -> Report n d t a o) [0..] descTimes)
+plotAll descTimes = report $ zipWith go [0..] descTimes
+  where go n (Single d (Payload t a o)) = Report n d measureNames t a o
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses

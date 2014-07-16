@@ -41,7 +41,7 @@ import GHC.Generics (Generic)
 import Paths_criterion (getDataFileName)
 import Statistics.Sample.KernelDensity (kde)
 import System.Directory (doesFileExist)
-import System.FilePath ((</>), isPathSeparator)
+import System.FilePath ((</>), (<.>), isPathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
 import Text.Hastache (MuType(..))
 import Text.Hastache.Context (mkGenericContext, mkStrContext, mkStrContextM)
@@ -59,6 +59,7 @@ import qualified Text.Hastache as H
 data Report = Report {
       reportNumber   :: Int
     , reportName     :: String
+    , reportKeys     :: [String]
     , reportMeasured :: V.Vector Measured
     , reportAnalysis :: SampleAnalysis
     , reportOutliers :: Outliers
@@ -90,6 +91,7 @@ formatReport :: [Report]
              -> T.Text    -- ^ Hastache template.
              -> IO TL.Text
 formatReport reports template = do
+  templates <- getDataFileName "templates"
   let context "report"  = return $ MuList $ map inner reports
       context "json"    = return $ MuVariable (encode reports)
       context "include" = return $ MuLambdaM $ includeFile [templateDir]
@@ -118,6 +120,8 @@ formatReport reports template = do
                 cycles      = measure measCycles reportMeasured
       config = H.defaultConfig {
                  H.muEscapeFunc = H.emptyEscape
+               , H.muTemplateFileDir = Just templates
+               , H.muTemplateFileExt = Just ".tpl"
                }
   H.hastacheStr config template context
 
@@ -204,7 +208,7 @@ loadTemplate paths name
     | any isPathSeparator name = T.readFile name
     | otherwise                = go Nothing paths
   where go me (p:ps) = do
-          let cur = p </> name
+          let cur = p </> name <.> "tpl"
           x <- doesFileExist cur
           if x
             then T.readFile cur `E.catch` \e -> go (me `mplus` Just e) ps

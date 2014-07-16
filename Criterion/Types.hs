@@ -30,6 +30,11 @@ module Criterion.Types
       Benchmarkable(..)
     , Benchmark(..)
     , Measured(..)
+    , measureNames
+    , fromInt
+    , toInt
+    , fromDouble
+    , toDouble
     , measure
     , rescale
     , whnf
@@ -48,7 +53,7 @@ import Control.Applicative ((<$>), (<*>))
 import Control.DeepSeq (NFData, rnf)
 import Control.Exception (evaluate)
 import Criterion.Analysis.Types (Outliers(..), SampleAnalysis(..))
-import Data.Aeson (FromJSON, ToJSON)
+import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..))
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
@@ -79,8 +84,23 @@ data Measured = Measured {
     , measGcCpuSeconds       :: !Double
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-instance FromJSON Measured
-instance ToJSON Measured
+instance FromJSON Measured where
+    parseJSON v = do
+      (a,b,c,d,e,f,g,h,i,j) <- parseJSON v
+      return $ Measured a b c d e f g h i j
+
+instance ToJSON Measured where
+    toJSON Measured{..} = toJSON
+      (measTime, measCycles, measIters,
+       i measAllocated, i measNumGcs, i measBytesCopied,
+       d measMutatorWallSeconds, d measMutatorCpuSeconds,
+       d measGcWallSeconds, d measMutatorCpuSeconds)
+      where i = fromInt; d = fromDouble
+
+measureNames :: [String]
+measureNames = ["time", "cycles", "iters", "allocated", "numGcs", "bytesCopied",
+                "mutatorWallSeconds", "mutatorCpuSeconds", "gcWallSeconds",
+                "gcCpuSeconds"]
 
 rescale :: Measured -> Measured
 rescale m@Measured{..} = m {
@@ -94,18 +114,25 @@ rescale m@Measured{..} = m {
     , measGcWallSeconds      = d measGcWallSeconds
     , measGcCpuSeconds       = d measGcCpuSeconds
     } where
-        d k = maybe k (/ iters) (double k)
-        i k = maybe k (round . (/ iters)) (fromIntegral <$> int k)
+        d k = maybe k (/ iters) (fromDouble k)
+        i k = maybe k (round . (/ iters)) (fromIntegral <$> fromInt k)
         iters               = fromIntegral measIters :: Double
 
-int :: Int64 -> Maybe Int64
-int i | i == minBound = Nothing
-      | otherwise     = Just i
+fromInt :: Int64 -> Maybe Int64
+fromInt i | i == minBound = Nothing
+          | otherwise     = Just i
 
-double :: Double -> Maybe Double
-double d | isInfinite d || isNaN d = Nothing
-         | otherwise               = Just d
+toInt :: Maybe Int64 -> Int64
+toInt Nothing  = minBound
+toInt (Just i) = i
 
+fromDouble :: Double -> Maybe Double
+fromDouble d | isInfinite d || isNaN d = Nothing
+             | otherwise               = Just d
+
+toDouble :: Maybe Double -> Double
+toDouble Nothing  = -1/0
+toDouble (Just d) = d
 
 instance Binary Measured where
     put Measured{..} = do
