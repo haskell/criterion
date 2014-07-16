@@ -104,7 +104,9 @@
 
    <li>The chart on the right is the raw data from which the kernel
      density estimate is built.  Measurements are displayed on
-     the <i>y</i> axis in the order in which they occurred.</li>
+     the <i>x</i> axis in the order in which they occurred.  The
+     number of iterations of the measurement loop increases with each
+     successive measurement.</li>
  </ul>
 
  <p>Under the charts is a small table displaying the mean and standard
@@ -152,18 +154,46 @@ $(function () {
                  function(secs) { return $.renderTime(secs / scale); });
     var timepairs = new Array(times.length);
     for (var i = 0; i < times.length; i++)
-      timepairs[i] = [times[i]*scale,iters[i]];
+      timepairs[i] = [iters[i],times[i]*scale];
+    iterFormatter = function() {
+      var denom = 0;
+      return function(iters) {
+	if (iters == 0)
+          return '';
+	if (denom > 0)
+	  return (iters / denom).toFixed();
+        var exp;
+	if (iters >= 1e9) {
+	    denom = '1e9'; exp = 9;
+        }
+	if (iters >= 1e6) {
+	    denom = '1e6'; exp = 6;
+        }
+        else if (iters >= 1e3) {
+            denom = '1e3'; exp = 3;
+        }
+        else denom = 1;
+        if (denom > 1) {
+          iters = (iters / denom).toFixed();
+	  iters += '&times;10<sup>' + exp + '</sup> iters';
+        } else {
+          iters += ' iters';
+        }
+        return iters;
+      };
+    };
     $.plot($("#time" + number),
            [{ label: name + " times",
               data: timepairs }],
            { points: { show: true },
              grid: { borderColor: "#777", hoverable: true },
-             xaxis: { tickFormatter: $.unitFormatter(scale) },
+             xaxis: { tickFormatter: iterFormatter() },
+             yaxis: { tickFormatter: $.unitFormatter(scale) },
            });
     $.addTooltip("#time" + number,
-		 function(secs,iters) {
-		   return ($.renderTime(secs / scale) + ', ' + iters +
-		           ' iters');
+		 function(iters,secs) {
+		   return ($.renderTime(secs / scale) + ' / ' +
+			   iters.toLocaleString() + ' iters');
 		 });
     if (0) {
       var cyclepairs = new Array(cycles.length);
