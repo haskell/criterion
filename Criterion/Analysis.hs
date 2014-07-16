@@ -35,7 +35,7 @@ import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
-import Statistics.Regression (ols, rSquare)
+import Statistics.Regression (olsRegress)
 import Statistics.Resampling (Resample, resample)
 import Statistics.Sample (mean)
 import Statistics.Types (Estimator(..), Sample)
@@ -43,7 +43,6 @@ import System.Random.MWC (withSystemRandom)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
-import qualified Statistics.Matrix as M
 import qualified Statistics.Resampling.Bootstrap as B
 
 -- | Classify outliers in a data set, using the boxplot technique.
@@ -133,9 +132,7 @@ analyseSample ci meas numResamples = do
       stime = measure (measTime . rescale) meas
       iters = measure (fromIntegral . measIters) meas
       n     = G.length meas
-      preds = M.fromVector n 1 iters
-      coefs = ols preds times
-      r2    = rSquare preds times coefs
+      (coefs,r2) = olsRegress [iters] times
       rgrs  = Regression ["iters"] "time" [G.head coefs] r2
   resamples <- withSystemRandom $ \gen ->
                resample gen ests numResamples stime :: IO [Resample]
