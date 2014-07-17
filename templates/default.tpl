@@ -53,6 +53,7 @@
    </tr>
   </tbody>
  </table>
+
  <table>
   <thead class="analysis">
    <th></th>
@@ -63,6 +64,14 @@
        title="{{anMean.estConfidenceLevel}} confidence level">upper bound</th>
   </thead>
   <tbody>
+   <tr>
+    <td>OLS regression</td>
+    <td></td><td><span class="olstime">xxx</span></td><td></td>
+   </tr>
+   <tr>
+    <td>R&#xb2; goodness-of-fit</td>
+    <td></td><td><span class="olsr2">xxx</span></td><td></td>
+   </tr>
    <tr>
     <td>Mean execution time</td>
     <td><span class="citime">{{anMean.estLowerBound}}</span></td>
@@ -143,7 +152,14 @@ $(function () {
 
     var meanSecs = mean;
     var units = $.timeUnits(mean);
+    var rgrs = rpt.reportAnalysis.anRegress[0];
     var scale = units[0];
+    $("olstime").text(function() {
+        return $.renderTime(rgrs.regCoeffs.time);
+      });
+    $("olsr2").text(function() {
+        return rgrs.regRSquare.toFixed(4);
+      });
     mean *= scale;
     kdetimes = $.scaleBy(scale, kdetimes);
     var kq = $("#kde" + number);
