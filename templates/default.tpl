@@ -210,10 +210,9 @@ $(function () {
       };
     };
     $.plot($("#time" + number),
-           [{ label: name + " times",
-              data: timepairs }],
-           { points: { show: true },
-             grid: { borderColor: "#777", hoverable: true },
+           [{ label: name + " times", data: timepairs,
+              points: { show: true }}],
+           { grid: { borderColor: "#777", hoverable: true },
              xaxis: { tickFormatter: iterFormatter() },
              yaxis: { tickFormatter: $.unitFormatter(scale) },
            });
