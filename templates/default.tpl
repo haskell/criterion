@@ -128,8 +128,19 @@
 
 <script type="text/javascript">
 $(function () {
-  function mangulate(number, name, mean, iters, times, cycles,
-                     kdetimes, kdepdf) {
+  function mangulate(rpt) {
+    var measured = function(key) {
+      var idx = rpt.reportKeys.indexOf(key);
+      return rpt.reportMeasured.map(function(r) { return r[idx]; });
+    };
+    var number = rpt.reportNumber;
+    var name = rpt.reportName;
+    var mean = rpt.reportAnalysis.anMean.estPoint;
+    var iters = measured("iters");
+    var times = measured("times");
+    var kdetimes = rpt.reportKDEs[0].kdeTimes;
+    var kdepdf = rpt.reportKDEs[0].kdePDF;
+
     var meanSecs = mean;
     var units = $.timeUnits(mean);
     var scale = units[0];
@@ -211,16 +222,8 @@ $(function () {
       $.addTooltip("#cycles" + number, function(x,y) { return x + ' cycles'; });
     }
   };
-  {{#report}}
-  mangulate(/* report number */ {{number}},
-            /* report name */ "{{name}}",
-            /* estimated mean */ {{anMean.estPoint}},
-            /* iterations */ [{{#iters}}{{x}},{{/iters}}],
-            /* measured times */ [{{#times}}{{x}},{{/times}}],
-            /* measured cycles */ [{{#cycles}}{{x}},{{/cycles}}],
-            /* kde times */ [{{#kdetimes}}{{x}},{{/kdetimes}}],
-            /* kde pdf */ [{{#kdepdf}}{{x}},{{/kdepdf}}]);
-  {{/report}}
+  var reports = {{json}};
+  reports.map(mangulate);
 
   var benches = [{{#report}}"{{name}}",{{/report}}];
   var ylabels = [{{#report}}[-{{number}},'<a href="#b{{number}}">{{name}}</a>'],{{/report}}];
