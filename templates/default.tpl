@@ -154,10 +154,10 @@ $(function () {
     var units = $.timeUnits(mean);
     var rgrs = rpt.reportAnalysis.anRegress[0];
     var scale = units[0];
-    $("olstime").text(function() {
+    $(".olstime").text(function() {
         return $.renderTime(rgrs.regCoeffs.time);
       });
-    $("olsr2").text(function() {
+    $(".olsr2").text(function() {
         return rgrs.regRSquare.toFixed(4);
       });
     mean *= scale;
