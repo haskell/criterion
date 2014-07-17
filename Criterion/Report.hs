@@ -19,6 +19,7 @@ module Criterion.Report
     , fromResults
     , formatReport
     , report
+    , tidyTails
     -- * Rendering helper functions
     , TemplateException(..)
     , loadTemplate
@@ -42,6 +43,7 @@ import Data.Data (Data, Typeable)
 import Data.Monoid (Last(..))
 import GHC.Generics (Generic)
 import Paths_criterion (getDataFileName)
+import Statistics.Function (minMax)
 import Statistics.Sample.KernelDensity (kde)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>), (<.>), isPathSeparator)
@@ -90,10 +92,22 @@ fromResults results = zipWith go [0..] results
           , reportMeasured = sample
           , reportAnalysis = sampleAnalysis
           , reportOutliers = outliers
-          , reportKDEs     = [KDE "time" kdeTimes kdePDF]
+          , reportKDEs     = kdes
           }
-          where (kdeTimes, kdePDF) = kde 128 $
-                                     measure (measTime . rescale) sample
+          where kdes = [uncurry (KDE "time") . kde 128 $
+                        measure (measTime . rescale) sample]
+
+-- | Trim long flat tails from a KDE plot.
+tidyTails :: KDE -> KDE
+tidyTails KDE{..} = KDE { kdeType   = kdeType
+                        , kdeValues = G.slice front winSize kdeValues
+                        , kdePDF    = G.slice front winSize kdePDF
+                        }
+  where tiny     = uncurry subtract (minMax kdePDF) * 0.005
+        omitTiny = G.length . G.takeWhile ((<= tiny) . abs)
+        front    = omitTiny kdePDF
+        back     = omitTiny . G.reverse $ kdePDF
+        winSize  = G.length kdePDF - front - back
 
 -- | The path to the template and other files used for generating
 -- reports.
