@@ -146,8 +146,8 @@ $(function () {
     var name = rpt.reportName;
     var mean = rpt.reportAnalysis.anMean.estPoint;
     var iters = measured("iters");
-    var times = measured("times");
-    var kdetimes = rpt.reportKDEs[0].kdeTimes;
+    var times = measured("time");
+    var kdetimes = rpt.reportKDEs[0].kdeValues;
     var kdepdf = rpt.reportKDEs[0].kdePDF;
 
     var meanSecs = mean;
