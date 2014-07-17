@@ -36,6 +36,7 @@ import Criterion.Types (Benchmark(..), Benchmarkable(..), Measured(..),
                         Payload(..), Result(..), measure, rescale)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
+import qualified Data.Map as Map
 import Data.Monoid (getLast)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
@@ -98,8 +99,10 @@ runAndAnalyseOne mdesc bm = do
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
   forM_ anRegress $ \Regression{..} ->
-    note "%-8s  %s   (R\178 %.4g)\n"
-         regResponder (secs (head regCoeffs)) regRSquare
+    case Map.lookup "time" regCoeffs of
+      Nothing -> return ()
+      Just t  -> note "%-8s  %s   (R\178 %.4g)\n"
+                      "time" (secs t) regRSquare
   (a,b,c) <- bs "mean   " anMean
   (d,e,f) <- bs "std dev" anStdDev
   case mdesc of

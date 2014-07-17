@@ -40,6 +40,7 @@ import Statistics.Resampling (Resample, resample)
 import Statistics.Sample (mean)
 import Statistics.Types (Estimator(..), Sample)
 import System.Random.MWC (withSystemRandom)
+import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
@@ -133,7 +134,8 @@ analyseSample ci meas numResamples = do
       iters = measure (fromIntegral . measIters) meas
       n     = G.length meas
       (coefs,r2) = olsRegress [iters] times
-      rgrs  = Regression ["iters"] "time" [G.head coefs] r2
+      coefmap = Map.fromList (zip ["time","y"] (G.toList coefs))
+      rgrs  = Regression ["iters"] coefmap r2
   resamples <- withSystemRandom $ \gen ->
                resample gen ests numResamples stime :: IO [Resample]
   let [estMean,estStdDev] = B.bootstrapBCA ci stime ests resamples

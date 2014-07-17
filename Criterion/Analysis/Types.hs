@@ -26,6 +26,7 @@ import Data.Aeson (FromJSON, ToJSON)
 import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
+import Data.Map (Map)
 import Data.Monoid (Monoid(..))
 import GHC.Generics (Generic)
 import qualified Statistics.Resampling.Bootstrap as B
@@ -112,8 +113,7 @@ instance NFData OutlierVariance where
 
 data Regression = Regression {
     regPredictors :: [String]
-  , regResponder  :: String
-  , regCoeffs     :: [Double]
+  , regCoeffs     :: Map String Double
   , regRSquare    :: Double
   } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
@@ -122,13 +122,11 @@ instance ToJSON Regression
 
 instance Binary Regression where
     put Regression{..} =
-      put regPredictors >> put regResponder >>
-      put regCoeffs >> put regRSquare
+      put regPredictors >> put regCoeffs >> put regRSquare
 
 instance NFData Regression where
     rnf Regression{..} =
-      rnf regPredictors `seq` rnf regResponder `seq`
-      rnf regCoeffs `seq` rnf regRSquare
+      rnf regPredictors `seq` rnf regCoeffs `seq` rnf regRSquare
 
 -- | Result of a bootstrap analysis of a non-parametric sample.
 data SampleAnalysis = SampleAnalysis {
