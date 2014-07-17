@@ -15,6 +15,8 @@
 module Criterion.Report
     (
       Report(..)
+    , KDE(..)
+    , fromResults
     , formatReport
     , report
     -- * Rendering helper functions
@@ -32,7 +34,8 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
 import Criterion.Monad (Criterion, getConfig)
-import Criterion.Types (Measured(..), measure, rescale)
+import Criterion.Types (Measured(..), Payload(..), Result(..), measure)
+import Criterion.Types (measureNames, rescale)
 import Data.Aeson.Encode (encodeToTextBuilder)
 import Data.Aeson.Types (FromJSON, ToJSON(..))
 import Data.Data (Data, Typeable)
@@ -56,6 +59,15 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import qualified Text.Hastache as H
 
+data KDE = KDE {
+      kdeType   :: String
+    , kdeValues :: U.Vector Double
+    , kdePDF    :: U.Vector Double
+    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance FromJSON KDE
+instance ToJSON KDE
+
 data Report = Report {
       reportNumber   :: Int
     , reportName     :: String
@@ -63,10 +75,25 @@ data Report = Report {
     , reportMeasured :: V.Vector Measured
     , reportAnalysis :: SampleAnalysis
     , reportOutliers :: Outliers
+    , reportKDEs     :: [KDE]
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance FromJSON Report
 instance ToJSON Report
+
+fromResults :: [Result] -> [Report]
+fromResults results = zipWith go [0..] results
+  where go num (Single name Payload{..}) = Report {
+            reportNumber   = num
+          , reportName     = name
+          , reportKeys     = measureNames
+          , reportMeasured = sample
+          , reportAnalysis = sampleAnalysis
+          , reportOutliers = outliers
+          , reportKDEs     = [KDE "time" kdeTimes kdePDF]
+          }
+          where (kdeTimes, kdePDF) = kde 128 $
+                                     measure (measTime . rescale) sample
 
 -- | The path to the template and other files used for generating
 -- reports.
@@ -106,17 +133,16 @@ formatReport reports template = do
                            "iters"    -> return $ vector "x" iters
                            "times"    -> return $ vector "x" times
                            "cycles"   -> return $ vector "x" cycles
-                           "kdetimes" -> return $ vector "x" kdeTimes
+                           "kdetimes" -> return $ vector "x" kdeValues
                            "kdepdf"   -> return $ vector "x" kdePDF
-                           "kde"      -> return $ vector2 "time" "pdf" kdeTimes kdePDF
+                           "kde"      -> return $ vector2 "time" "pdf" kdeValues kdePDF
                            ('a':'n':_)-> mkGenericContext reportAnalysis $
                                          H.encodeStr nym
                            _          -> mkGenericContext reportOutliers $
                                          H.encodeStr nym
-          where (kdeTimes,kdePDF) = kde 128 scaledTimes
+          where [KDE{..}]   = reportKDEs
                 iters       = measure measIters reportMeasured
                 times       = measure measTime reportMeasured
-                scaledTimes = measure (measTime . rescale) reportMeasured
                 cycles      = measure measCycles reportMeasured
       config = H.defaultConfig {
                  H.muEscapeFunc = H.emptyEscape
