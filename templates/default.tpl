@@ -189,20 +189,20 @@ $(function () {
           return '';
 	if (denom > 0)
 	  return (iters / denom).toFixed();
-        var exp;
+        var power;
 	if (iters >= 1e9) {
-	    denom = '1e9'; exp = 9;
+	    denom = '1e9'; power = '&#x2079;';
         }
 	if (iters >= 1e6) {
-	    denom = '1e6'; exp = 6;
+	    denom = '1e6'; power = '&#x2076;';
         }
         else if (iters >= 1e3) {
-            denom = '1e3'; exp = 3;
+            denom = '1e3'; power = '&#xb3;';
         }
         else denom = 1;
         if (denom > 1) {
           iters = (iters / denom).toFixed();
-	  iters += '&times;10<sup>' + exp + '</sup> iters';
+	  iters += '&times;10' + power + ' iters';
         } else {
           iters += ' iters';
         }
