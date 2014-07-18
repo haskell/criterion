@@ -84,9 +84,9 @@ runBenchmark (Benchmarkable run) = do
   liftIO $ loop (squish (unfoldr series 1)) []
 
 -- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: Maybe String -> Benchmarkable
+runAndAnalyseOne :: String -> Benchmarkable
                  -> Criterion (V.Vector Measured, SampleAnalysis, Outliers)
-runAndAnalyseOne mdesc bm = do
+runAndAnalyseOne desc bm = do
   meas <- runBenchmark bm
   ci <- getConfigItem $ fromLJ cfgConfInterval
   numResamples <- getConfigItem $ fromLJ cfgResamples
@@ -105,9 +105,7 @@ runAndAnalyseOne mdesc bm = do
                       "time" (secs t) regRSquare
   (a,b,c) <- bs "mean   " anMean
   (d,e,f) <- bs "std dev" anStdDev
-  case mdesc of
-    Just desc -> writeCsv (desc,a,b,c,d,e,f)
-    Nothing   -> writeCsv (a,b,c,d,e,f)
+  writeCsv (desc,a,b,c,d,e,f)
   vrb <- getConfigItem $ fromLJ cfgVerbosity
   let out = classifyOutliers $ measure (measTime . rescale) meas
   when (vrb == Verbose || (ovEffect > Slight && vrb > Quiet)) $ do
@@ -146,7 +144,7 @@ runAndAnalyse p bs' = do
 
   let go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "benchmarking %s\n" desc'
-                           (x,an,out) <- runAndAnalyseOne (Just desc') b
+                           (x,an,out) <- runAndAnalyseOne desc' b
                            let result = Single desc' $ Payload x an out
                            liftIO $ L.hPut handle (encode result)
                            return $! k + 1
