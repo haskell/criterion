@@ -35,7 +35,7 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
 import Criterion.Monad (Criterion, getConfig)
-import Criterion.Types (Measured(..), Payload(..), Result(..), measure)
+import Criterion.Types (Measured(..), Result(..), measure)
 import Criterion.Types (measureNames, rescale)
 import Data.Aeson.Encode (encodeToTextBuilder)
 import Data.Aeson.Types (FromJSON, ToJSON(..))
@@ -85,7 +85,7 @@ instance ToJSON Report
 
 fromResults :: [Result] -> [Report]
 fromResults results = zipWith go [0..] results
-  where go num (Single name Payload{..}) = Report {
+  where go num Result{..} = Report {
             reportNumber   = num
           , reportName     = name
           , reportKeys     = measureNames

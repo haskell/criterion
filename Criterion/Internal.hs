@@ -33,7 +33,7 @@ import Criterion.Measurement
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Report (fromResults, report)
 import Criterion.Types (Benchmark(..), Benchmarkable(..), Measured(..),
-                        Payload(..), Result(..), measure, rescale)
+                        Result(..), measure, rescale)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import qualified Data.Map as Map
@@ -84,8 +84,7 @@ runBenchmark (Benchmarkable run) = do
   liftIO $ loop (squish (unfoldr series 1)) []
 
 -- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: String -> Benchmarkable
-                 -> Criterion (V.Vector Measured, SampleAnalysis, Outliers)
+runAndAnalyseOne :: String -> Benchmarkable -> Criterion Result
 runAndAnalyseOne desc bm = do
   meas <- runBenchmark bm
   ci <- getConfigItem $ fromLJ cfgConfInterval
@@ -114,7 +113,7 @@ runAndAnalyseOne desc bm = do
          (round (ovFraction * 100) :: Int) wibble
     return ()
   _ <- note "\n"
-  return (meas,an,out)
+  return (Result desc meas an out)
   where bs :: String -> Estimate -> Criterion (Double,Double,Double)
         bs d e = do
           _ <- note "%s   %s   (lb %s   ub %s   ci %.3f)\n" d
@@ -144,8 +143,7 @@ runAndAnalyse p bs' = do
 
   let go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "benchmarking %s\n" desc'
-                           (x,an,out) <- runAndAnalyseOne desc' b
-                           let result = Single desc' $ Payload x an out
+                           result <- runAndAnalyseOne desc' b
                            liftIO $ L.hPut handle (encode result)
                            return $! k + 1
           | otherwise = return (k :: Int)
@@ -201,8 +199,8 @@ junit rs
           (length rs) ++
           concatMap single rs ++
           "</testsuite>\n"
-    single (Single d r) = printf "  <testcase name=\"%s\" time=\"%f\" />\n"
-               (attrEsc d) (estPoint $ anMean $ sampleAnalysis r)
+    single Result{..} = printf "  <testcase name=\"%s\" time=\"%f\" />\n"
+               (attrEsc name) (estPoint $ anMean $ sampleAnalysis)
     attrEsc = concatMap esc
       where
         esc '\'' = "&apos;"

@@ -46,7 +46,6 @@ module Criterion.Types
     , benchNames
     -- * Result types
     , Result(..)
-    , Payload(..)
     ) where
 
 import Control.Applicative ((<$>), (<*>))
@@ -212,25 +211,20 @@ instance Show Benchmark where
     show (Benchmark d _)  = ("Benchmark " ++ show d)
     show (BenchGroup d _) = ("BenchGroup " ++ show d)
 
-data Payload = Payload {
-      sample         :: V.Vector Measured
+measure :: (U.Unbox a) => (Measured -> a) -> V.Vector Measured -> U.Vector a
+measure f v = U.convert . V.map f $ v
+
+data Result = Result {
+      name :: String
+    , sample         :: V.Vector Measured
     , sampleAnalysis :: SampleAnalysis
     , outliers       :: Outliers
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-instance FromJSON Payload
-instance ToJSON Payload
-
-measure :: (U.Unbox a) => (Measured -> a) -> V.Vector Measured -> U.Vector a
-measure f v = U.convert . V.map f $ v
-
-instance Binary Payload where
-    put (Payload x y z) = put x >> put y >> put z
-    get = Payload <$> get <*> get <*> get
-
-data Result = Single String Payload
-              deriving (Eq, Read, Show, Typeable, Data, Generic)
+instance FromJSON Result
+instance ToJSON Result
 
 instance Binary Result where
-    put (Single x y) = put x >> put y
-    get = Single <$> get <*> get
+    put Result{..} =
+      put name >> put sample >> put sampleAnalysis >> put outliers
+    get = Result <$> get <*> get <*> get <*> get
