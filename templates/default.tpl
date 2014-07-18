@@ -97,10 +97,9 @@
  <h2><a name="grokularation">understanding this report</a></h2>
 
  <p>In this report, each function benchmarked by criterion is assigned
-   a section of its own.  In each section, we display two charts, each
-   with an <i>x</i> axis that represents measured execution time.
-   These charts are active; if you hover your mouse over data points
-   and annotations, you will see more details.</p>
+   a section of its own.  The charts in each section are active; if
+   you hover your mouse over data points and annotations, you will see
+   more details.</p>
 
  <ul>
    <li>The chart on the left is a
@@ -112,21 +111,40 @@
      measurement was repeated.</li>
 
    <li>The chart on the right is the raw data from which the kernel
-     density estimate is built.  Measurements are displayed on
-     the <i>x</i> axis in the order in which they occurred.  The
-     number of iterations of the measurement loop increases with each
-     successive measurement.</li>
+     density estimate is built.  The <i>x</i> axis indicates the
+     number of loop iterations, while the <i>y</i> axis shows measured
+     execution time for the given number of loop iterations.  The
+     line behind the values is the linear regression prediction of
+     execution time for a given number of iterations. Ideally, all
+     measurements will be on (or very near) this line.</li>
  </ul>
 
- <p>Under the charts is a small table displaying the mean and standard
-   deviation of the measurements.  We use a statistical technique
-   called
+ <p>Under the charts is a small table.
+   The first two rows are the results of a linear regression run
+     on the measurements displayed in the right-hand chart.</p>
+
+ <ul>
+   <li><i>OLS regression</i> indicates the
+     linear-regression-estimated time for a single loop iteration.
+     This is typically more accurate than the <i>mean</i> row below
+     it, as it more accurately eliminates measurement overhead.</li>
+   <li><i>R&#xb2; goodness-of-fit</i> is a measure of how
+     accurately the linear regression model fits the observed
+     measurements.  If the measurements are not too noisy, R&#xb2;
+     should lie between 0.99 and 1, indicating an excellent fit. If
+     the number is below 0.99, something is confounding the accuracy
+     of the linear model.</li>
+   <li><i>Mean execution time</i> and <i>standard deviation</i> are
+     statistics calculated from execution time
+     divided by number of iterations.</li>
+ </ul>
+
+ <p>We use a statistical technique called
    the <a href="http://en.wikipedia.org/wiki/Bootstrapping_(statistics)">bootstrap</a>
-   to provide confidence intervals on our estimates of these values.
-   The bootstrap-derived upper and lower bounds on the mean and
-   standard deviation let you see how accurate we believe those
-   estimates to be.  (Hover the mouse over the table headers to see
-   the confidence levels.)</p>
+   to provide confidence intervals on our estimates.  The
+   bootstrap-derived upper and lower bounds on estimates let you see
+   how accurate we believe those estimates to be.  (Hover the mouse
+   over the table headers to see the confidence levels.)</p>
 
  <p>A noisy benchmarking environment can cause some or many
    measurements to fall far from the mean.  These outlying
