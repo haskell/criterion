@@ -125,9 +125,10 @@
 
  <ul>
    <li><i>OLS regression</i> indicates the
-     linear-regression-estimated time for a single loop iteration.
-     This is typically more accurate than the <i>mean</i> row below
-     it, as it more accurately eliminates measurement overhead.</li>
+     time estimated for a single loop iteration using an ordinary
+     least-squares regression model.  This number is more accurate
+     than the <i>mean</i> esimate below it, as it more effectively
+     eliminates measurement overhead and other constant factors.</li>
    <li><i>R&#xb2; goodness-of-fit</i> is a measure of how
      accurately the linear regression model fits the observed
      measurements.  If the measurements are not too noisy, R&#xb2;
