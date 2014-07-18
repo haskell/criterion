@@ -66,11 +66,11 @@
   <tbody>
    <tr>
     <td>OLS regression</td>
-    <td></td><td><span class="olstime">xxx</span></td><td></td>
+    <td></td><td><span class="olstime{{number}}">xxx</span></td><td></td>
    </tr>
    <tr>
     <td>R&#xb2; goodness-of-fit</td>
-    <td></td><td><span class="olsr2">xxx</span></td><td></td>
+    <td></td><td><span class="olsr2{{number}}">xxx</span></td><td></td>
    </tr>
    <tr>
     <td>Mean execution time</td>
@@ -173,10 +173,10 @@ $(function () {
     var rgrs = rpt.reportAnalysis.anRegress[0];
     var scale = units[0];
     var olsTime = rgrs.regCoeffs.time;
-    $(".olstime").text(function() {
+    $(".olstime" + number).text(function() {
         return $.renderTime(olsTime);
       });
-    $(".olsr2").text(function() {
+    $(".olsr2" + number).text(function() {
         return rgrs.regRSquare.toFixed(4);
       });
     mean *= scale;
