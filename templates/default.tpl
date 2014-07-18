@@ -154,8 +154,9 @@ $(function () {
     var units = $.timeUnits(mean);
     var rgrs = rpt.reportAnalysis.anRegress[0];
     var scale = units[0];
+    var olsTime = rgrs.regCoeffs.time;
     $(".olstime").text(function() {
-        return $.renderTime(rgrs.regCoeffs.time);
+        return $.renderTime(olsTime);
       });
     $(".olsr2").text(function() {
         return rgrs.regRSquare.toFixed(4);
@@ -180,6 +181,8 @@ $(function () {
     $.addTooltip("#kde" + number,
                  function(secs) { return $.renderTime(secs / scale); });
     var timepairs = new Array(times.length);
+    var lastiter = iters[iters.length-1];
+    var olspairs = [[0,0], [lastiter, lastiter * scale * olsTime]];
     for (var i = 0; i < times.length; i++)
       timepairs[i] = [iters[i],times[i]*scale];
     iterFormatter = function() {
@@ -210,12 +213,13 @@ $(function () {
       };
     };
     $.plot($("#time" + number),
-           [{ label: name + " times", data: timepairs,
-              points: { show: true }}],
-           { grid: { borderColor: "#777", hoverable: true },
-             xaxis: { tickFormatter: iterFormatter() },
-             yaxis: { tickFormatter: $.unitFormatter(scale) },
-           });
+           [{ label: "regression", data: olspairs,
+              lines: { show: true } },
+            { label: name + " times", data: timepairs,
+              points: { show: true } }],
+            { grid: { borderColor: "#777", hoverable: true },
+              xaxis: { tickFormatter: iterFormatter() },
+              yaxis: { tickFormatter: $.unitFormatter(scale) } });
     $.addTooltip("#time" + number,
 		 function(iters,secs) {
 		   return ($.renderTime(secs / scale) + ' / ' +
