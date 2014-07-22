@@ -228,15 +228,15 @@ measure f v = U.convert . V.map f $ v
 -- | Outliers from sample data, calculated using the boxplot
 -- technique.
 data Outliers = Outliers {
-      samplesSeen :: {-# UNPACK #-} !Int64
-    , lowSevere   :: {-# UNPACK #-} !Int64
+      samplesSeen :: !Int64
+    , lowSevere   :: !Int64
     -- ^ More than 3 times the interquartile range (IQR) below the
     -- first quartile.
-    , lowMild     :: {-# UNPACK #-} !Int64
+    , lowMild     :: !Int64
     -- ^ Between 1.5 and 3 times the IQR below the first quartile.
-    , highMild    :: {-# UNPACK #-} !Int64
+    , highMild    :: !Int64
     -- ^ Between 1.5 and 3 times the IQR above the third quartile.
-    , highSevere  :: {-# UNPACK #-} !Int64
+    , highSevere  :: !Int64
     -- ^ More than 3 times the IQR above the third quartile.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
