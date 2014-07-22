@@ -69,7 +69,7 @@ import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Resampling.Bootstrap as B
 
 -- | A pure function or impure action that can be benchmarked. The
--- 'Int' parameter indicates the number of times to run the given
+-- 'Int64' parameter indicates the number of times to run the given
 -- function or action.
 newtype Benchmarkable = Benchmarkable (Int64 -> IO ())
 
