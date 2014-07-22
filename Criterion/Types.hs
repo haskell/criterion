@@ -45,7 +45,6 @@ module Criterion.Types
     , bgroup
     , benchNames
     -- * Result types
-    , Result(..)
     , Outliers(..)
     , OutlierEffect(..)
     , OutlierVariance(..)
@@ -225,21 +224,6 @@ instance Show Benchmark where
 
 measure :: (U.Unbox a) => (Measured -> a) -> V.Vector Measured -> U.Vector a
 measure f v = U.convert . V.map f $ v
-
-data Result = Result {
-      name :: String
-    , sample         :: V.Vector Measured
-    , sampleAnalysis :: SampleAnalysis
-    , outliers       :: Outliers
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
-
-instance FromJSON Result
-instance ToJSON Result
-
-instance Binary Result where
-    put Result{..} =
-      put name >> put sample >> put sampleAnalysis >> put outliers
-    get = Result <$> get <*> get <*> get <*> get
 
 -- | Outliers from sample data, calculated using the boxplot
 -- technique.

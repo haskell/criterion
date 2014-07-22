@@ -14,8 +14,7 @@
 
 module Criterion.Report
     (
-      fromResults
-    , formatReport
+      formatReport
     , report
     , tidyTails
     -- * Rendering helper functions
@@ -40,7 +39,6 @@ import Data.Monoid (Last(..))
 import GHC.Generics (Generic)
 import Paths_criterion (getDataFileName)
 import Statistics.Function (minMax)
-import Statistics.Sample.KernelDensity (kde)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>), (<.>), isPathSeparator)
 import System.IO.Unsafe (unsafePerformIO)
@@ -55,20 +53,6 @@ import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Text.Hastache as H
-
-fromResults :: [Result] -> [Report]
-fromResults results = zipWith go [0..] results
-  where go num Result{..} = Report {
-            reportNumber   = num
-          , reportName     = name
-          , reportKeys     = measureNames
-          , reportMeasured = sample
-          , reportAnalysis = sampleAnalysis
-          , reportOutliers = outliers
-          , reportKDEs     = kdes
-          }
-          where kdes = [uncurry (KDE "time") . kde 128 $
-                        measure (measTime . rescale) sample]
 
 -- | Trim long flat tails from a KDE plot.
 tidyTails :: KDE -> KDE
