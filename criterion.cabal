@@ -44,7 +44,6 @@ library
   exposed-modules:
     Criterion
     Criterion.Analysis
-    Criterion.Analysis.Types
     Criterion.Config
     Criterion.IO
     Criterion.IO.Printf

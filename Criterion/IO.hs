@@ -13,13 +13,13 @@
 module Criterion.IO
     (
       header
-    , hGetResults
-    , hPutResults
-    , readResults
-    , writeResults
+    , hGetReports
+    , hPutReports
+    , readReports
+    , writeReports
     ) where
 
-import Criterion.Types (Result(..))
+import Criterion.Types (Report(..))
 import Data.Binary (Binary(..), encode)
 #if MIN_VERSION_binary(0, 6, 3)
 import Data.Binary.Get (runGetOrFail)
@@ -38,23 +38,23 @@ header = runPut $ do
   putByteString "criterio"
   mapM_ (putWord16be . fromIntegral) (versionBranch version)
 
-hGetResults :: Handle -> IO (Either String [Result])
-hGetResults handle = do
+hGetReports :: Handle -> IO (Either String [Report])
+hGetReports handle = do
   bs <- L.hGet handle (fromIntegral (L.length header))
   if bs == header
     then Right `fmap` readAll handle
     else return $ Left "unexpected header"
 
-hPutResults :: Handle -> [Result] -> IO ()
-hPutResults handle rs = do
+hPutReports :: Handle -> [Report] -> IO ()
+hPutReports handle rs = do
   L.hPut handle header
   mapM_ (L.hPut handle . encode) rs
 
-readResults :: FilePath -> IO (Either String [Result])
-readResults path = withFile path ReadMode hGetResults
+readReports :: FilePath -> IO (Either String [Report])
+readReports path = withFile path ReadMode hGetReports
 
-writeResults :: FilePath -> [Result] -> IO ()
-writeResults path rs = withFile path WriteMode (flip hPutResults rs)
+writeReports :: FilePath -> [Report] -> IO ()
+writeReports path rs = withFile path WriteMode (flip hPutReports rs)
 
 #if MIN_VERSION_binary(0, 6, 3)
 readAll :: Binary a => Handle -> IO [a]

@@ -26,11 +26,10 @@ module Criterion.Analysis
     ) where
 
 import Control.Monad (when)
-import Criterion.Analysis.Types
 import Criterion.IO.Printf (note)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion)
-import Criterion.Types (Measured(..), measure, rescale)
+import Criterion.Types
 import Data.Int (Int64)
 import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
@@ -38,6 +37,7 @@ import Statistics.Quantile (weightedAvg)
 import Statistics.Regression (olsRegress)
 import Statistics.Resampling (Resample, resample)
 import Statistics.Sample (mean)
+import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Estimator(..), Sample)
 import System.Random.MWC (withSystemRandom)
 import qualified Data.Map as Map
@@ -122,12 +122,14 @@ scale f s@SampleAnalysis{..} = s {
                                }
 
 -- | Perform an analysis of a measurement.
-analyseSample :: Double         -- ^ Confidence interval (between 0 and 1).
+analyseSample :: Int            -- ^ Experiment number.
+              -> String         -- ^ Experiment name.
+              -> Double         -- ^ Confidence interval (between 0 and 1).
               -> V.Vector Measured -- ^ Sample data.
               -> Int            -- ^ Number of resamples to perform
                                 -- when bootstrapping.
-              -> IO SampleAnalysis
-analyseSample ci meas numResamples = do
+              -> IO Report
+analyseSample i name ci meas numResamples = do
   let ests  = [Mean,StdDev]
       times = measure measTime meas
       stime = measure (measTime . rescale) meas
@@ -135,17 +137,25 @@ analyseSample ci meas numResamples = do
       n     = G.length meas
       (coefs,r2) = olsRegress [iters] times
       coefmap = Map.fromList (zip ["time","y"] (G.toList coefs))
-      rgrs  = Regression ["iters"] coefmap r2
   resamples <- withSystemRandom $ \gen ->
                resample gen ests numResamples stime :: IO [Resample]
   let [estMean,estStdDev] = B.bootstrapBCA ci stime ests resamples
       ov = outlierVariance estMean estStdDev (fromIntegral n)
-  return SampleAnalysis {
-               anRegress = [rgrs]
+      an = SampleAnalysis {
+               anRegress = [Regression ["iters"] coefmap r2]
              , anMean = estMean
              , anStdDev = estStdDev
              , anOutlierVar = ov
              }
+  return Report {
+      reportNumber   = i
+    , reportName     = name
+    , reportKeys     = measureNames
+    , reportMeasured = meas
+    , reportAnalysis = an
+    , reportOutliers = classifyOutliers stime
+    , reportKDEs     = [uncurry (KDE "time") (kde 128 stime)]
+    }
 
 -- | Display a report of the 'Outliers' present in a 'Sample'.
 noteOutliers :: Outliers -> Criterion ()

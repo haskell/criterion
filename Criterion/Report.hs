@@ -14,9 +14,7 @@
 
 module Criterion.Report
     (
-      Report(..)
-    , KDE(..)
-    , fromResults
+      fromResults
     , formatReport
     , report
     , tidyTails
@@ -32,13 +30,11 @@ module Criterion.Report
 import Control.Exception (Exception, IOException, throwIO)
 import Control.Monad (mplus)
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import Criterion.Analysis (Outliers(..), SampleAnalysis(..))
 import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
 import Criterion.Monad (Criterion, getConfig)
-import Criterion.Types (Measured(..), Result(..), measure)
-import Criterion.Types (measureNames, rescale)
+import Criterion.Types
 import Data.Aeson.Encode (encodeToTextBuilder)
-import Data.Aeson.Types (FromJSON, ToJSON(..))
+import Data.Aeson.Types (toJSON)
 import Data.Data (Data, Typeable)
 import Data.Monoid (Last(..))
 import GHC.Generics (Generic)
@@ -57,31 +53,8 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Vector.Generic as G
-import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import qualified Text.Hastache as H
-
-data KDE = KDE {
-      kdeType   :: String
-    , kdeValues :: U.Vector Double
-    , kdePDF    :: U.Vector Double
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
-
-instance FromJSON KDE
-instance ToJSON KDE
-
-data Report = Report {
-      reportNumber   :: Int
-    , reportName     :: String
-    , reportKeys     :: [String]
-    , reportMeasured :: V.Vector Measured
-    , reportAnalysis :: SampleAnalysis
-    , reportOutliers :: Outliers
-    , reportKDEs     :: [KDE]
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
-
-instance FromJSON Report
-instance ToJSON Report
 
 fromResults :: [Result] -> [Report]
 fromResults results = zipWith go [0..] results

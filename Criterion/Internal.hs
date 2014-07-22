@@ -24,16 +24,14 @@ import Data.Binary (encode)
 import Data.Int (Int64)
 import Data.List (unfoldr)
 import qualified Data.ByteString.Lazy as L
-import Criterion.Analysis (analyseSample, classifyOutliers, noteOutliers)
-import Criterion.Analysis.Types
+import Criterion.Analysis (analyseSample, noteOutliers)
 import Criterion.Config (Config(..), Verbosity(..), fromLJ)
-import Criterion.IO (header, hGetResults)
+import Criterion.IO (header, hGetReports)
 import Criterion.IO.Printf (note, prolix, writeCsv)
 import Criterion.Measurement
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
-import Criterion.Report (fromResults, report)
-import Criterion.Types (Benchmark(..), Benchmarkable(..), Measured(..),
-                        Result(..), measure, rescale)
+import Criterion.Report (report)
+import Criterion.Types
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import qualified Data.Map as Map
@@ -84,14 +82,15 @@ runBenchmark (Benchmarkable run) = do
   liftIO $ loop (squish (unfoldr series 1)) []
 
 -- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: String -> Benchmarkable -> Criterion Result
-runAndAnalyseOne desc bm = do
+runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion Report
+runAndAnalyseOne i desc bm = do
   meas <- runBenchmark bm
   ci <- getConfigItem $ fromLJ cfgConfInterval
   numResamples <- getConfigItem $ fromLJ cfgResamples
   _ <- prolix "analysing with %d resamples\n" numResamples
-  an@SampleAnalysis{..} <- liftIO $ analyseSample ci meas numResamples
-  let OutlierVariance{..} = anOutlierVar
+  rpt@Report{..} <- liftIO $ analyseSample i desc ci meas numResamples
+  let SampleAnalysis{..} = reportAnalysis
+      OutlierVariance{..} = anOutlierVar
   let wibble = case ovEffect of
                  Unaffected -> "unaffected" :: String
                  Slight -> "slightly inflated"
@@ -106,14 +105,13 @@ runAndAnalyseOne desc bm = do
   (d,e,f) <- bs "std dev" anStdDev
   writeCsv (desc,a,b,c,d,e,f)
   vrb <- getConfigItem $ fromLJ cfgVerbosity
-  let out = classifyOutliers $ measure (measTime . rescale) meas
   when (vrb == Verbose || (ovEffect > Slight && vrb > Quiet)) $ do
-    when (vrb == Verbose) $ noteOutliers out
+    when (vrb == Verbose) $ noteOutliers reportOutliers
     _ <- note "variance introduced by outliers: %d%% (%s)\n"
          (round (ovFraction * 100) :: Int) wibble
     return ()
   _ <- note "\n"
-  return (Result desc meas an out)
+  return rpt
   where bs :: String -> Estimate -> Criterion (Double,Double,Double)
         bs d e = do
           _ <- note "%s   %s   (lb %s   ub %s   ci %.3f)\n" d
@@ -143,8 +141,8 @@ runAndAnalyse p bs' = do
 
   let go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "benchmarking %s\n" desc'
-                           result <- runAndAnalyseOne desc' b
-                           liftIO $ L.hPut handle (encode result)
+                           rpt <- runAndAnalyseOne k desc' b
+                           liftIO $ L.hPut handle (encode rpt)
                            return $! k + 1
           | otherwise = return (k :: Int)
           where desc' = prefix pfx desc
@@ -152,16 +150,16 @@ runAndAnalyse p bs' = do
           foldM go k [(prefix pfx desc, b) | b <- bs]
   _ <- go 0 ("", bs')
 
-  rts <- (either fail return =<<) . liftIO $ do
+  rpts <- (either fail return =<<) . liftIO $ do
     hSeek handle AbsoluteSeek 0
-    rs <- hGetResults handle
+    rs <- hGetReports handle
     hClose handle
     case mbResultFile of
       Just _ -> return rs
       _      -> removeFile resultFile >> return rs
 
-  report (fromResults rts)
-  junit rts
+  report rpts
+  junit rpts
 
 runNotAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
@@ -187,7 +185,7 @@ prefix ""  desc = desc
 prefix pfx desc = pfx ++ '/' : desc
 
 -- | Write summary JUnit file (if applicable)
-junit :: [Result] -> Criterion ()
+junit :: [Report] -> Criterion ()
 junit rs
   = do junitOpt <- getConfigItem (getLast . cfgJUnitFile)
        case junitOpt of
@@ -199,8 +197,8 @@ junit rs
           (length rs) ++
           concatMap single rs ++
           "</testsuite>\n"
-    single Result{..} = printf "  <testcase name=\"%s\" time=\"%f\" />\n"
-               (attrEsc name) (estPoint $ anMean $ sampleAnalysis)
+    single Report{..} = printf "  <testcase name=\"%s\" time=\"%f\" />\n"
+               (attrEsc reportName) (estPoint $ anMean $ reportAnalysis)
     attrEsc = concatMap esc
       where
         esc '\'' = "&apos;"
