@@ -82,6 +82,7 @@ data Verbosity = Quiet
 data Config = Config {
       confInterval :: Double
     , forceGC      :: Bool
+    , timeLimit    :: Double
     , onlyRun      :: Bool
     , resamples    :: Int
     , rawDataFile  :: Maybe FilePath

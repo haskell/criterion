@@ -41,6 +41,7 @@ defaultConfig :: Config
 defaultConfig = Config {
       confInterval = 0.95
     , forceGC      = True
+    , timeLimit    = 5
     , onlyRun      = False
     , resamples    = 10000
     , rawDataFile  = Nothing
@@ -71,6 +72,9 @@ config Config{..} = Config
               help "confidence interval")
   <*> (not <$> switch (long "no-gc" <> short 'G' <>
                        help "do not collect garbage between iterations"))
+  <*> option (long "time-limit" <> short 'L' <> metavar "SECS" <>
+              value timeLimit <> reader (range 0.1 86400) <>
+              help "time limit to run a benchmark")
   <*> switch (long "only-run" <> short 'n' <>
               help "run benchmarks, don't analyse")
   <*> option (long "resamples" <> metavar "COUNT" <> value resamples <>

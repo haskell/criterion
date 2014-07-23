@@ -58,8 +58,7 @@ runBenchmark (Benchmarkable run) = do
   liftIO $ run 1
   Config{..} <- getConfig
   start <- liftIO $ performGC >> getTime
-  let budget = 5
-      loop [] _ = error "unpossible!"
+  let loop [] _ = error "unpossible!"
       loop (iters:niters) acc = do
         when forceGC $ performGC
         startStats <- getGCStats
@@ -74,7 +73,7 @@ runBenchmark (Benchmarkable run) = do
                 , measCycles = max 0 (fromIntegral (endCycles - startCycles))
                 , measIters  = iters
                 }
-        if endTime - start >= budget
+        if endTime - start >= timeLimit
           then return $! G.reverse (G.fromList acc)
           else loop niters (m:acc)
   liftIO $ loop (squish (unfoldr series 1)) []
