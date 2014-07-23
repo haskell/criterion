@@ -25,7 +25,6 @@ import Data.Int (Int64)
 import Data.List (unfoldr)
 import qualified Data.ByteString.Lazy as L
 import Criterion.Analysis (analyseSample, noteOutliers)
-import Criterion.Config (Config(..), Verbosity(..), fromLJ)
 import Criterion.IO (header, hGetReports)
 import Criterion.IO.Printf (note, prolix, writeCsv)
 import Criterion.Measurement
@@ -35,7 +34,6 @@ import Criterion.Types
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import qualified Data.Map as Map
-import Data.Monoid (getLast)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
@@ -58,12 +56,12 @@ series k = Just (truncate l, l)
 runBenchmark :: Benchmarkable -> Criterion (V.Vector Measured)
 runBenchmark (Benchmarkable run) = do
   liftIO $ run 1
-  cfg <- getConfig
+  Config{..} <- getConfig
   start <- liftIO $ performGC >> getTime
   let budget = 5
       loop [] _ = error "unpossible!"
       loop (iters:niters) acc = do
-        when (fromLJ cfgPerformGC cfg) $ performGC
+        when forceGC $ performGC
         startStats <- getGCStats
         startTime <- getTime
         startCycles <- getCycles
@@ -85,10 +83,9 @@ runBenchmark (Benchmarkable run) = do
 runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion Report
 runAndAnalyseOne i desc bm = do
   meas <- runBenchmark bm
-  ci <- getConfigItem $ fromLJ cfgConfInterval
-  numResamples <- getConfigItem $ fromLJ cfgResamples
-  _ <- prolix "analysing with %d resamples\n" numResamples
-  rpt@Report{..} <- liftIO $ analyseSample i desc ci meas numResamples
+  Config{..} <- getConfig
+  _ <- prolix "analysing with %d resamples\n" resamples
+  rpt@Report{..} <- liftIO $ analyseSample i desc confInterval meas resamples
   let SampleAnalysis{..} = reportAnalysis
       OutlierVariance{..} = anOutlierVar
   let wibble = case ovEffect of
@@ -104,9 +101,8 @@ runAndAnalyseOne i desc bm = do
   (a,b,c) <- bs "mean   " anMean
   (d,e,f) <- bs "std dev" anStdDev
   writeCsv (desc,a,b,c,d,e,f)
-  vrb <- getConfigItem $ fromLJ cfgVerbosity
-  when (vrb == Verbose || (ovEffect > Slight && vrb > Quiet)) $ do
-    when (vrb == Verbose) $ noteOutliers reportOutliers
+  when (verbosity == Verbose || (ovEffect > Slight && verbosity > Quiet)) $ do
+    when (verbosity == Verbose) $ noteOutliers reportOutliers
     _ <- note "variance introduced by outliers: %d%% (%s)\n"
          (round (ovFraction * 100) :: Int) wibble
     return ()
@@ -128,7 +124,7 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Benchmark
               -> Criterion ()
 runAndAnalyse p bs' = do
-  mbResultFile <- getConfigItem $ getLast . cfgResults
+  mbResultFile <- getConfigItem reportFile
   (resultFile, handle) <- liftIO $
     case mbResultFile of
       Nothing -> do
@@ -176,9 +172,7 @@ runNotAnalyse p bs' = goQuickly "" bs'
         goQuickly pfx (BenchGroup desc bs) =
             mapM_ (goQuickly (prefix pfx desc)) bs
 
-        runOne (Benchmarkable run) = do
-            samples <- getConfigItem $ fromLJ cfgSamples
-            liftIO $ run samples
+        runOne (Benchmarkable run) = liftIO (run 1)
 
 prefix :: String -> String -> String
 prefix ""  desc = desc
@@ -187,7 +181,7 @@ prefix pfx desc = pfx ++ '/' : desc
 -- | Write summary JUnit file (if applicable)
 junit :: [Report] -> Criterion ()
 junit rs
-  = do junitOpt <- getConfigItem (getLast . cfgJUnitFile)
+  = do junitOpt <- getConfigItem junitFile
        case junitOpt of
          Just fn -> liftIO $ writeFile fn msg
          Nothing -> return ()

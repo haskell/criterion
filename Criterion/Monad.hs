@@ -20,7 +20,7 @@ module Criterion.Monad
 import Control.Applicative (Applicative)
 import Control.Monad.Reader (MonadReader, ReaderT, ask, runReaderT)
 import Control.Monad.Trans (MonadIO)
-import Criterion.Config (Config)
+import Criterion.Types (Config)
 
 -- | The monad in which most criterion code executes.
 newtype Criterion a = Criterion {

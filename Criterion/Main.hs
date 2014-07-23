@@ -39,133 +39,22 @@ module Criterion.Main
     , defaultMainWith
     -- * Other useful code
     , makeMatcher
-    , defaultOptions
-    , parseArgs
     ) where
 
 import Control.Monad (unless)
 import Control.Monad.Trans (liftIO)
-import Criterion.Config
-import Criterion.IO.Printf (note, printError, writeCsv)
+import Criterion.IO.Printf (printError, writeCsv)
 import Criterion.Internal (runAndAnalyse, runNotAnalyse, prefix)
+import Criterion.Main.Options (MatchType(..), Mode(..), defaultConfig, describe)
 import Criterion.Measurement (initializeTime)
 import Criterion.Monad (Criterion, withConfig)
-import Criterion.Types (Benchmarkable(..), Benchmark(..), bench,
-                        benchNames, bgroup, nf, nfIO, whnf, whnfIO)
-import Data.Char (toLower)
+import Criterion.Types
 import Data.List (isPrefixOf, sort, stripPrefix)
 import Data.Maybe (fromMaybe)
-import Data.Monoid (Monoid(..), Last(..))
-import System.Console.GetOpt
-import System.Environment (getArgs, getProgName)
+import Options.Applicative (execParser)
+import System.Environment (getProgName)
 import System.Exit (ExitCode(..), exitWith)
 import System.FilePath.Glob
-
--- | Parse a confidence interval.
-ci :: String -> IO Config
-ci s = case reads s' of
-         [(d,"%")] -> check (d/100)
-         [(d,"")]  -> check d
-         _         -> parseError "invalid confidence interval provided"
-  where s' = case s of
-               ('.':_) -> '0':s
-               _       -> s
-        check d | d <= 0 = parseError "confidence interval is negative"
-                | d >= 1 = parseError "confidence interval is greater than 1"
-                | otherwise = return mempty { cfgConfInterval = ljust d }
-
-matchType :: String -> IO Config
-matchType s = case map toLower s of
-                "prefix" -> return mempty { cfgMatchType = ljust Prefix }
-                "glob" -> return mempty { cfgMatchType = ljust Glob }
-                _ -> parseError "match type is not 'glob' or 'prefix'"
-
--- | Parse a positive number.
-pos :: (Num a, Ord a, Read a) =>
-       String -> (Last a -> Config) -> String -> IO Config
-pos q f s =
-    case reads s of
-      [(n,"")] | n > 0     -> return . f $ ljust n
-               | otherwise -> parseError $ q ++ " must be positive"
-      _                    -> parseError $ "invalid " ++ q ++ " provided"
-
-noArg :: Config -> ArgDescr (IO Config)
-noArg = NoArg . return
-
--- | The standard options accepted on the command line.
-defaultOptions :: [OptDescr (IO Config)]
-defaultOptions = [
-   Option ['h','?'] ["help"] (noArg mempty { cfgPrintExit = Help })
-          "print help, then exit"
- , Option ['G'] ["no-gc"] (noArg mempty { cfgPerformGC = ljust False })
-          "do not collect garbage between iterations"
- , Option ['g'] ["gc"] (noArg mempty { cfgPerformGC = ljust True })
-          "collect garbage between iterations (default)"
- , Option ['I'] ["ci"] (ReqArg ci "CI")
-          "bootstrap confidence interval"
- , Option ['l'] ["list"] (noArg mempty { cfgPrintExit = List })
-          "print only a list of benchmark names"
- , Option ['m'] ["match"] (ReqArg matchType "MATCH")
-          "how to match benchmark names (prefix|glob)"
- , Option ['o'] ["output"]
-          (ReqArg (\t -> return $ mempty { cfgReport = ljust t }) "FILENAME")
-          "report file to write to"
- , Option ['q'] ["quiet"] (noArg mempty { cfgVerbosity = ljust Quiet })
-          "print less output"
- , Option [] ["resamples"]
-          (ReqArg (pos "resample count"$ \n -> mempty { cfgResamples = n }) "N")
-          "number of bootstrap resamples to perform"
- , Option [] ["results"]
-          (ReqArg (\n -> return $ mempty { cfgResults = ljust n }) "FILENAME")
-          "file to write raw results to"
- , Option ['s'] ["samples"]
-          (ReqArg (pos "sample count" $ \n -> mempty { cfgSamples = n }) "N")
-          "number of samples to collect"
- , Option ['t'] ["template"]
-          (ReqArg (\t -> return $ mempty { cfgTemplate = ljust t }) "FILENAME")
-          "template file to use"
- , Option ['u'] ["summary"] (ReqArg (\s -> return $ mempty { cfgSummaryFile = ljust s }) "FILENAME")
-          "produce a summary CSV file of all results"
- , Option ['n'] ["no-measurements"] (noArg mempty { cfgMeasure = ljust False })
-          "don't do any measurements"
- , Option ['V'] ["version"] (noArg mempty { cfgPrintExit = Version })
-          "display version, then exit"
- , Option ['v'] ["verbose"] (noArg mempty { cfgVerbosity = ljust Verbose })
-          "print more output"
- , Option [] ["junit"] (ReqArg (\s -> return $ mempty { cfgJUnitFile = ljust s }) "FILENAME")
-          "produce a JUnit report file of all results"
- ]
-
-printBanner :: Config -> IO ()
-printBanner cfg = withConfig cfg $
-    case cfgBanner cfg of
-      Last (Just b) -> note "%s\n" b
-      _             -> note "Hey, nobody told me what version I am!\n"
-
-printUsage :: [OptDescr (IO Config)] -> ExitCode -> IO a
-printUsage options exitCode = do
-  p <- getProgName
-  putStr (usageInfo ("Usage: " ++ p ++ " [OPTIONS] [BENCHMARKS]") options)
-  putStrLn $ concat [
-    "If no benchmark names are given, all are run\n",
-    "Otherwise, benchmarks are chosen by prefix or zsh-style pattern ",
-    "match\n",
-    "(use --match to specify how to match the benchmarks to run)"
-    ]
-  exitWith exitCode
-
--- | Parse command line options.
-parseArgs :: Config -> [OptDescr (IO Config)] -> [String]
-          -> IO (Config, [String])
-parseArgs defCfg options args =
-  case getOpt Permute options args of
-    (_, _, (err:_)) -> parseError err
-    (opts, rest, _) -> do
-      cfg <- (mappend defCfg . mconcat) `fmap` sequence opts
-      case cfgPrintExit cfg of
-        Help ->    printBanner cfg >> printUsage options ExitSuccess
-        Version -> printBanner cfg >> exitWith ExitSuccess
-        _ ->       return (cfg, rest)
 
 -- | An entry point that can be used as a @main@ function.
 --
@@ -201,7 +90,7 @@ makeMatcher matchKind args =
 --
 -- Example:
 --
--- > import Criterion.Config
+-- > import Criterion.OldConfig
 -- > import Criterion.Main
 -- >
 -- > myConfig = defaultConfig {
@@ -225,20 +114,18 @@ defaultMainWith :: Config
                 -> [Benchmark]
                 -> IO ()
 defaultMainWith defCfg prep bs = do
-  (cfg, args) <- parseArgs defCfg defaultOptions =<< getArgs
-  shouldRun <- either parseError return .
-               makeMatcher (fromMaybe Prefix . getLast . cfgMatchType $ cfg) $
-               args
-  unless (null args || any shouldRun (names bsgroup)) $
-    parseError "none of the specified names matches a benchmark"
-  withConfig cfg $
-   if not $ fromLJ cfgMeasure cfg
-     then runNotAnalyse shouldRun bsgroup
-     else do
-       if cfgPrintExit cfg == List
-        then do
-          _ <- note "Benchmarks:\n"
-          mapM_ (note "  %s\n") (sort $ concatMap benchNames bs)
+  wat <- execParser (describe defCfg)
+  case wat of
+    List -> mapM_ putStrLn . sort . concatMap benchNames $ bs
+    Run cfg matchType benches -> do
+      shouldRun <- either parseError return .
+                   makeMatcher matchType $
+                   benches
+      unless (null benches || any shouldRun (names bsgroup)) $
+        parseError "none of the specified names matches a benchmark"
+      withConfig cfg $
+        if onlyRun cfg
+        then runNotAnalyse shouldRun bsgroup
         else do
           writeCsv ("Name","Mean","MeanLB","MeanUB","Stddev","StddevLB",
                     "StddevUB")

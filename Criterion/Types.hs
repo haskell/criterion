@@ -26,8 +26,11 @@
 
 module Criterion.Types
     (
+    -- * Configuration
+      Config(..)
+    , Verbosity(..)
     -- * Benchmark descriptions
-      Benchmarkable(..)
+    , Benchmarkable(..)
     , Benchmark(..)
     , Measured(..)
     , measureNames
@@ -67,6 +70,27 @@ import GHC.Generics (Generic)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Resampling.Bootstrap as B
+
+-- | Control the amount of information displayed.
+data Verbosity = Quiet
+               | Normal
+               | Verbose
+                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data,
+                           Generic)
+
+-- | Top-level benchmarking configuration.
+data Config = Config {
+      confInterval :: Double
+    , forceGC      :: Bool
+    , onlyRun      :: Bool
+    , resamples    :: Int
+    , rawDataFile  :: Maybe FilePath
+    , reportFile   :: Maybe FilePath
+    , csvFile      :: Maybe FilePath
+    , junitFile    :: Maybe FilePath
+    , verbosity    :: Verbosity
+    , template     :: FilePath
+    } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 -- | A pure function or impure action that can be benchmarked. The
 -- 'Int64' parameter indicates the number of times to run the given

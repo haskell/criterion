@@ -29,13 +29,12 @@ module Criterion.Report
 import Control.Exception (Exception, IOException, throwIO)
 import Control.Monad (mplus)
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import Criterion.Config (cfgReport, cfgTemplate, fromLJ)
 import Criterion.Monad (Criterion, getConfig)
 import Criterion.Types
 import Data.Aeson.Encode (encodeToTextBuilder)
 import Data.Aeson.Types (toJSON)
 import Data.Data (Data, Typeable)
-import Data.Monoid (Last(..))
+import Data.Foldable (forM_)
 import GHC.Generics (Generic)
 import Paths_criterion (getDataFileName)
 import Statistics.Function (minMax)
@@ -76,12 +75,10 @@ templateDir = unsafePerformIO $ getDataFileName "templates"
 -- configured to do so.
 report :: [Report] -> Criterion ()
 report reports = do
-  cfg <- getConfig
-  case cfgReport cfg of
-    Last Nothing -> return ()
-    Last (Just name) -> liftIO $ do
-      tpl <- loadTemplate [".",templateDir] (fromLJ cfgTemplate cfg)
-      TL.writeFile name =<< formatReport reports tpl
+  Config{..} <- getConfig
+  forM_ reportFile $ \name -> liftIO $ do
+    tpl <- loadTemplate [".",templateDir] template
+    TL.writeFile name =<< formatReport reports tpl
 
 -- | Format a series of 'Report' values using the given Hastache
 -- template.

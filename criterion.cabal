@@ -44,10 +44,10 @@ library
   exposed-modules:
     Criterion
     Criterion.Analysis
-    Criterion.Config
     Criterion.IO
     Criterion.IO.Printf
     Criterion.Main
+    Criterion.Main.Options
     Criterion.Measurement
     Criterion.Monad
     Criterion.Report
@@ -82,6 +82,7 @@ library
     hastache >= 0.6.0,
     mtl >= 2,
     mwc-random >= 0.8.0.3,
+    optparse-applicative,
     parsec >= 3.1.0,
     statistics >= 0.13.1.0,
     text >= 0.11,

@@ -21,10 +21,9 @@ module Criterion.IO.Printf
 
 import Control.Monad (when)
 import Control.Monad.Trans (liftIO)
-import Criterion.Config (Config, Verbosity(..), cfgSummaryFile, cfgVerbosity,
-                         fromLJ)
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
-import Data.Monoid (getLast)
+import Criterion.Types (Config(csvFile, verbosity), Verbosity(..))
+import Data.Foldable (forM_)
 import System.IO (Handle, stderr, stdout)
 import Text.Printf (PrintfArg)
 import qualified Data.ByteString.Lazy as B
@@ -83,11 +82,11 @@ cPrintf shouldPrint s
 
 -- | Print a \"normal\" note.
 note :: (CritHPrintfType r) => String -> r
-note = chPrintf ((> Quiet) . fromLJ cfgVerbosity) stdout
+note = chPrintf ((> Quiet) . verbosity) stdout
 
 -- | Print verbose output.
 prolix :: (CritHPrintfType r) => String -> r
-prolix = chPrintf ((== Verbose) . fromLJ cfgVerbosity) stdout
+prolix = chPrintf ((== Verbose) . verbosity) stdout
 
 -- | Print an error message.
 printError :: (CritHPrintfType r) => String -> r
@@ -96,7 +95,6 @@ printError = chPrintf (const True) stderr
 -- | Write a record to a CSV file.
 writeCsv :: Csv.ToRecord a => a -> Criterion ()
 writeCsv val = do
-  sumOpt <- getConfigItem (getLast . cfgSummaryFile)
-  case sumOpt of
-    Just fn -> liftIO . B.appendFile fn . Csv.encode $ [val]
-    Nothing -> return ()
+  csv <- getConfigItem csvFile
+  forM_ csv $ \fn ->
+    liftIO . B.appendFile fn . Csv.encode $ [val]
