@@ -12,14 +12,13 @@
 --
 -- Types for benchmarking.
 --
--- The core class is 'Benchmarkable', which admits both pure functions
+-- The core type is 'Benchmarkable', which admits both pure functions
 -- and 'IO' actions.
 --
 -- For a pure function of type @a -> b@, the benchmarking harness
--- calls this function repeatedly, each time with a different 'Int'
--- argument, and reduces the result the function returns to weak head
--- normal form.  If you need the result reduced to normal form, that
--- is your responsibility.
+-- calls this function repeatedly, each time with a different 'Int64'
+-- argument (the number of times to run the function in a loop), and
+-- reduces the result the function returns to weak head normal form.
 --
 -- For an action of type @IO a@, the benchmarking harness calls the
 -- action repeatedly, but does not reduce the result.
