@@ -18,6 +18,7 @@ module Criterion
     , whnf
     , nfIO
     , whnfIO
+    , env
     , bench
     , bgroup
     , runBenchmark

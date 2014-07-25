@@ -43,6 +43,7 @@ module Criterion.Types
     , nf
     , nfIO
     , whnfIO
+    , env
     , bench
     , bgroup
     , benchNames
@@ -217,12 +218,103 @@ impure strategy a = Benchmarkable go
           | otherwise = a >>= (evaluate . strategy) >> go (n-1)
 {-# INLINE impure #-}
 
--- | A benchmark may consist of either a single 'Benchmarkable' item
--- with a name, created with 'bench', or a (possibly nested) group of
--- 'Benchmark's, created with 'bgroup'.
+-- | A benchmark may consist of:
+--
+-- * An environment that creates input data for benchmarks, created
+--   with 'env'
+--
+-- * A single 'Benchmarkable' item with a name, created with 'bench'
+--
+-- * A (possibly nested) group of 'Benchmark's, created with 'bgroup'
 data Benchmark where
+    Environment  :: NFData env => IO env -> (env -> Benchmark) -> Benchmark
     Benchmark    :: String -> Benchmarkable -> Benchmark
     BenchGroup   :: String -> [Benchmark] -> Benchmark
+
+-- | Run a benchmark (or collection of benchmarks) in the given
+-- environment.  The purpose of an environment is to lazily create
+-- input data to pass to the functions that will be benchmarked.
+--
+-- A common example of environment data is input that is read from a
+-- file.  Another is a large data structure constructed in-place.
+--
+-- __Motivation.__ In earlier versions of criterion, all benchmark
+-- inputs were always created when a program started running.  By
+-- deferring the creation of an environment when its associated
+-- benchmarks need the its, we avoid two problems that this strategy
+-- caused:
+--
+-- * Memory pressure distorted the results of unrelated benchmarks.
+--   If one benchmark needed e.g. a gigabyte-sized input, it would
+--   force the garbage collector to do extra work when running some
+--   other benchmark that had no use for that input.  Since the data
+--   created by an environment is only available when it is in scope,
+--   it should be garbage collected before other benchmarks are run.
+--
+-- * The time cost of generating all needed inputs could be
+--   significant in cases where no inputs (or just a few) were really
+--   needed.  This occurred often, for instance when just one out of a
+--   large suite of benchmarks was run, or when a user would list the
+--   collection of benchmarks without running any.
+--
+-- __Creation.__ An environment is created right before its related
+-- benchmarks are run.  The 'IO' action that creates the environment
+-- is run, then the newly created environment is evaluated to normal
+-- form (hence the 'NFData' constraint) before being passed to the
+-- function that receives the environment.
+--
+-- __Complex environments.__ If you need to create an environment that
+-- contains multiple values, simply pack the values into a tuple.
+--
+-- __Lazy pattern matching.__ In situations where a \"real\"
+-- environment is not needed, e.g. if a list of benchmark names is
+-- being generated, @undefined@ will be passed to the function that
+-- receives the environment.  This avoids the overhead of generating
+-- an environment that will not actually be used.
+--
+-- The function that receives the environment must use lazy pattern
+-- matching to deconstruct the tuple, as use of strict pattern
+-- matching will cause a crash if @undefined@ is passed in.
+--
+-- __Example.__ This program runs benchmarks in an environment that
+-- contains two values.  The first value is the contents of a text
+-- file; the second is a string.  Pay attention to the use of a lazy
+-- pattern to deconstruct the tuple in the function that returns the
+-- benchmarks to be run.
+--
+-- > setupEnv = do
+-- >   let small = replicate 1000 1
+-- >   big <- readFile "/usr/dict/words"
+-- >   return (small, big)
+-- >
+-- > main = defaultMain [
+-- >    -- notice the lazy pattern match here!
+-- >    env setupEnv $ \ ~(small,big) ->
+-- >    bgroup "small" [
+-- >      bench "length" $ whnf length small
+-- >    , bench "length . filter" $ whnf (length . filter (==1)) small
+-- >    ]
+-- >  ,  bgroup "big" [
+-- >      bench "length" $ whnf length big
+-- >    , bench "length . filter" $ whnf (length . filter (==1)) big
+-- >    ]
+-- >  ]
+--
+-- __Discussion.__ The environment created in the example above is
+-- intentionally /not/ ideal.  As Haskell's scoping rules suggest, the
+-- variable @big@ is in scope for the benchmarks that use only
+-- @small@.  It would be better to create a separate environment for
+-- @big@, so that it will not be kept alive while the unrelated
+-- benchmarks are being run.
+env :: NFData env =>
+       IO env
+    -- ^ Create the environment.  The environment will be evaluated to
+    -- normal form before being passed to the benchmark.
+    -> (env -> Benchmark)
+    -- ^ Receive make the newly created environment, and make it
+    -- available to the given benchmarks.
+    -> Benchmark
+env = Environment
 
 -- | Create a single benchmark.
 bench :: String                 -- ^ A name to identify the benchmark.
@@ -239,12 +331,14 @@ bgroup = BenchGroup
 -- | Retrieve the names of all benchmarks.  Grouped benchmarks are
 -- prefixed with the name of the group they're in.
 benchNames :: Benchmark -> [String]
+benchNames (Environment _ b) = benchNames (b undefined)
 benchNames (Benchmark d _)   = [d]
 benchNames (BenchGroup d bs) = map ((d ++ "/") ++) . concatMap benchNames $ bs
 
 instance Show Benchmark where
-    show (Benchmark d _)  = ("Benchmark " ++ show d)
-    show (BenchGroup d _) = ("BenchGroup " ++ show d)
+    show (Environment _ b) = "Environment _ " ++ show (b undefined)
+    show (Benchmark d _)   = "Benchmark " ++ show d
+    show (BenchGroup d _)  = "BenchGroup " ++ show d
 
 measure :: (U.Unbox a) => (Measured -> a) -> V.Vector Measured -> U.Vector a
 measure f v = U.convert . V.map f $ v

@@ -18,6 +18,8 @@ module Criterion.Internal
     , prefix
     ) where
 
+import Control.DeepSeq (rnf)
+import Control.Exception (evaluate)
 import Control.Monad (foldM, forM_, when)
 import Control.Monad.Trans (liftIO)
 import Data.Binary (encode)
@@ -134,7 +136,13 @@ runAndAnalyse p bs' = do
         return (file, handle)
   liftIO $ L.hPut handle header
 
-  let go !k (pfx, Benchmark desc b)
+  let go !k (pfx, Environment mkenv mkbench) = do
+        e <- liftIO $ do
+               ee <- mkenv
+               evaluate (rnf ee)
+               return ee
+        go k (pfx, mkbench e)
+      go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "benchmarking %s\n" desc'
                            rpt <- runAndAnalyseOne k desc' b
                            liftIO $ L.hPut handle (encode rpt)
@@ -163,6 +171,9 @@ runNotAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Criterion ()
 runNotAnalyse p bs' = goQuickly "" bs'
   where goQuickly :: String -> Benchmark -> Criterion ()
+        goQuickly pfx (Environment mkenv mkbench) = do
+            e <- liftIO mkenv
+            goQuickly pfx (mkbench e)
         goQuickly pfx (Benchmark desc b)
             | p desc'   = do _ <- note "benchmarking %s\n" desc'
                              runOne b

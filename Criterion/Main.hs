@@ -28,6 +28,7 @@ module Criterion.Main
       Benchmarkable(..)
     , Benchmark
     -- * Constructing benchmarks
+    , env
     , bench
     , bgroup
     , nf
@@ -135,7 +136,8 @@ defaultMainWith defCfg prep bs = do
   where
   bsgroup = BenchGroup "" bs
   names = go ""
-    where go pfx (BenchGroup pfx' bms) = concatMap (go (prefix pfx pfx')) bms
+    where go pfx (Environment _ b)     = go pfx (b undefined)
+          go pfx (BenchGroup pfx' bms) = concatMap (go (prefix pfx pfx')) bms
           go pfx (Benchmark desc _)    = [prefix pfx desc]
 
 -- | Display an error message from a command line parsing failure, and
