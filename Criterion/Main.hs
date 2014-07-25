@@ -86,6 +86,16 @@ makeMatcher matchKind args =
                           errMsg
            Right ps -> Right $ \b -> null ps || any (`match` b) ps
 
+selectBenches :: MatchType -> [String] -> Benchmark -> IO (String -> Bool)
+selectBenches matchType benches bsgroup = do
+  let go pfx (Environment _ b)     = go pfx (b undefined)
+      go pfx (BenchGroup pfx' bms) = concatMap (go (prefix pfx pfx')) bms
+      go pfx (Benchmark desc _)    = [prefix pfx desc]
+  toRun <- either parseError return . makeMatcher matchType $ benches
+  unless (null benches || any toRun (go "" bsgroup)) $
+    parseError "none of the specified names matches a benchmark"
+  return toRun
+
 -- | An entry point that can be used as a @main@ function, with
 -- configurable defaults.
 --
@@ -116,29 +126,21 @@ defaultMainWith :: Config
                 -> IO ()
 defaultMainWith defCfg prep bs = do
   wat <- execParser (describe defCfg)
+  let bsgroup = BenchGroup "" bs
   case wat of
     List -> mapM_ putStrLn . sort . concatMap benchNames $ bs
+    OnlyRun iters matchType benches -> do
+      shouldRun <- selectBenches matchType benches bsgroup
+      withConfig defaultConfig $
+        runNotAnalyse iters shouldRun bsgroup
     Run cfg matchType benches -> do
-      shouldRun <- either parseError return .
-                   makeMatcher matchType $
-                   benches
-      unless (null benches || any shouldRun (names bsgroup)) $
-        parseError "none of the specified names matches a benchmark"
-      withConfig cfg $
-        case onlyRun cfg of
-          Just iters -> runNotAnalyse iters shouldRun bsgroup
-          Nothing -> do
-            writeCsv ("Name","Mean","MeanLB","MeanUB","Stddev","StddevLB",
-                      "StddevUB")
-            liftIO initializeTime
-            prep
-            runAndAnalyse shouldRun bsgroup
-  where
-  bsgroup = BenchGroup "" bs
-  names = go ""
-    where go pfx (Environment _ b)     = go pfx (b undefined)
-          go pfx (BenchGroup pfx' bms) = concatMap (go (prefix pfx pfx')) bms
-          go pfx (Benchmark desc _)    = [prefix pfx desc]
+      shouldRun <- selectBenches matchType benches bsgroup
+      withConfig cfg $ do
+        writeCsv ("Name","Mean","MeanLB","MeanUB","Stddev","StddevLB",
+                  "StddevUB")
+        liftIO initializeTime
+        prep
+        runAndAnalyse shouldRun bsgroup
 
 -- | Display an error message from a command line parsing failure, and
 -- exit.

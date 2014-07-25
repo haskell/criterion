@@ -23,6 +23,7 @@ module Criterion.Main.Options
 import Criterion.Types (Config(..), Verbosity(..))
 import Data.Char (toLower)
 import Data.Data (Data, Typeable)
+import Data.Int (Int64)
 import GHC.Generics (Generic)
 import Data.List (isPrefixOf)
 import Data.Monoid (mempty)
@@ -35,6 +36,7 @@ data MatchType = Prefix | Glob
 
 -- | Execution mode for a benchmark program.
 data Mode = List
+          | OnlyRun Int64 MatchType [String]
           | Run Config MatchType [String]
           deriving (Eq, Read, Show, Typeable, Data, Generic)
 
@@ -44,7 +46,6 @@ defaultConfig = Config {
       confInterval = 0.95
     , forceGC      = True
     , timeLimit    = 5
-    , onlyRun      = Nothing
     , resamples    = 10000
     , rawDataFile  = Nothing
     , reportFile   = Nothing
@@ -56,8 +57,18 @@ defaultConfig = Config {
 
 parseWith :: Config -> Parser Mode
 parseWith cfg =
+  onlyRun <|>
   run cfg <|>
   (List <$ switch (long "list" <> short 'l' <> help "list benchmarks"))
+
+onlyRun :: Parser Mode
+onlyRun = OnlyRun
+  <$> (option (long "only-run" <> short 'n' <> metavar "ITERS" <>
+               help "run benchmarks, don't analyse"))
+  <*> option (long "match" <> short 'm' <> metavar "MATCH" <> value Prefix <>
+              reader match <>
+              help "how to match benchmark names")
+  <*> many (argument str (metavar "NAME..."))
 
 run :: Config -> Parser Mode
 run cfg = Run
@@ -77,9 +88,6 @@ config Config{..} = Config
   <*> option (long "time-limit" <> short 'L' <> metavar "SECS" <>
               value timeLimit <> reader (range 0.1 86400) <>
               help "time limit to run a benchmark")
-  <*> optional
-      (option (long "only-run" <> short 'n' <> metavar "ITERS" <>
-               help "run benchmarks, don't analyse"))
   <*> option (long "resamples" <> metavar "COUNT" <> value resamples <>
               reader (range 1 1000000) <>
               help "number of bootstrap resamples to perform")
