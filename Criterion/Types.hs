@@ -31,22 +31,25 @@ module Criterion.Types
     -- * Benchmark descriptions
     , Benchmarkable(..)
     , Benchmark(..)
+    -- * Measurements
     , Measured(..)
-    , measureNames
     , fromInt
     , toInt
     , fromDouble
     , toDouble
+    , measureNames
     , measure
     , rescale
-    , whnf
-    , nf
-    , nfIO
-    , whnfIO
+    -- * Benchmark construction
     , env
     , bench
     , bgroup
     , benchNames
+    -- ** Evaluation control
+    , whnf
+    , nf
+    , nfIO
+    , whnfIO
     -- * Result types
     , Outliers(..)
     , OutlierEffect(..)
@@ -81,15 +84,30 @@ data Verbosity = Quiet
 -- | Top-level benchmarking configuration.
 data Config = Config {
       confInterval :: Double
+      -- ^ Confidence interval for bootstrap estimation (greater than
+      -- 0, less than 1).
     , forceGC      :: Bool
+      -- ^ Force garbage collection between every benchmark run.  This
+      -- leads to more stable results.
     , timeLimit    :: Double
+      -- ^ Number of seconds to run a single benchmark.  (In practice,
+      -- execution time will very slightly exceed this limit.)
     , resamples    :: Int
+      -- ^ Number of resamples to perform when bootstrapping.
     , rawDataFile  :: Maybe FilePath
+      -- ^ File to write binary measurement and analysis data to.  If
+      -- not specified, this will be a temporary file.
     , reportFile   :: Maybe FilePath
+      -- ^ File to write report output to, with template expanded.
     , csvFile      :: Maybe FilePath
+      -- ^ File to write CSV summary to.
     , junitFile    :: Maybe FilePath
+      -- ^ File to write JUnit-compatible XML results to.
     , verbosity    :: Verbosity
+      -- ^ Verbosity level to use when running and analysing
+      -- benchmarks.
     , template     :: FilePath
+      -- ^ Template file to use if writing a report.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 -- | A pure function or impure action that can be benchmarked. The
@@ -98,21 +116,46 @@ data Config = Config {
 newtype Benchmarkable = Benchmarkable (Int64 -> IO ())
 
 -- | A collection of measurements made while benchmarking.
+--
+-- Measurements related to garbage collection are tagged with __GC__.
+-- They will only be available if a benchmark is run with @\"+RTS
+-- -T\"@.
+--
+-- __Packed storage.__ When GC statistics cannot be collected, GC
+-- values will be set to huge negative values.  If a field is labeled
+-- with \"__GC__\" below, use 'fromInt' and 'fromDouble' to safely
+-- convert to \"real\" values.
 data Measured = Measured {
       measTime               :: !Double
+      -- ^ Total wall-clock time elapsed, in seconds.
     , measCycles             :: !Int64
+      -- ^ Cycles, in unspecified units that may be CPU cycles.  (On
+      -- i386 and x86_64, this is measured using the @rdtsc@
+      -- instruction.)
     , measIters              :: !Int64
+      -- ^ Number of loop iterations measured.
 
-    -- GC statistics are only available if a benchmark was run with
-    -- "+RTS -T".  If not available, they're set to huge negative
-    -- values.
     , measAllocated          :: !Int64
+      -- ^ __(GC)__ Number of bytes allocated.  Access using 'fromInt'.
     , measNumGcs             :: !Int64
+      -- ^ __(GC)__ Number of garbage collections performed.  Access
+      -- using 'fromInt'.
     , measBytesCopied        :: !Int64
+      -- ^ __(GC)__ Number of bytes copied during garbage collection.
+      -- Access using 'fromInt'.
     , measMutatorWallSeconds :: !Double
+      -- ^ __(GC)__ Wall-clock time spent doing real work
+      -- (\"mutation\"), as distinct from garbage collection.  Access
+      -- using 'fromDouble'.
     , measMutatorCpuSeconds  :: !Double
+      -- ^ __(GC)__ CPU time spent doing real work (\"mutation\"), as
+      -- distinct from garbage collection.  Access using 'fromDouble'.
     , measGcWallSeconds      :: !Double
+      -- ^ __(GC)__ Wall-clock time spent doing garbage collection.
+      -- Access using 'fromDouble'.
     , measGcCpuSeconds       :: !Double
+      -- ^ __(GC)__ CPU time spent doing garbage collection.  Access
+      -- using 'fromDouble'.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance FromJSON Measured where
@@ -131,6 +174,7 @@ instance ToJSON Measured where
 instance NFData Measured where
     rnf Measured{} = ()
 
+-- | List of the field names measured in a 'Measured' record.
 measureNames :: [String]
 measureNames = ["time", "cycles", "iters", "allocated", "numGcs", "bytesCopied",
                 "mutatorWallSeconds", "mutatorCpuSeconds", "gcWallSeconds",
@@ -152,18 +196,28 @@ rescale m@Measured{..} = m {
         i k = maybe k (round . (/ iters)) (fromIntegral <$> fromInt k)
         iters               = fromIntegral measIters :: Double
 
+-- | Convert a (possibly unavailable) GC measurement to a true value.
+-- If the measurement is a huge negative number that corresponds to
+-- \"no data\", this will return 'Nothing'.
 fromInt :: Int64 -> Maybe Int64
 fromInt i | i == minBound = Nothing
           | otherwise     = Just i
 
+-- | Convert from a true value back to the packed representation used
+-- for GC measurements.
 toInt :: Maybe Int64 -> Int64
 toInt Nothing  = minBound
 toInt (Just i) = i
 
+-- | Convert a (possibly unavailable) GC measurement to a true value.
+-- If the measurement is a huge negative number that corresponds to
+-- \"no data\", this will return 'Nothing'.
 fromDouble :: Double -> Maybe Double
 fromDouble d | isInfinite d || isNaN d = Nothing
              | otherwise               = Just d
 
+-- | Convert from a true value back to the packed representation used
+-- for GC measurements.
 toDouble :: Maybe Double -> Double
 toDouble Nothing  = -1/0
 toDouble (Just d) = d
@@ -217,14 +271,15 @@ impure strategy a = Benchmarkable go
           | otherwise = a >>= (evaluate . strategy) >> go (n-1)
 {-# INLINE impure #-}
 
--- | A benchmark may consist of:
+-- | Specification of a collection of benchmarks and environments. A
+-- benchmark may consist of:
 --
 -- * An environment that creates input data for benchmarks, created
---   with 'env'
+--   with 'env'.
 --
--- * A single 'Benchmarkable' item with a name, created with 'bench'
+-- * A single 'Benchmarkable' item with a name, created with 'bench'.
 --
--- * A (possibly nested) group of 'Benchmark's, created with 'bgroup'
+-- * A (possibly nested) group of 'Benchmark's, created with 'bgroup'.
 data Benchmark where
     Environment  :: NFData env => IO env -> (env -> Benchmark) -> Benchmark
     Benchmark    :: String -> Benchmarkable -> Benchmark
@@ -479,6 +534,7 @@ data Report = Report {
       reportNumber   :: Int
     , reportName     :: String
     , reportKeys     :: [String]
+      -- ^ See 'measureNames'.
     , reportMeasured :: V.Vector Measured
     , reportAnalysis :: SampleAnalysis
     , reportOutliers :: Outliers

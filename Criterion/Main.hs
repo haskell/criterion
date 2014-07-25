@@ -75,7 +75,12 @@ import System.FilePath.Glob
 defaultMain :: [Benchmark] -> IO ()
 defaultMain = defaultMainWith defaultConfig (return ())
 
-makeMatcher :: MatchType -> [String] -> Either String (String -> Bool)
+-- | Create a function that can tell if a name given on the command
+-- line matches a benchmark.
+makeMatcher :: MatchType
+            -> [String]
+            -- ^ Command line arguments.
+            -> Either String (String -> Bool)
 makeMatcher matchKind args =
   case matchKind of
     Prefix -> Right $ \b -> null args || any (`isPrefixOf` b) args

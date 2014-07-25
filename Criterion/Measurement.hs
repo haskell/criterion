@@ -35,11 +35,15 @@ import Text.Printf (printf)
 import qualified Control.Exception as Exc
 import qualified GHC.Stats as Stats
 
+-- | Try to get GC statistics, bearing in mind that the GHC runtime
+-- will throw an exception if statistics collection was not enabled
+-- using \"@+RTS -T@\".
 getGCStats :: IO (Maybe GCStats)
 getGCStats =
   (Just `fmap` Stats.getGCStats) `Exc.catch` \(_::Exc.SomeException) ->
   return Nothing
 
+-- | An empty structure.
 measured :: Measured
 measured = Measured {
       measTime               = 0
@@ -55,7 +59,15 @@ measured = Measured {
     , measGcCpuSeconds       = bad
     } where bad = -1/0
 
-applyGCStats :: Maybe GCStats -> Maybe GCStats -> Measured -> Measured
+-- | Apply the difference between two sets of GC statistics to a
+-- measurement.
+applyGCStats :: Maybe GCStats
+             -- ^ Statistics gathered at the __end__ of a run.
+             -> Maybe GCStats
+             -- ^ Statistics gathered at the __beginning__ of a run.
+             -> Measured
+             -- ^ Value to \"modify\".
+             -> Measured
 applyGCStats (Just end) (Just start) m = m {
     measAllocated          = diff bytesAllocated
   , measNumGcs             = diff numGcs
@@ -67,6 +79,8 @@ applyGCStats (Just end) (Just start) m = m {
   } where diff f = f end - f start
 applyGCStats _ _ m = m
 
+-- | Return the result of an action, and the time (in seconds) it took
+-- to execute it.
 time :: IO a -> IO (Double, a)
 time act = do
   start <- getTime
@@ -75,6 +89,7 @@ time act = do
   let !delta = end - start
   return (delta, result)
 
+-- | Return the time (in seconds) it took to execute an action.
 time_ :: IO a -> IO Double
 time_ act = do
   start <- getTime
@@ -82,6 +97,8 @@ time_ act = do
   end <- getTime
   return $! end - start
 
+-- | Return the result of an action, and number of cycles it took to
+-- execute it.
 cycles :: IO a -> IO (Word64, a)
 cycles act = do
   start <- getCycles
@@ -102,6 +119,9 @@ runForAtLeast howLong initSeed act = loop initSeed (0::Int) =<< getTime
         then loop (seed * 2) (iters+1) initTime
         else return (elapsed, seed, result)
 
+-- | Convert a number of seconds to a string.  The string will consist
+-- of four decimal places, followed by a short description of the time
+-- units.
 secs :: Double -> String
 secs k
     | k < 0      = '-' : secs (-k)
@@ -118,8 +138,10 @@ secs k
                | t >= 1e1  = printf "%.2f %s" t u
                | otherwise = printf "%.3f %s" t u
 
+-- | Set up time measurement.
 foreign import ccall unsafe "criterion_inittime" initializeTime :: IO ()
 
+-- | Read the CPU cycle counter.
 foreign import ccall unsafe "criterion_rdtsc" getCycles :: IO Word64
 
 -- | Return the current wallclock time, in seconds since some

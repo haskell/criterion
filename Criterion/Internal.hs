@@ -164,6 +164,7 @@ runAndAnalyse p bs' = do
   report rpts
   junit rpts
 
+-- | Run a benchmark without analysing its performance.
 runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.
               -> (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
