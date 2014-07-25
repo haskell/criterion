@@ -36,8 +36,12 @@ data MatchType = Prefix | Glob
 
 -- | Execution mode for a benchmark program.
 data Mode = List
+            -- ^ List all benchmarks.
           | OnlyRun Int64 MatchType [String]
+            -- ^ Run the given benchmarks, without collecting or
+            -- analysing performance numbers.
           | Run Config MatchType [String]
+            -- ^ Run and analyse the given benchmarks.
           deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 -- | Default benchmarking configuration.
@@ -57,26 +61,18 @@ defaultConfig = Config {
 
 parseWith :: Config -> Parser Mode
 parseWith cfg =
-  onlyRun <|>
-  run cfg <|>
-  (List <$ switch (long "list" <> short 'l' <> help "list benchmarks"))
-
-onlyRun :: Parser Mode
-onlyRun = OnlyRun
-  <$> (option (long "only-run" <> short 'n' <> metavar "ITERS" <>
-               help "run benchmarks, don't analyse"))
-  <*> option (long "match" <> short 'm' <> metavar "MATCH" <> value Prefix <>
-              reader match <>
-              help "how to match benchmark names")
-  <*> many (argument str (metavar "NAME..."))
-
-run :: Config -> Parser Mode
-run cfg = Run
-  <$> config cfg
-  <*> option (long "match" <> short 'm' <> metavar "MATCH" <> value Prefix <>
-              reader match <>
-              help "how to match benchmark names")
-  <*> many (argument str (metavar "NAME..."))
+    onlyRun <|>
+    (matchNames (Run <$> config cfg)) <|>
+    (List <$ switch (long "list" <> short 'l' <> help "list benchmarks"))
+  where
+    onlyRun = matchNames $
+      OnlyRun <$> option (long "only-run" <> short 'n' <> metavar "ITERS" <>
+                          help "run benchmarks, don't analyse")
+    matchNames wat = wat
+      <*> option (long "match" <> short 'm' <> metavar "MATCH" <>
+                  value Prefix <> reader match <>
+                  help "how to match benchmark names")
+      <*> many (argument str (metavar "NAME..."))
 
 config :: Config -> Parser Config
 config Config{..} = Config
