@@ -33,10 +33,12 @@ data MatchType = Prefix | Glob
                deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data,
                          Generic)
 
+-- | Execution mode for a benchmark program.
 data Mode = List
           | Run Config MatchType [String]
           deriving (Eq, Read, Show, Typeable, Data, Generic)
 
+-- | Default benchmarking configuration.
 defaultConfig :: Config
 defaultConfig = Config {
       confInterval = 0.95
