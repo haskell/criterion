@@ -164,12 +164,13 @@ runAndAnalyse p bs' = do
   report rpts
   junit rpts
 
-runNotAnalyse :: (String -> Bool) -- ^ A predicate that chooses
+runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.
+              -> (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
                                   -- name.
               -> Benchmark
               -> Criterion ()
-runNotAnalyse p bs' = goQuickly "" bs'
+runNotAnalyse iters p bs' = goQuickly "" bs'
   where goQuickly :: String -> Benchmark -> Criterion ()
         goQuickly pfx (Environment mkenv mkbench) = do
             e <- liftIO mkenv
@@ -182,7 +183,7 @@ runNotAnalyse p bs' = goQuickly "" bs'
         goQuickly pfx (BenchGroup desc bs) =
             mapM_ (goQuickly (prefix pfx desc)) bs
 
-        runOne (Benchmarkable run) = liftIO (run 1)
+        runOne (Benchmarkable run) = liftIO (run iters)
 
 prefix :: String -> String -> String
 prefix ""  desc = desc

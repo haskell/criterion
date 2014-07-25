@@ -42,7 +42,7 @@ defaultConfig = Config {
       confInterval = 0.95
     , forceGC      = True
     , timeLimit    = 5
-    , onlyRun      = False
+    , onlyRun      = Nothing
     , resamples    = 10000
     , rawDataFile  = Nothing
     , reportFile   = Nothing
@@ -75,8 +75,9 @@ config Config{..} = Config
   <*> option (long "time-limit" <> short 'L' <> metavar "SECS" <>
               value timeLimit <> reader (range 0.1 86400) <>
               help "time limit to run a benchmark")
-  <*> switch (long "only-run" <> short 'n' <>
-              help "run benchmarks, don't analyse")
+  <*> optional
+      (option (long "only-run" <> short 'n' <> metavar "ITERS" <>
+               help "run benchmarks, don't analyse"))
   <*> option (long "resamples" <> metavar "COUNT" <> value resamples <>
               reader (range 1 1000000) <>
               help "number of bootstrap resamples to perform")

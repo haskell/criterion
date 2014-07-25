@@ -125,14 +125,14 @@ defaultMainWith defCfg prep bs = do
       unless (null benches || any shouldRun (names bsgroup)) $
         parseError "none of the specified names matches a benchmark"
       withConfig cfg $
-        if onlyRun cfg
-        then runNotAnalyse shouldRun bsgroup
-        else do
-          writeCsv ("Name","Mean","MeanLB","MeanUB","Stddev","StddevLB",
-                    "StddevUB")
-          liftIO initializeTime
-          prep
-          runAndAnalyse shouldRun bsgroup
+        case onlyRun cfg of
+          Just iters -> runNotAnalyse iters shouldRun bsgroup
+          Nothing -> do
+            writeCsv ("Name","Mean","MeanLB","MeanUB","Stddev","StddevLB",
+                      "StddevUB")
+            liftIO initializeTime
+            prep
+            runAndAnalyse shouldRun bsgroup
   where
   bsgroup = BenchGroup "" bs
   names = go ""

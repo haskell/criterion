@@ -83,7 +83,7 @@ data Config = Config {
       confInterval :: Double
     , forceGC      :: Bool
     , timeLimit    :: Double
-    , onlyRun      :: Bool
+    , onlyRun      :: Maybe Int64
     , resamples    :: Int
     , rawDataFile  :: Maybe FilePath
     , reportFile   :: Maybe FilePath
