@@ -1,5 +1,4 @@
-{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface, ScopedTypeVariables,
-    TypeOperators #-}
+{-# LANGUAGE ForeignFunctionInterface, ScopedTypeVariables #-}
 
 -- |
 -- Module      : Criterion.Measurement
@@ -16,18 +15,13 @@ module Criterion.Measurement
     (
       initializeTime
     , getTime
-    , runForAtLeast
     , getCycles
-    , secs
-    , time
-    , time_
-    , cycles
     , getGCStats
+    , secs
     , measured
     , applyGCStats
     ) where
 
-import Control.Monad (when)
 import Criterion.Types (Measured(..))
 import Data.Word (Word64)
 import GHC.Stats (GCStats(..))
@@ -78,46 +72,6 @@ applyGCStats (Just end) (Just start) m = m {
   , measGcCpuSeconds       = diff gcCpuSeconds
   } where diff f = f end - f start
 applyGCStats _ _ m = m
-
--- | Return the result of an action, and the time (in seconds) it took
--- to execute it.
-time :: IO a -> IO (Double, a)
-time act = do
-  start <- getTime
-  result <- act
-  end <- getTime
-  let !delta = end - start
-  return (delta, result)
-
--- | Return the time (in seconds) it took to execute an action.
-time_ :: IO a -> IO Double
-time_ act = do
-  start <- getTime
-  _ <- act
-  end <- getTime
-  return $! end - start
-
--- | Return the result of an action, and number of cycles it took to
--- execute it.
-cycles :: IO a -> IO (Word64, a)
-cycles act = do
-  start <- getCycles
-  result <- act
-  end <- getCycles
-  let !delta = end - start
-  return (delta, result)
-
-runForAtLeast :: Double -> Int -> (Int -> IO a) -> IO (Double, Int, a)
-runForAtLeast howLong initSeed act = loop initSeed (0::Int) =<< getTime
-  where
-    loop !seed !iters initTime = do
-      now <- getTime
-      when (now - initTime > howLong * 10) $
-        fail (printf "took too long to run: seed %d, iters %d" seed iters)
-      (elapsed,result) <- time (act seed)
-      if elapsed < howLong
-        then loop (seed * 2) (iters+1) initTime
-        else return (elapsed, seed, result)
 
 -- | Convert a number of seconds to a string.  The string will consist
 -- of four decimal places, followed by a short description of the time

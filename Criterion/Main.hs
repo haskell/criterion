@@ -106,15 +106,15 @@ selectBenches matchType benches bsgroup = do
 --
 -- Example:
 --
--- > import Criterion.OldConfig
+-- > import Criterion.Main.Options
 -- > import Criterion.Main
 -- >
 -- > myConfig = defaultConfig {
--- >              -- Always GC between runs.
--- >              cfgPerformGC = ljust True
+-- >              -- Do not GC between runs.
+-- >              forceGC = False
 -- >            }
 -- >
--- > main = defaultMainWith myConfig (return ()) [
+-- > main = defaultMainWith myConfig [
 -- >          bench "fib 30" $ whnf fib 30
 -- >        ]
 --
@@ -126,10 +126,9 @@ selectBenches matchType benches bsgroup = do
 -- Run @\"Fib --help\"@ on the command line to get a list of command
 -- line options.
 defaultMainWith :: Config
-                -> Criterion () -- ^ Prepare data prior to executing the first benchmark.
                 -> [Benchmark]
                 -> IO ()
-defaultMainWith defCfg prep bs = do
+defaultMainWith defCfg bs = do
   wat <- execParser (describe defCfg)
   let bsgroup = BenchGroup "" bs
   case wat of
@@ -144,7 +143,6 @@ defaultMainWith defCfg prep bs = do
         writeCsv ("Name","Mean","MeanLB","MeanUB","Stddev","StddevLB",
                   "StddevUB")
         liftIO initializeTime
-        prep
         runAndAnalyse shouldRun bsgroup
 
 -- | Display an error message from a command line parsing failure, and
@@ -157,9 +155,10 @@ parseError msg = do
 
 -- $bench
 --
--- The 'Benchmarkable' typeclass represents the class of all code that
--- can be benchmarked.  Every instance must run a benchmark a given
--- number of times.  We are most interested in benchmarking two things:
+-- The 'Benchmarkable' type is a container for code that can be
+-- benchmarked.  The value inside must run a benchmark the given
+-- number of times.  We are most interested in benchmarking two
+-- things:
 --
 -- * 'IO' actions.  Any 'IO' action can be benchmarked directly.
 --
@@ -185,22 +184,21 @@ parseError msg = do
 -- only be evaluated once, for which all but the first iteration of
 -- the timing loop will be timing the cost of doing nothing.
 --
--- To work around this, we provide a special type, 'Pure', for
--- benchmarking pure code.  Values of this type are constructed using
--- one of two functions.
+-- To work around this, we provide two functions for benchmarking pure
+-- code.
 --
--- The first is a function which will cause results to be fully
--- evaluated to normal form (NF):
+-- The first will cause results to be fully evaluated to normal form
+-- (NF):
 --
 -- @
--- 'nf' :: 'NFData' b => (a -> b) -> a -> 'Pure'
+-- 'nf' :: 'NFData' b => (a -> b) -> a -> 'Benchmarkable'
 -- @
 --
 -- The second will cause results to be evaluated to weak head normal
 -- form (the Haskell default):
 --
 -- @
--- 'whnf' :: (a -> b) -> a -> 'Pure'
+-- 'whnf' :: (a -> b) -> a -> 'Benchmarkable'
 -- @
 --
 -- As both of these types suggest, when you want to benchmark a
@@ -224,9 +222,6 @@ parseError msg = do
 -- @
 -- 'nf' firstN 1000
 -- @
---
--- The compiler will correctly infer that the number 1000 must have
--- the type 'Int', and the type of the expression is 'Pure'.
 
 -- $rnf
 --
@@ -243,6 +238,7 @@ parseError msg = do
 -- 'whnf' firstN 1000
 -- @
 --
--- Because in this case the result will only be forced until it
--- reaches WHNF, what this would /actually/ benchmark is merely the
--- production of the first list element!
+-- Since we are using 'whnf', in this case the result will only be
+-- forced until it reaches WHNF, so what this would /actually/
+-- benchmark is merely how long it takes to produce the first list
+-- element!

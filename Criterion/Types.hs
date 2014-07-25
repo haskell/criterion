@@ -251,14 +251,14 @@ pureFunc reduce f0 x0 = Benchmarkable $ go f0 x0
 {-# INLINE pureFunc #-}
 
 -- | Perform an action, then evaluate its result to head normal form.
--- This is particularly useful for forcing a lazy IO action to be
+-- This is particularly useful for forcing a lazy 'IO' action to be
 -- completely performed.
 nfIO :: NFData a => IO a -> Benchmarkable
 nfIO = impure rnf
 {-# INLINE nfIO #-}
 
 -- | Perform an action, then evaluate its result to weak head normal
--- form (WHNF).  This is useful for forcing an IO action whose result
+-- form (WHNF).  This is useful for forcing an 'IO' action whose result
 -- is an expression to be evaluated down to a more useful value.
 whnfIO :: IO a -> Benchmarkable
 whnfIO = impure id
