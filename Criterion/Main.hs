@@ -48,7 +48,7 @@ import Criterion.IO.Printf (printError, writeCsv)
 import Criterion.Internal (runAndAnalyse, runNotAnalyse, prefix)
 import Criterion.Main.Options (MatchType(..), Mode(..), defaultConfig, describe)
 import Criterion.Measurement (initializeTime)
-import Criterion.Monad (Criterion, withConfig)
+import Criterion.Monad (withConfig)
 import Criterion.Types
 import Data.List (isPrefixOf, sort, stripPrefix)
 import Data.Maybe (fromMaybe)
@@ -73,7 +73,7 @@ import System.FilePath.Glob
 -- >                     ]
 -- >                    ]
 defaultMain :: [Benchmark] -> IO ()
-defaultMain = defaultMainWith defaultConfig (return ())
+defaultMain = defaultMainWith defaultConfig
 
 -- | Create a function that can tell if a name given on the command
 -- line matches a benchmark.
