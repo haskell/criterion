@@ -128,6 +128,9 @@ newtype Benchmarkable = Benchmarkable (Int64 -> IO ())
 data Measured = Measured {
       measTime               :: !Double
       -- ^ Total wall-clock time elapsed, in seconds.
+    , measCpuTime            :: !Double
+      -- ^ Total CPU time elapsed, in seconds.  Includes both user and
+      -- kernel (system) time.
     , measCycles             :: !Int64
       -- ^ Cycles, in unspecified units that may be CPU cycles.  (On
       -- i386 and x86_64, this is measured using the @rdtsc@
@@ -160,12 +163,12 @@ data Measured = Measured {
 
 instance FromJSON Measured where
     parseJSON v = do
-      (a,b,c,d,e,f,g,h,i,j) <- parseJSON v
-      return $ Measured a b c d e f g h i j
+      (a,b,c,d,e,f,g,h,i,j,k) <- parseJSON v
+      return $ Measured a b c d e f g h i j k
 
 instance ToJSON Measured where
     toJSON Measured{..} = toJSON
-      (measTime, measCycles, measIters,
+      (measTime, measCpuTime, measCycles, measIters,
        i measAllocated, i measNumGcs, i measBytesCopied,
        d measMutatorWallSeconds, d measMutatorCpuSeconds,
        d measGcWallSeconds, d measMutatorCpuSeconds)
@@ -183,6 +186,7 @@ measureNames = ["time", "cycles", "iters", "allocated", "numGcs", "bytesCopied",
 rescale :: Measured -> Measured
 rescale m@Measured{..} = m {
       measTime               = d measTime
+    , measCpuTime            = d measCpuTime
     , measCycles             = i measCycles
     -- skip measIters
     , measNumGcs             = i measNumGcs
@@ -224,11 +228,11 @@ toDouble (Just d) = d
 
 instance Binary Measured where
     put Measured{..} = do
-      put measTime; put measCycles; put measIters
+      put measTime; put measCpuTime; put measCycles; put measIters
       put measAllocated; put measNumGcs; put measBytesCopied
       put measMutatorWallSeconds; put measMutatorCpuSeconds
       put measGcWallSeconds; put measGcCpuSeconds
-    get = Measured <$> get <*> get <*> get
+    get = Measured <$> get <*> get <*> get <*> get
                    <*> get <*> get <*> get <*> get <*> get <*> get <*> get
 
 -- | Apply an argument to a function, and evaluate the result to weak

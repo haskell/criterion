@@ -57,3 +57,22 @@ double criterion_gettime(void)
 }
 
 #endif
+
+static ULONGLONG to_quad_100ns(FILETIME ft)
+{
+    ULARGE_INTEGER li;
+    li.LowPart = ft.dwLowDateTime;
+    li.HighPart = ft.dwHighDateTime;
+    return li.QuadPart;
+}
+
+double criterion_getcputime(void)
+{
+    FILETIME creation, exit, kernel, user;
+    ULONGLONG time;
+
+    GetProcessTimes(GetCurrentProcess(), &creation, &exit, &kernel, &user);
+
+    time = to_quad_100ns(user_time) + to_quad_100ns(kernel_time);
+    return time / 1e7;
+}

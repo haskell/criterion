@@ -15,6 +15,7 @@ module Criterion.Measurement
     (
       initializeTime
     , getTime
+    , getCPUTime
     , getCycles
     , getGCStats
     , secs
@@ -41,6 +42,7 @@ getGCStats =
 measured :: Measured
 measured = Measured {
       measTime               = 0
+    , measCpuTime            = 0
     , measCycles             = 0
     , measIters              = 0
 
@@ -103,3 +105,7 @@ foreign import ccall unsafe "criterion_rdtsc" getCycles :: IO Word64
 --
 -- You /must/ call 'initializeTime' once before calling this function!
 foreign import ccall unsafe "criterion_gettime" getTime :: IO Double
+
+-- | Return the amount of elapsed CPU time, combining user and kernel
+-- (system) time into a single measure.
+foreign import ccall unsafe "criterion_getcputime" getCPUTime :: IO Double
