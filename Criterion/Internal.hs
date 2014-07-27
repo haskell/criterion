@@ -129,9 +129,9 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Benchmark
               -> Criterion ()
 runAndAnalyse p bs' = do
-  mbResultFile <- getConfigItem reportFile
-  (resultFile, handle) <- liftIO $
-    case mbResultFile of
+  mbRawFile <- getConfigItem rawDataFile
+  (rawFile, handle) <- liftIO $
+    case mbRawFile of
       Nothing -> do
         tmpDir <- getTemporaryDirectory
         openBinaryTempFile tmpDir "criterion.dat"
@@ -161,9 +161,9 @@ runAndAnalyse p bs' = do
     hSeek handle AbsoluteSeek 0
     rs <- hGetReports handle
     hClose handle
-    case mbResultFile of
+    case mbRawFile of
       Just _ -> return rs
-      _      -> removeFile resultFile >> return rs
+      _      -> removeFile rawFile >> return rs
 
   report rpts
   junit rpts
