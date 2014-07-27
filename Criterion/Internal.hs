@@ -99,7 +99,7 @@ runAndAnalyseOne i desc bm = do
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
   forM_ anRegress $ \Regression{..} ->
-    case Map.lookup "time" regCoeffs of
+    case Map.lookup "iters" regCoeffs of
       Nothing -> return ()
       Just t  -> note "%-8s  %s   (R\178 %.4g)\n"
                       "time" (secs t) regRSquare

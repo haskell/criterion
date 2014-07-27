@@ -173,7 +173,7 @@ $(function () {
     var units = $.timeUnits(mean);
     var rgrs = rpt.reportAnalysis.anRegress[0];
     var scale = units[0];
-    var olsTime = rgrs.regCoeffs.time;
+    var olsTime = rgrs.regCoeffs.iters;
     $(".olstime" + number).text(function() {
         return $.renderTime(olsTime);
       });

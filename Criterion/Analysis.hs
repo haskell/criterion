@@ -23,14 +23,18 @@ module Criterion.Analysis
     , classifyOutliers
     , noteOutliers
     , outlierVariance
+    , resolveAccessors
+    , regress
     ) where
 
-import Control.Monad (when)
+import Control.Arrow (second)
+import Control.Monad (unless, when)
 import Criterion.IO.Printf (note)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion)
 import Criterion.Types
 import Data.Int (Int64)
+import Data.Maybe (fromJust)
 import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
@@ -40,6 +44,7 @@ import Statistics.Sample (mean)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Estimator(..), Sample)
 import System.Random.MWC (withSystemRandom)
+import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
@@ -131,18 +136,15 @@ analyseSample :: Int            -- ^ Experiment number.
               -> IO Report
 analyseSample i name ci meas numResamples = do
   let ests  = [Mean,StdDev]
-      times = measure measTime meas
       stime = measure (measTime . rescale) meas
-      iters = measure (fromIntegral . measIters) meas
       n     = G.length meas
-      (coefs,r2) = olsRegress [iters] times
-      coefmap = Map.fromList (zip ["time","y"] (G.toList coefs))
   resamples <- withSystemRandom $ \gen ->
                resample gen ests numResamples stime :: IO [Resample]
   let [estMean,estStdDev] = B.bootstrapBCA ci stime ests resamples
       ov = outlierVariance estMean estStdDev (fromIntegral n)
+      Right r = regress ["iters"] "time" meas
       an = SampleAnalysis {
-               anRegress = [Regression ["iters"] coefmap r2]
+               anRegress = [r]
              , anMean = estMean
              , anStdDev = estStdDev
              , anOutlierVar = ov
@@ -156,6 +158,58 @@ analyseSample i name ci meas numResamples = do
     , reportOutliers = classifyOutliers stime
     , reportKDEs     = [uncurry (KDE "time") (kde 128 stime)]
     }
+
+-- | Regress the given predictors against the responder.
+--
+-- Errors may be returned under various circumstances, such as invalid
+-- names or lack of needed data.
+--
+-- See 'olsRegress' for details of the regression performed.
+regress :: [String]             -- ^ Predictor names.
+        -> String               -- ^ Responder name.
+        -> V.Vector Measured
+        -> Either String Regression
+regress predNames respName meas = do
+  when (null predNames) $
+    Left "no predictors specified"
+  let names = respName:predNames
+  accs <- resolveAccessors names
+  when (G.null meas) $
+    Left "no measurements"
+  let unmeasured = [n | (n, Nothing) <- map (second ($ G.head meas)) accs]
+  unless (null unmeasured) $
+    Left $ "no data available for " ++ renderNames unmeasured
+  let dups = map head . filter (not . singleton) .
+             List.group . List.sort . map fst $ accs
+  unless (null dups) $
+    Left $ "duplicate keys " ++ renderNames dups
+  let (r:ps)      = map ((`measure` meas) . (fromJust .) . snd) accs
+      (coeffs,r2) = olsRegress ps r
+  return Regression {
+      regResponder = respName
+    , regCoeffs    = Map.fromList (zip (predNames ++ ["y"]) (G.toList coeffs))
+    , regRSquare   = r2
+    }
+
+singleton :: [a] -> Bool
+singleton [_] = True
+singleton _   = False
+
+-- | Given a list of accessor names (see 'measureKeys'), return either
+-- a mapping from accessor name to function or an error message if
+-- any names are wrong.
+resolveAccessors :: [String]
+                 -> Either String [(String, Measured -> Maybe Double)]
+resolveAccessors names =
+  case unresolved of
+    [] -> Right [(n, a) | (n, Just a) <- accessors]
+    _  -> Left $ "unknown measurement names " ++ renderNames unresolved
+  where
+    unresolved = [n | (n, Nothing) <- accessors]
+    accessors = flip map names $ \n -> (n, Map.lookup n measureAccessors)
+
+renderNames :: [String] -> String
+renderNames = List.intercalate ", " . map show
 
 -- | Display a report of the 'Outliers' present in a 'Sample'.
 noteOutliers :: Outliers -> Criterion ()
