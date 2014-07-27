@@ -14,6 +14,7 @@ module Criterion.Internal
     (
       runBenchmark
     , runAndAnalyse
+    , runAndAnalyseOne
     , runNotAnalyse
     , prefix
     ) where

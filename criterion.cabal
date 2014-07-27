@@ -46,6 +46,7 @@ library
     Criterion.Analysis
     Criterion.IO
     Criterion.IO.Printf
+    Criterion.Internal
     Criterion.Main
     Criterion.Main.Options
     Criterion.Measurement
@@ -64,7 +65,6 @@ library
   }
 
   other-modules:
-    Criterion.Internal
     Paths_criterion
 
   build-depends:

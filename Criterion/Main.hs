@@ -27,17 +27,19 @@ module Criterion.Main
     -- * Types
       Benchmarkable(..)
     , Benchmark
-    -- * Constructing benchmarks
+    -- * Creating a benchmark suite
     , env
     , bench
     , bgroup
+    -- ** Running a benchmark
     , nf
     , whnf
     , nfIO
     , whnfIO
-    -- * Running benchmarks
+    -- * Turning a suite of benchmarks into a program
     , defaultMain
     , defaultMainWith
+    , defaultConfig
     -- * Other useful code
     , makeMatcher
     ) where
