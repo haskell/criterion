@@ -24,6 +24,7 @@ module Criterion.Analysis
     , noteOutliers
     , outlierVariance
     , resolveAccessors
+    , validateAccessors
     , regress
     ) where
 
@@ -130,23 +131,25 @@ scale f s@SampleAnalysis{..} = s {
 analyseSample :: Int            -- ^ Experiment number.
               -> String         -- ^ Experiment name.
               -> Double         -- ^ Confidence interval (between 0 and 1).
+              -> [([String], String)] -- ^ Regressions to perform.
               -> V.Vector Measured -- ^ Sample data.
               -> Int            -- ^ Number of resamples to perform
                                 -- when bootstrapping.
               -> IO Report
-analyseSample i name ci meas numResamples = do
+analyseSample i name ci regs meas numResamples = do
   let ests  = [Mean,StdDev]
       stime = measure (measTime . rescale) meas
       n     = G.length meas
+  rs <- either fail return . mapM (\(ps,r) -> regress ps r meas) $ regs
   resamples <- withSystemRandom $ \gen ->
                resample gen ests numResamples stime :: IO [Resample]
   let [estMean,estStdDev] = B.bootstrapBCA ci stime ests resamples
       ov = outlierVariance estMean estStdDev (fromIntegral n)
       Right r = regress ["iters"] "time" meas
       an = SampleAnalysis {
-               anRegress = [r]
-             , anMean = estMean
-             , anStdDev = estStdDev
+               anRegress    = r:rs
+             , anMean       = estMean
+             , anStdDev     = estStdDev
              , anOutlierVar = ov
              }
   return Report {
@@ -170,19 +173,12 @@ regress :: [String]             -- ^ Predictor names.
         -> V.Vector Measured
         -> Either String Regression
 regress predNames respName meas = do
-  when (null predNames) $
-    Left "no predictors specified"
-  let names = respName:predNames
-  accs <- resolveAccessors names
   when (G.null meas) $
     Left "no measurements"
+  accs <- validateAccessors predNames respName
   let unmeasured = [n | (n, Nothing) <- map (second ($ G.head meas)) accs]
   unless (null unmeasured) $
     Left $ "no data available for " ++ renderNames unmeasured
-  let dups = map head . filter (not . singleton) .
-             List.group . List.sort . map fst $ accs
-  unless (null dups) $
-    Left $ "duplicate keys " ++ renderNames dups
   let (r:ps)      = map ((`measure` meas) . (fromJust .) . snd) accs
       (coeffs,r2) = olsRegress ps r
   return Regression {
@@ -203,10 +199,25 @@ resolveAccessors :: [String]
 resolveAccessors names =
   case unresolved of
     [] -> Right [(n, a) | (n, Just a) <- accessors]
-    _  -> Left $ "unknown measurement names " ++ renderNames unresolved
+    _  -> Left $ "unknown metric " ++ renderNames unresolved
   where
     unresolved = [n | (n, Nothing) <- accessors]
     accessors = flip map names $ \n -> (n, Map.lookup n measureAccessors)
+
+-- | Given predictor and responder names, do some basic validation,
+-- then hand back the relevant accessors.
+validateAccessors :: [String]   -- ^ Predictor names.
+                  -> String     -- ^ Responder name.
+                  -> Either String [(String, Measured -> Maybe Double)]
+validateAccessors predNames respName = do
+  when (null predNames) $
+    Left "no predictors specified"
+  let names = respName:predNames
+      dups = map head . filter (not . singleton) .
+             List.group . List.sort $ names
+  unless (null dups) $
+    Left $ "duplicated metric " ++ renderNames dups
+  resolveAccessors names
 
 renderNames :: [String] -> String
 renderNames = List.intercalate ", " . map show

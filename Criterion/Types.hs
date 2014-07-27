@@ -95,6 +95,8 @@ data Config = Config {
       -- execution time will very slightly exceed this limit.)
     , resamples    :: Int
       -- ^ Number of resamples to perform when bootstrapping.
+    , regressions  :: [([String], String)]
+      -- ^ Regressions to perform.
     , rawDataFile  :: Maybe FilePath
       -- ^ File to write binary measurement and analysis data to.  If
       -- not specified, this will be a temporary file.

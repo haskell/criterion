@@ -90,7 +90,8 @@ runAndAnalyseOne i desc bm = do
   meas <- runBenchmark bm
   Config{..} <- getConfig
   _ <- prolix "analysing with %d resamples\n" resamples
-  rpt@Report{..} <- liftIO $ analyseSample i desc confInterval meas resamples
+  rpt@Report{..} <- liftIO $
+                    analyseSample i desc confInterval regressions meas resamples
   let SampleAnalysis{..} = reportAnalysis
       OutlierVariance{..} = anOutlierVar
   let wibble = case ovEffect of
@@ -98,11 +99,16 @@ runAndAnalyseOne i desc bm = do
                  Slight -> "slightly inflated"
                  Moderate -> "moderately inflated"
                  Severe -> "severely inflated"
-  forM_ anRegress $ \Regression{..} ->
+  let (builtin, others) = splitAt 1 anRegress
+  forM_ builtin $ \Regression{..} ->
     case Map.lookup "iters" regCoeffs of
       Nothing -> return ()
       Just t  -> note "%-8s  %s   (R\178 %.4g)\n"
-                      "time" (secs t) regRSquare
+                      regResponder (secs t) regRSquare
+  forM_ others $ \Regression{..} -> do
+    _ <- note "%-16s     (R\178 %.4g)\n" regResponder regRSquare
+    forM_ (Map.toList regCoeffs) $ \(prd,val) ->
+      note "  %-18s  %.4g\n" prd val
   (a,b,c) <- bs "mean   " anMean
   (d,e,f) <- bs "std dev" anStdDev
   writeCsv (desc,a,b,c,d,e,f)

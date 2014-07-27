@@ -20,14 +20,17 @@ module Criterion.Main.Options
     , describe
     ) where
 
+import Control.Monad (when)
+import Criterion.Analysis (validateAccessors)
 import Criterion.Types (Config(..), Verbosity(..))
-import Data.Char (toLower)
+import Data.Char (isSpace, toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
-import GHC.Generics (Generic)
 import Data.List (isPrefixOf)
 import Data.Monoid (mempty)
+import GHC.Generics (Generic)
 import Options.Applicative
+import Options.Applicative.Types
 
 -- | How to match a benchmark name.
 data MatchType = Prefix | Glob
@@ -51,6 +54,7 @@ defaultConfig = Config {
     , forceGC      = True
     , timeLimit    = 5
     , resamples    = 10000
+    , regressions  = []
     , rawDataFile  = Nothing
     , reportFile   = Nothing
     , csvFile      = Nothing
@@ -87,6 +91,9 @@ config Config{..} = Config
   <*> option (long "resamples" <> metavar "COUNT" <> value resamples <>
               reader (range 1 1000000) <>
               help "number of bootstrap resamples to perform")
+  <*> many (option (long "regress" <> metavar "RESP:PRED.." <>
+                    reader regressParams <>
+                    help "regressions to perform"))
   <*> outputOption rawDataFile (long "raw" <>
                                 help "file to write raw data to")
   <*> outputOption reportFile (long "output" <> short 'o' <>
@@ -123,6 +130,20 @@ match m
     | otherwise                = readerError $
                                  show m ++ " is not a known match type"
     where mm = map toLower m
+
+regressParams :: String -> ReadM ([String], String)
+regressParams m = do
+  let repl ','   = ' '
+      repl c     = c
+      tidy       = reverse . dropWhile isSpace . reverse . dropWhile isSpace
+      (r,ps)     = break (==':') m
+  when (null r) $
+    readerError "no responder specified"
+  when (null ps) $
+    readerError "no predictors specified"
+  let ret = (words . map repl . drop 1 $ ps, tidy r)
+  either readerError (ReadM . Right . const ()) $ uncurry validateAccessors ret
+  return ret
 
 describe :: Config -> ParserInfo Mode
 describe cfg = info (helper <*> parseWith cfg) $
