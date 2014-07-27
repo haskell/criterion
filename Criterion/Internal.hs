@@ -66,13 +66,16 @@ runBenchmark (Benchmarkable run) = do
         when forceGC $ performGC
         startStats <- getGCStats
         startTime <- getTime
+        startCpuTime <- getCPUTime
         startCycles <- getCycles
         run iters
         endTime <- getTime
+        endCpuTime <- getCPUTime
         endCycles <- getCycles
         endStats <- getGCStats
         let m = applyGCStats endStats startStats $ measured {
                   measTime   = max 0 (endTime - startTime)
+                , measCpuTime= max 0 (endCpuTime - startCpuTime)
                 , measCycles = max 0 (fromIntegral (endCycles - startCycles))
                 , measIters  = iters
                 }
