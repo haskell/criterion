@@ -42,9 +42,11 @@ void criterion_inittime(void)
 {
     LARGE_INTEGER freq;
 
-    QueryPerformanceFrequency(&freq);
-    QueryPerformanceCounter(&firstClock);
-    freq_recip = 1.0 / freq.QuadPart;
+    if (freq_recip == 0) {
+	QueryPerformanceFrequency(&freq);
+	QueryPerformanceCounter(&firstClock);
+	freq_recip = 1.0 / freq.QuadPart;
+    }
 }
 
 double criterion_gettime(void)

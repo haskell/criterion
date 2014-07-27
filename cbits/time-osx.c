@@ -6,8 +6,10 @@ static double timebase_recip;
 
 void criterion_inittime(void)
 {
-    mach_timebase_info(&timebase_info);
-    timebase_recip = (timebase_info.denom / timebase_info.numer) / 1e9;
+    if (timebase_recip == 0) {
+	mach_timebase_info(&timebase_info);
+	timebase_recip = (timebase_info.denom / timebase_info.numer) / 1e9;
+    }
 }
 
 double criterion_gettime(void)
