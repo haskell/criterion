@@ -150,7 +150,7 @@ analyseSample i name ci meas numResamples = do
   return Report {
       reportNumber   = i
     , reportName     = name
-    , reportKeys     = measureNames
+    , reportKeys     = measureKeys
     , reportMeasured = meas
     , reportAnalysis = an
     , reportOutliers = classifyOutliers stime

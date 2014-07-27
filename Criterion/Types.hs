@@ -37,7 +37,8 @@ module Criterion.Types
     , toInt
     , fromDouble
     , toDouble
-    , measureNames
+    , measureAccessors
+    , measureKeys
     , measure
     , rescale
     -- * Benchmark construction
@@ -67,7 +68,7 @@ import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
-import Data.Map (Map)
+import Data.Map (Map, fromList)
 import Data.Monoid (Monoid(..))
 import GHC.Generics (Generic)
 import qualified Data.Vector as V
@@ -177,11 +178,34 @@ instance ToJSON Measured where
 instance NFData Measured where
     rnf Measured{} = ()
 
--- | List of the field names measured in a 'Measured' record.
-measureNames :: [String]
-measureNames = ["time", "cycles", "iters", "allocated", "numGcs", "bytesCopied",
-                "mutatorWallSeconds", "mutatorCpuSeconds", "gcWallSeconds",
-                "gcCpuSeconds"]
+-- THIS MUST REFLECT THE ORDER OF FIELDS IN THE DATA TYPE.
+--
+-- The ordering is used by Javascript code to pick out the correct
+-- index into the vector that represents a Measured value in that
+-- world.
+measureAccessors_ :: [(String, Measured -> Maybe Double)]
+measureAccessors_ = [
+    ("time",               Just . measTime)
+  , ("cpuTime",            Just . measCpuTime)
+  , ("cycles",             Just . fromIntegral . measCycles)
+  , ("iters",              Just . fromIntegral . measIters)
+  , ("allocated",          fmap fromIntegral . fromInt . measAllocated)
+  , ("numGcs",             fmap fromIntegral . fromInt . measNumGcs)
+  , ("bytesCopied",        fmap fromIntegral . fromInt . measBytesCopied)
+  , ("mutatorWallSeconds", fromDouble . measMutatorWallSeconds)
+  , ("mutatorCpuSeconds",  fromDouble . measMutatorCpuSeconds)
+  , ("gcWallSeconds",      fromDouble . measGcWallSeconds)
+  , ("gcCpuSeconds",       fromDouble . measGcCpuSeconds)
+  ]
+
+-- | Field names in a 'Measured' record, in the order in which they
+-- appear.
+measureKeys :: [String]
+measureKeys = map fst measureAccessors_
+
+-- | Field names and accessors for a 'Measured' record.
+measureAccessors :: Map String (Measured -> Maybe Double)
+measureAccessors = fromList measureAccessors_
 
 rescale :: Measured -> Measured
 rescale m@Measured{..} = m {
