@@ -26,10 +26,16 @@ module Criterion.Analysis
     , resolveAccessors
     , validateAccessors
     , regress
+    , bootstrapRegress
     ) where
 
+import Control.Applicative ((<$>))
 import Control.Arrow (second)
-import Control.Monad (unless, when)
+import Control.Concurrent (forkIO)
+import Data.Ord
+import Control.Concurrent.Chan
+import Control.DeepSeq (rnf)
+import Control.Monad (forM_, replicateM, unless, when)
 import Criterion.IO.Printf (note)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion)
@@ -37,14 +43,17 @@ import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
 import Data.Monoid (Monoid(..))
-import Statistics.Function (sort)
+import Data.Word (Word32)
+import GHC.Conc (getNumCapabilities)
+import Statistics.Function (sort, sortBy)
+import Statistics.Matrix.Types
 import Statistics.Quantile (weightedAvg)
 import Statistics.Regression (olsRegress)
 import Statistics.Resampling (Resample, resample)
 import Statistics.Sample (mean)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Estimator(..), Sample)
-import System.Random.MWC (withSystemRandom)
+import System.Random.MWC (GenIO, initialize, uniformR, uniformVector, withSystemRandom)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Vector as V
@@ -237,3 +246,45 @@ noteOutliers o = do
     check (lowMild o) 1 "low mild"
     check (highMild o) 1 "high mild"
     check (highSevere o) 0 "high severe"
+
+-- | Bootstrap a regression function, and return estimates of the
+-- bootstrapped confidence intervals for the numbers it reports.
+bootstrapRegress :: GenIO
+                 -> Int         -- ^ Number of resamples to compute.
+                 -> Double      -- ^ Confidence interval.
+                 -> ([Vector] -> Vector -> (Vector, Double))
+                 -- ^ Regression function.
+                 -> [Vector]    -- ^ Predictor vectors.
+                 -> Vector      -- ^ Responder vector.
+                 -> IO (V.Vector B.Estimate, B.Estimate)
+bootstrapRegress gen0 numResamples ci rgrss preds0 resp0 = do
+  caps <- getNumCapabilities
+  gens <- replicateM caps $
+          initialize =<< (uniformVector gen0 256 :: IO (U.Vector Word32))
+  done <- newChan :: IO (Chan (V.Vector (Vector, Double)))
+  forM_ (zip gens (balance caps numResamples)) $ \(gen,count) -> do
+    forkIO $ do
+      v <- V.replicateM count $ do
+           let !numSamples = U.length resp0
+           ixs <- U.replicateM numSamples $ uniformR (0,numSamples-1) gen
+           let resp  = U.backpermute resp0 ixs
+               preds = map (flip U.backpermute ixs) preds0
+           return $ rgrss preds resp
+      rnf v `seq` writeChan done v
+  (coeffsv, r2v) <- (G.unzip . sortBy (comparing (G.head . fst)) . V.concat) <$>
+                    replicateM caps (readChan done)
+  let n  = fromIntegral (G.length r2v)
+      c  = n * ((1 - ci) / 2)
+      lo = round c
+      hi = truncate (n - c)
+      (coeffss, r2s) = rgrss preds0 resp0
+      est f s v = B.Estimate s (f (v G.! lo)) (f (v G.! hi)) ci
+      r2 = est id r2s r2v
+      coeffs = flip G.imap (G.convert coeffss) $ \i x ->
+               est (flip (G.!) i) x coeffsv
+  return (coeffs, r2)
+
+balance :: Int -> Int -> [Int]
+balance numSlices numItems = zipWith (+) (replicate numSlices q)
+                                         (replicate r 1 ++ repeat 0)
+ where (q,r) = numItems `quotRem` numSlices
