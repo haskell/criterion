@@ -140,14 +140,14 @@ analyseSample i name ci regs meas numResamples = do
   let ests  = [Mean,StdDev]
       stime = measure (measTime . rescale) meas
       n     = G.length meas
-  rs <- either fail return . mapM (\(ps,r) -> regress ps r meas) $ regs
+  rs <- either fail return . mapM (\(ps,r) -> regress ps r meas) $
+        ((["iters"],"time"):regs)
   resamples <- withSystemRandom $ \gen ->
                resample gen ests numResamples stime :: IO [Resample]
   let [estMean,estStdDev] = B.bootstrapBCA ci stime ests resamples
       ov = outlierVariance estMean estStdDev (fromIntegral n)
-      Right r = regress ["iters"] "time" meas
       an = SampleAnalysis {
-               anRegress    = r:rs
+               anRegress    = rs
              , anMean       = estMean
              , anStdDev     = estStdDev
              , anOutlierVar = ov
