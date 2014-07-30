@@ -32,8 +32,7 @@ module Criterion.Analysis
 import Control.Applicative ((<$>))
 import Control.Arrow (second)
 import Control.Concurrent (forkIO)
-import Data.Ord
-import Control.Concurrent.Chan
+import Control.Concurrent.Chan (newChan, readChan, writeChan)
 import Control.DeepSeq (rnf)
 import Control.Monad (forM_, replicateM, unless, when)
 import Criterion.IO.Printf (note)
@@ -43,6 +42,7 @@ import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
 import Data.Monoid (Monoid(..))
+import Data.Ord (comparing)
 import Data.Word (Word32)
 import GHC.Conc (getNumCapabilities)
 import Statistics.Function (sort, sortBy)
@@ -261,7 +261,7 @@ bootstrapRegress gen0 numResamples ci rgrss preds0 resp0 = do
   caps <- getNumCapabilities
   gens <- replicateM caps $
           initialize =<< (uniformVector gen0 256 :: IO (U.Vector Word32))
-  done <- newChan :: IO (Chan (V.Vector (Vector, Double)))
+  done <- newChan
   forM_ (zip gens (balance caps numResamples)) $ \(gen,count) -> do
     forkIO $ do
       v <- V.replicateM count $ do
