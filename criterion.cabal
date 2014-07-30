@@ -84,7 +84,7 @@ library
     mwc-random >= 0.8.0.3,
     optparse-applicative,
     parsec >= 3.1.0,
-    statistics >= 0.13.1.1,
+    statistics >= 0.13.2.0,
     text >= 0.11,
     time,
     transformers,
