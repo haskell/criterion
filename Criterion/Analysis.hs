@@ -42,10 +42,9 @@ import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
 import Data.Monoid (Monoid(..))
-import Data.Ord (comparing)
 import Data.Word (Word32)
 import GHC.Conc (getNumCapabilities)
-import Statistics.Function (sort, sortBy)
+import Statistics.Function (sort)
 import Statistics.Matrix.Types
 import Statistics.Quantile (weightedAvg)
 import Statistics.Regression (olsRegress)
@@ -53,7 +52,8 @@ import Statistics.Resampling (Resample, resample)
 import Statistics.Sample (mean)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Estimator(..), Sample)
-import System.Random.MWC (GenIO, initialize, uniformR, uniformVector, withSystemRandom)
+import System.Random.MWC (GenIO, initialize, uniformR, uniformVector,
+                          withSystemRandom)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Vector as V
@@ -259,31 +259,32 @@ bootstrapRegress :: GenIO
                  -> IO (V.Vector B.Estimate, B.Estimate)
 bootstrapRegress gen0 numResamples ci rgrss preds0 resp0 = do
   caps <- getNumCapabilities
-  gens <- replicateM caps $
+  gens <- fmap (gen0:) . replicateM (caps-1) $
           initialize =<< (uniformVector gen0 256 :: IO (U.Vector Word32))
   done <- newChan
   forM_ (zip gens (balance caps numResamples)) $ \(gen,count) -> do
     forkIO $ do
       v <- V.replicateM count $ do
-           let !numSamples = U.length resp0
-           ixs <- U.replicateM numSamples $ uniformR (0,numSamples-1) gen
+           let n = U.length resp0
+           ixs <- U.replicateM n $ uniformR (0,n-1) gen
            let resp  = U.backpermute resp0 ixs
                preds = map (flip U.backpermute ixs) preds0
            return $ rgrss preds resp
       rnf v `seq` writeChan done v
-  (coeffsv, r2v) <- (G.unzip . sortBy (comparing (G.head . fst)) . V.concat) <$>
-                    replicateM caps (readChan done)
-  let n  = fromIntegral (G.length r2v)
-      c  = n * ((1 - ci) / 2)
-      lo = round c
-      hi = truncate (n - c)
+  (coeffsv, r2v) <- (G.unzip . V.concat) <$> replicateM caps (readChan done)
+  let coeffs  = flip G.imap (G.convert coeffss) $ \i x ->
+                est x . U.generate numResamples $ \k -> ((coeffsv G.! k) G.! i)
+      r2      = est r2s (G.convert r2v)
       (coeffss, r2s) = rgrss preds0 resp0
-      est f s v = B.Estimate s (f (v G.! lo)) (f (v G.! hi)) ci
-      r2 = est id r2s r2v
-      coeffs = flip G.imap (G.convert coeffss) $ \i x ->
-               est (flip (G.!) i) x coeffsv
+      est s v = B.Estimate s (w G.! lo) (w G.! hi) ci
+        where w  = sort v
+              lo = round c
+              hi = truncate (n - c)
+              n  = fromIntegral numResamples
+              c  = n * ((1 - ci) / 2)
   return (coeffs, r2)
 
+-- | Balance units of work across workers.
 balance :: Int -> Int -> [Int]
 balance numSlices numItems = zipWith (+) (replicate numSlices q)
                                          (replicate r 1 ++ repeat 0)
