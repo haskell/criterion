@@ -23,13 +23,14 @@ import Control.DeepSeq (rnf)
 import Control.Exception (evaluate)
 import Control.Monad (foldM, forM_, when)
 import Control.Monad.Trans (liftIO)
+import Control.Monad.Trans.Either
 import Data.Binary (encode)
 import Data.Int (Int64)
 import Data.List (unfoldr)
 import qualified Data.ByteString.Lazy as L
 import Criterion.Analysis (analyseSample, noteOutliers)
 import Criterion.IO (header, hGetReports)
-import Criterion.IO.Printf (note, prolix, writeCsv)
+import Criterion.IO.Printf (note, printError, prolix, writeCsv)
 import Criterion.Measurement
 import Criterion.Monad (Criterion, getConfig, getConfigItem)
 import Criterion.Report (report)
@@ -90,42 +91,45 @@ runAndAnalyseOne i desc bm = do
   meas <- runBenchmark bm
   Config{..} <- getConfig
   _ <- prolix "analysing with %d resamples\n" resamples
-  rpt@Report{..} <- liftIO $
-                    analyseSample i desc confInterval regressions meas resamples
-  let SampleAnalysis{..} = reportAnalysis
-      OutlierVariance{..} = anOutlierVar
-  let wibble = case ovEffect of
-                 Unaffected -> "unaffected" :: String
-                 Slight -> "slightly inflated"
-                 Moderate -> "moderately inflated"
-                 Severe -> "severely inflated"
-  let (builtin, others) = splitAt 1 anRegress
-  forM_ builtin $ \Regression{..} ->
-    case Map.lookup "iters" regCoeffs of
-      Nothing -> return ()
-      Just t  -> note "%-8s  %s   (R\178 %.4g)\n"
-                      regResponder (secs t) regRSquare
-  forM_ others $ \Regression{..} -> do
-    _ <- note "%-16s     (R\178 %.4g)\n" regResponder regRSquare
-    forM_ (Map.toList regCoeffs) $ \(prd,val) ->
-      note "  %-18s  %.4g\n" prd val
-  (a,b,c) <- bs "mean   " anMean
-  (d,e,f) <- bs "std dev" anStdDev
-  writeCsv (desc,a,b,c,d,e,f)
-  when (verbosity == Verbose || (ovEffect > Slight && verbosity > Quiet)) $ do
-    when (verbosity == Verbose) $ noteOutliers reportOutliers
-    _ <- note "variance introduced by outliers: %d%% (%s)\n"
-         (round (ovFraction * 100) :: Int) wibble
-    return ()
-  _ <- note "\n"
-  return rpt
-  where bs :: String -> Estimate -> Criterion (Double,Double,Double)
-        bs d e = do
-          _ <- note "%s   %s   (lb %s   ub %s   ci %.3f)\n" d
-               (secs $ estPoint e)
-               (secs $ estLowerBound e) (secs $ estUpperBound e)
-               (estConfidenceLevel e)
-          return (estPoint e, estLowerBound e, estUpperBound e)
+  erp <- liftIO . runEitherT $
+         analyseSample i desc confInterval regressions meas resamples
+  case erp of
+    Left err -> printError "*** Error: %s\n" err
+    Right rpt@Report{..} -> do
+      let SampleAnalysis{..} = reportAnalysis
+          OutlierVariance{..} = anOutlierVar
+          wibble = case ovEffect of
+                     Unaffected -> "unaffected" :: String
+                     Slight -> "slightly inflated"
+                     Moderate -> "moderately inflated"
+                     Severe -> "severely inflated"
+          (builtin, others) = splitAt 1 anRegress
+      forM_ builtin $ \Regression{..} ->
+        case Map.lookup "iters" regCoeffs of
+          Nothing -> return ()
+          Just t  -> note "%-8s  %s   (R\178 %.4g)\n"
+                          regResponder (secs t) regRSquare
+      forM_ others $ \Regression{..} -> do
+        _ <- note "%-16s     (R\178 %.4g)\n" regResponder regRSquare
+        forM_ (Map.toList regCoeffs) $ \(prd,val) ->
+          note "  %-18s  %.4g\n" prd val
+      (a,b,c) <- bs "mean   " anMean
+      (d,e,f) <- bs "std dev" anStdDev
+      writeCsv (desc,a,b,c,d,e,f)
+      when (verbosity == Verbose || (ovEffect > Slight && verbosity > Quiet)) $ do
+        when (verbosity == Verbose) $ noteOutliers reportOutliers
+        _ <- note "variance introduced by outliers: %d%% (%s)\n"
+             (round (ovFraction * 100) :: Int) wibble
+        return ()
+      _ <- note "\n"
+      return rpt
+      where bs :: String -> Estimate -> Criterion (Double,Double,Double)
+            bs d e = do
+              _ <- note "%s   %s   (lb %s   ub %s   ci %.3f)\n" d
+                   (secs $ estPoint e)
+                   (secs $ estLowerBound e) (secs $ estUpperBound e)
+                   (estConfidenceLevel e)
+              return (estPoint e, estLowerBound e, estUpperBound e)
 
 
 -- | Run, and analyse, one or more benchmarks.

@@ -30,6 +30,8 @@ module Criterion.Analysis
 
 import Control.Arrow (second)
 import Control.Monad (unless, when)
+import Control.Monad.Trans
+import Control.Monad.Trans.Either
 import Criterion.IO.Printf (note)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion)
@@ -135,14 +137,14 @@ analyseSample :: Int            -- ^ Experiment number.
               -> V.Vector Measured -- ^ Sample data.
               -> Int            -- ^ Number of resamples to perform
                                 -- when bootstrapping.
-              -> IO Report
+              -> EitherT String IO Report
 analyseSample i name ci regs meas numResamples = do
   let ests  = [Mean,StdDev]
       stime = measure (measTime . rescale) meas
       n     = G.length meas
-  rs <- either fail return . mapM (\(ps,r) -> regress ps r meas) $
+  rs <- mapM (\(ps,r) -> regress ps r meas) $
         ((["iters"],"time"):regs)
-  resamples <- withSystemRandom $ \gen ->
+  resamples <- liftIO . withSystemRandom $ \gen ->
                resample gen ests numResamples stime :: IO [Resample]
   let [estMean,estStdDev] = B.bootstrapBCA ci stime ests resamples
       ov = outlierVariance estMean estStdDev (fromIntegral n)
@@ -171,14 +173,14 @@ analyseSample i name ci regs meas numResamples = do
 regress :: [String]             -- ^ Predictor names.
         -> String               -- ^ Responder name.
         -> V.Vector Measured
-        -> Either String Regression
+        -> EitherT String IO Regression
 regress predNames respName meas = do
   when (G.null meas) $
-    Left "no measurements"
-  accs <- validateAccessors predNames respName
+    left "no measurements"
+  accs <- hoistEither $ validateAccessors predNames respName
   let unmeasured = [n | (n, Nothing) <- map (second ($ G.head meas)) accs]
   unless (null unmeasured) $
-    Left $ "no data available for " ++ renderNames unmeasured
+    left $ "no data available for " ++ renderNames unmeasured
   let (r:ps)      = map ((`measure` meas) . (fromJust .) . snd) accs
       (coeffs,r2) = olsRegress ps r
   return Regression {
