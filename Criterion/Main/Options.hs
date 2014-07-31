@@ -65,8 +65,8 @@ defaultConfig = Config {
 
 parseWith :: Config -> Parser Mode
 parseWith cfg =
-    onlyRun <|>
     (matchNames (Run <$> config cfg)) <|>
+    onlyRun <|>
     (List <$ switch (long "list" <> short 'l' <> help "list benchmarks"))
   where
     onlyRun = matchNames $
