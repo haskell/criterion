@@ -34,7 +34,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Either
 import Criterion.IO.Printf (note)
 import Criterion.Measurement (secs)
-import Criterion.Monad (Criterion)
+import Criterion.Monad (Criterion, getConfig)
 import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
@@ -132,21 +132,18 @@ scale f s@SampleAnalysis{..} = s {
 -- | Perform an analysis of a measurement.
 analyseSample :: Int            -- ^ Experiment number.
               -> String         -- ^ Experiment name.
-              -> Double         -- ^ Confidence interval (between 0 and 1).
-              -> [([String], String)] -- ^ Regressions to perform.
               -> V.Vector Measured -- ^ Sample data.
-              -> Int            -- ^ Number of resamples to perform
-                                -- when bootstrapping.
-              -> EitherT String IO Report
-analyseSample i name ci regs meas numResamples = do
+              -> EitherT String Criterion Report
+analyseSample i name meas = do
+  Config{..} <- lift getConfig
   let ests  = [Mean,StdDev]
       stime = measure (measTime . rescale) meas
       n     = G.length meas
   rs <- mapM (\(ps,r) -> regress ps r meas) $
-        ((["iters"],"time"):regs)
-  resamples <- liftIO . withSystemRandom $ \gen ->
-               resample gen ests numResamples stime :: IO [Resample]
-  let [estMean,estStdDev] = B.bootstrapBCA ci stime ests resamples
+        ((["iters"],"time"):regressions)
+  resamps <- liftIO . withSystemRandom $ \gen ->
+               resample gen ests resamples stime :: IO [Resample]
+  let [estMean,estStdDev] = B.bootstrapBCA confInterval stime ests resamps
       ov = outlierVariance estMean estStdDev (fromIntegral n)
       an = SampleAnalysis {
                anRegress    = rs
@@ -173,7 +170,7 @@ analyseSample i name ci regs meas numResamples = do
 regress :: [String]             -- ^ Predictor names.
         -> String               -- ^ Responder name.
         -> V.Vector Measured
-        -> EitherT String IO Regression
+        -> EitherT String Criterion Regression
 regress predNames respName meas = do
   when (G.null meas) $
     left "no measurements"

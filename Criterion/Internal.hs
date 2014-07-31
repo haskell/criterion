@@ -91,8 +91,7 @@ runAndAnalyseOne i desc bm = do
   meas <- runBenchmark bm
   Config{..} <- getConfig
   _ <- prolix "analysing with %d resamples\n" resamples
-  erp <- liftIO . runEitherT $
-         analyseSample i desc confInterval regressions meas resamples
+  erp <- runEitherT $ analyseSample i desc meas
   case erp of
     Left err -> printError "*** Error: %s\n" err
     Right rpt@Report{..} -> do
