@@ -509,8 +509,8 @@ instance NFData OutlierVariance where
 
 data Regression = Regression {
     regResponder  :: String
-  , regCoeffs     :: Map String Double
-  , regRSquare    :: Double
+  , regCoeffs     :: Map String B.Estimate
+  , regRSquare    :: B.Estimate
   } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance FromJSON Regression
@@ -564,7 +564,7 @@ data Report = Report {
       reportNumber   :: Int
     , reportName     :: String
     , reportKeys     :: [String]
-      -- ^ See 'measureNames'.
+      -- ^ See 'measureKeys'.
     , reportMeasured :: V.Vector Measured
     , reportAnalysis :: SampleAnalysis
     , reportOutliers :: Outliers

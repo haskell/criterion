@@ -41,12 +41,12 @@ import Data.Maybe (fromJust)
 import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
-import Statistics.Regression (olsRegress)
-import Statistics.Resampling (Resample, resample)
+import Statistics.Regression (bootstrapRegress, olsRegress)
+import Statistics.Resampling (resample)
 import Statistics.Sample (mean)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Estimator(..), Sample)
-import System.Random.MWC (withSystemRandom)
+import System.Random.MWC (GenIO, createSystemRandom)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Vector as V
@@ -139,10 +139,10 @@ analyseSample i name meas = do
   let ests  = [Mean,StdDev]
       stime = measure (measTime . rescale) meas
       n     = G.length meas
-  rs <- mapM (\(ps,r) -> regress ps r meas) $
+  gen <- liftIO createSystemRandom
+  rs <- mapM (\(ps,r) -> regress gen ps r meas) $
         ((["iters"],"time"):regressions)
-  resamps <- liftIO . withSystemRandom $ \gen ->
-               resample gen ests resamples stime :: IO [Resample]
+  resamps <- liftIO $ resample gen ests resamples stime
   let [estMean,estStdDev] = B.bootstrapBCA confInterval stime ests resamps
       ov = outlierVariance estMean estStdDev (fromIntegral n)
       an = SampleAnalysis {
@@ -167,11 +167,12 @@ analyseSample i name meas = do
 -- names or lack of needed data.
 --
 -- See 'olsRegress' for details of the regression performed.
-regress :: [String]             -- ^ Predictor names.
+regress :: GenIO
+        -> [String]             -- ^ Predictor names.
         -> String               -- ^ Responder name.
         -> V.Vector Measured
         -> EitherT String Criterion Regression
-regress predNames respName meas = do
+regress gen predNames respName meas = do
   when (G.null meas) $
     left "no measurements"
   accs <- hoistEither $ validateAccessors predNames respName
@@ -179,7 +180,9 @@ regress predNames respName meas = do
   unless (null unmeasured) $
     left $ "no data available for " ++ renderNames unmeasured
   let (r:ps)      = map ((`measure` meas) . (fromJust .) . snd) accs
-      (coeffs,r2) = olsRegress ps r
+  Config{..} <- lift getConfig
+  (coeffs,r2) <- liftIO $
+                 bootstrapRegress gen resamples confInterval olsRegress ps r
   return Regression {
       regResponder = respName
     , regCoeffs    = Map.fromList (zip (predNames ++ ["y"]) (G.toList coeffs))

@@ -103,18 +103,21 @@ runAndAnalyseOne i desc bm = do
                      Moderate -> "moderately inflated"
                      Severe -> "severely inflated"
           (builtin, others) = splitAt 1 anRegress
+      let r2 n = printf "%.3f R\178" n
       forM_ builtin $ \Regression{..} ->
         case Map.lookup "iters" regCoeffs of
           Nothing -> return ()
-          Just t  -> note "%-8s  %s   (R\178 %.4g)\n"
-                          regResponder (secs t) regRSquare
+          Just t  -> bs secs "time" t >> bs r2 "" regRSquare
+      bs secs "mean" anMean
+      bs secs "std dev" anStdDev
       forM_ others $ \Regression{..} -> do
-        _ <- note "%-16s     (R\178 %.4g)\n" regResponder regRSquare
+        _ <- bs r2 (regResponder ++ ":") regRSquare
         forM_ (Map.toList regCoeffs) $ \(prd,val) ->
-          note "  %-18s  %.4g\n" prd val
-      (a,b,c) <- bs "mean   " anMean
-      (d,e,f) <- bs "std dev" anStdDev
-      writeCsv (desc,a,b,c,d,e,f)
+          bs (printf "%.3g") ("  " ++ prd) val
+      writeCsv (desc,
+                estPoint anMean, estLowerBound anMean, estUpperBound anMean,
+                estPoint anStdDev, estLowerBound anStdDev,
+                estUpperBound anStdDev)
       when (verbosity == Verbose || (ovEffect > Slight && verbosity > Quiet)) $ do
         when (verbosity == Verbose) $ noteOutliers reportOutliers
         _ <- note "variance introduced by outliers: %d%% (%s)\n"
@@ -122,13 +125,12 @@ runAndAnalyseOne i desc bm = do
         return ()
       _ <- note "\n"
       return rpt
-      where bs :: String -> Estimate -> Criterion (Double,Double,Double)
-            bs d e = do
-              _ <- note "%s   %s   (lb %s   ub %s   ci %.3f)\n" d
-                   (secs $ estPoint e)
-                   (secs $ estLowerBound e) (secs $ estUpperBound e)
-                   (estConfidenceLevel e)
-              return (estPoint e, estLowerBound e, estUpperBound e)
+      where bs :: (Double -> String) -> String -> Estimate -> Criterion ()
+            bs f metric Estimate{..} =
+              note "%-20s %-10s (%s .. %s%s)\n" metric
+                   (f estPoint) (f estLowerBound) (f estUpperBound)
+                   (if estConfidenceLevel == 0.95 then ""
+                    else printf ", ci %.3f" estConfidenceLevel)
 
 
 -- | Run, and analyse, one or more benchmarks.
