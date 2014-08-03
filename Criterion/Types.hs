@@ -185,19 +185,30 @@ instance NFData Measured where
 -- The ordering is used by Javascript code to pick out the correct
 -- index into the vector that represents a Measured value in that
 -- world.
-measureAccessors_ :: [(String, Measured -> Maybe Double)]
+measureAccessors_ :: [(String, (Measured -> Maybe Double, String))]
 measureAccessors_ = [
-    ("time",               Just . measTime)
-  , ("cpuTime",            Just . measCpuTime)
-  , ("cycles",             Just . fromIntegral . measCycles)
-  , ("iters",              Just . fromIntegral . measIters)
-  , ("allocated",          fmap fromIntegral . fromInt . measAllocated)
-  , ("numGcs",             fmap fromIntegral . fromInt . measNumGcs)
-  , ("bytesCopied",        fmap fromIntegral . fromInt . measBytesCopied)
-  , ("mutatorWallSeconds", fromDouble . measMutatorWallSeconds)
-  , ("mutatorCpuSeconds",  fromDouble . measMutatorCpuSeconds)
-  , ("gcWallSeconds",      fromDouble . measGcWallSeconds)
-  , ("gcCpuSeconds",       fromDouble . measGcCpuSeconds)
+    ("time",               (Just . measTime,
+                            "wall-clock time"))
+  , ("cpuTime",            (Just . measCpuTime,
+                            "CPU time"))
+  , ("cycles",             (Just . fromIntegral . measCycles,
+                            "CPU cycles"))
+  , ("iters",              (Just . fromIntegral . measIters,
+                            "loop iterations"))
+  , ("allocated",          (fmap fromIntegral . fromInt . measAllocated,
+                            "bytes allocated"))
+  , ("numGcs",             (fmap fromIntegral . fromInt . measNumGcs,
+                            "number of garbage collections"))
+  , ("bytesCopied",        (fmap fromIntegral . fromInt . measBytesCopied,
+                            "number of bytes copied during GC"))
+  , ("mutatorWallSeconds", (fromDouble . measMutatorWallSeconds,
+                            "wall-clock time spent running mutator threads"))
+  , ("mutatorCpuSeconds",  (fromDouble . measMutatorCpuSeconds,
+                            "CPU time spent running mutator threads"))
+  , ("gcWallSeconds",      (fromDouble . measGcWallSeconds,
+                            "wall-clock time spent doing GC"))
+  , ("gcCpuSeconds",       (fromDouble . measGcCpuSeconds,
+                            "CPU time spent doing GC"))
   ]
 
 -- | Field names in a 'Measured' record, in the order in which they
@@ -206,7 +217,7 @@ measureKeys :: [String]
 measureKeys = map fst measureAccessors_
 
 -- | Field names and accessors for a 'Measured' record.
-measureAccessors :: Map String (Measured -> Maybe Double)
+measureAccessors :: Map String (Measured -> Maybe Double, String)
 measureAccessors = fromList measureAccessors_
 
 rescale :: Measured -> Measured

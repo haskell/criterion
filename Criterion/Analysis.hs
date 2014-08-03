@@ -200,7 +200,7 @@ resolveAccessors :: [String]
                  -> Either String [(String, Measured -> Maybe Double)]
 resolveAccessors names =
   case unresolved of
-    [] -> Right [(n, a) | (n, Just a) <- accessors]
+    [] -> Right [(n, a) | (n, Just (a,_)) <- accessors]
     _  -> Left $ "unknown metric " ++ renderNames unresolved
   where
     unresolved = [n | (n, Nothing) <- accessors]
