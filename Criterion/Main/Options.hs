@@ -22,7 +22,8 @@ module Criterion.Main.Options
 
 import Control.Monad (when)
 import Criterion.Analysis (validateAccessors)
-import Criterion.Types (Config(..), Verbosity(..))
+import Criterion.Types (Config(..), Verbosity(..), measureAccessors,
+                        measureKeys)
 import Data.Char (isSpace, toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
@@ -30,7 +31,11 @@ import Data.List (isPrefixOf)
 import Data.Monoid (mempty)
 import GHC.Generics (Generic)
 import Options.Applicative
+import Options.Applicative.Help (Chunk(..), tabulate)
+import Options.Applicative.Help.Pretty ((.$.))
 import Options.Applicative.Types
+import Text.PrettyPrint.ANSI.Leijen (Doc, text)
+import qualified Data.Map as M
 
 -- | How to match a benchmark name.
 data MatchType = Prefix | Glob
@@ -147,4 +152,10 @@ regressParams m = do
 
 describe :: Config -> ParserInfo Mode
 describe cfg = info (helper <*> parseWith cfg) $
-  fullDesc
+    fullDesc <> footerDoc (unChunk regressionHelp)
+
+regressionHelp :: Chunk Doc
+regressionHelp =
+    fmap (text "Regression metrics (for use with --regress):" .$.) $
+      tabulate [(text n,text d) | (n,(_,d)) <- map f measureKeys]
+  where f k = (k, measureAccessors M.! k)

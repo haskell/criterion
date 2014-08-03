@@ -196,19 +196,19 @@ measureAccessors_ = [
   , ("iters",              (Just . fromIntegral . measIters,
                             "loop iterations"))
   , ("allocated",          (fmap fromIntegral . fromInt . measAllocated,
-                            "bytes allocated"))
+                            "(+RTS -T) bytes allocated"))
   , ("numGcs",             (fmap fromIntegral . fromInt . measNumGcs,
-                            "number of garbage collections"))
+                            "(+RTS -T) number of garbage collections"))
   , ("bytesCopied",        (fmap fromIntegral . fromInt . measBytesCopied,
-                            "number of bytes copied during GC"))
+                            "(+RTS -T) number of bytes copied during GC"))
   , ("mutatorWallSeconds", (fromDouble . measMutatorWallSeconds,
-                            "wall-clock time spent running mutator threads"))
+                            "(+RTS -T) wall-clock time for mutator threads"))
   , ("mutatorCpuSeconds",  (fromDouble . measMutatorCpuSeconds,
-                            "CPU time spent running mutator threads"))
+                            "(+RTS -T) CPU time spent running mutator threads"))
   , ("gcWallSeconds",      (fromDouble . measGcWallSeconds,
-                            "wall-clock time spent doing GC"))
+                            "(+RTS -T) wall-clock time spent doing GC"))
   , ("gcCpuSeconds",       (fromDouble . measGcCpuSeconds,
-                            "CPU time spent doing GC"))
+                            "(+RTS -T) CPU time spent doing GC"))
   ]
 
 -- | Field names in a 'Measured' record, in the order in which they
