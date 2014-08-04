@@ -38,7 +38,11 @@ import Text.PrettyPrint.ANSI.Leijen (Doc, text)
 import qualified Data.Map as M
 
 -- | How to match a benchmark name.
-data MatchType = Prefix | Glob
+data MatchType = Prefix
+                 -- ^ Match by prefix. For example, a prefix of
+                 -- @\"foo\"@ will match @\"foobar\"@.
+               | Glob
+                 -- ^ Match by Unix-style glob pattern.
                deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data,
                          Generic)
 
@@ -68,7 +72,11 @@ defaultConfig = Config {
     , template     = "default"
     }
 
-parseWith :: Config -> Parser Mode
+-- ^ Parse a command line.
+parseWith :: Config
+             -- ^ Default configuration to use if options are not
+             -- explicitly specified.
+          -> Parser Mode
 parseWith cfg =
     (matchNames (Run <$> config cfg)) <|>
     onlyRun <|>
@@ -150,10 +158,12 @@ regressParams m = do
   either readerError (ReadM . Right . const ()) $ uncurry validateAccessors ret
   return ret
 
+-- | Flesh out a command line parser.
 describe :: Config -> ParserInfo Mode
 describe cfg = info (helper <*> parseWith cfg) $
     fullDesc <> footerDoc (unChunk regressionHelp)
 
+-- We sort not by name, but by likely frequency of use.
 regressionHelp :: Chunk Doc
 regressionHelp =
     fmap (text "Regression metrics (for use with --regress):" .$.) $
