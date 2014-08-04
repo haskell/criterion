@@ -47,7 +47,7 @@ module Criterion.Main
 import Control.Monad (unless)
 import Control.Monad.Trans (liftIO)
 import Criterion.IO.Printf (printError, writeCsv)
-import Criterion.Internal (runAndAnalyse, runNotAnalyse, prefix)
+import Criterion.Internal (runAndAnalyse, runNotAnalyse, addPrefix)
 import Criterion.Main.Options (MatchType(..), Mode(..), defaultConfig, describe)
 import Criterion.Measurement (initializeTime)
 import Criterion.Monad (withConfig)
@@ -96,8 +96,8 @@ makeMatcher matchKind args =
 selectBenches :: MatchType -> [String] -> Benchmark -> IO (String -> Bool)
 selectBenches matchType benches bsgroup = do
   let go pfx (Environment _ b)     = go pfx (b undefined)
-      go pfx (BenchGroup pfx' bms) = concatMap (go (prefix pfx pfx')) bms
-      go pfx (Benchmark desc _)    = [prefix pfx desc]
+      go pfx (BenchGroup pfx' bms) = concatMap (go (addPrefix pfx pfx')) bms
+      go pfx (Benchmark desc _)    = [addPrefix pfx desc]
   toRun <- either parseError return . makeMatcher matchType $ benches
   unless (null benches || any toRun (go "" bsgroup)) $
     parseError "none of the specified names matches a benchmark"

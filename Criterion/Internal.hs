@@ -16,7 +16,7 @@ module Criterion.Internal
     , runAndAnalyse
     , runAndAnalyseOne
     , runNotAnalyse
-    , prefix
+    , addPrefix
     ) where
 
 import Control.DeepSeq (rnf)
@@ -163,9 +163,9 @@ runAndAnalyse p bs' = do
                            liftIO $ L.hPut handle (encode rpt)
                            return $! k + 1
           | otherwise = return (k :: Int)
-          where desc' = prefix pfx desc
+          where desc' = addPrefix pfx desc
       go !k (pfx, BenchGroup desc bs) =
-          foldM go k [(prefix pfx desc, b) | b <- bs]
+          foldM go k [(addPrefix pfx desc, b) | b <- bs]
   _ <- go 0 ("", bs')
 
   rpts <- (either fail return =<<) . liftIO $ do
@@ -195,15 +195,20 @@ runNotAnalyse iters p bs' = goQuickly "" bs'
             | p desc'   = do _ <- note "benchmarking %s\n" desc'
                              runOne b
             | otherwise = return ()
-            where desc' = prefix pfx desc
+            where desc' = addPrefix pfx desc
         goQuickly pfx (BenchGroup desc bs) =
-            mapM_ (goQuickly (prefix pfx desc)) bs
+            mapM_ (goQuickly (addPrefix pfx desc)) bs
 
         runOne (Benchmarkable run) = liftIO (run iters)
 
-prefix :: String -> String -> String
-prefix ""  desc = desc
-prefix pfx desc = pfx ++ '/' : desc
+-- | Add the given prefix to a name.  If the prefix is empty, the name
+-- is returned unmodified.  Otherwise, the prefix and name are
+-- separated by a @\'\/\'@ character.
+addPrefix :: String             -- ^ Prefix.
+          -> String             -- ^ Name.
+          -> String
+addPrefix ""  desc = desc
+addPrefix pfx desc = pfx ++ '/' : desc
 
 -- | Write summary JUnit file (if applicable)
 junit :: [Report] -> Criterion ()
