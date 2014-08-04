@@ -20,8 +20,9 @@ module Criterion.IO.Printf
     ) where
 
 import Control.Monad (when)
+import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (liftIO)
-import Criterion.Monad (Criterion, getConfig, getConfigItem)
+import Criterion.Monad (Criterion)
 import Criterion.Types (Config(csvFile, verbosity), Verbosity(..))
 import Data.Foldable (forM_)
 import System.IO (Handle, stderr, stdout)
@@ -45,7 +46,7 @@ class CritHPrintfType a where
 
 instance CritHPrintfType (Criterion a) where
   chPrintfImpl check (PrintfCont final _)
-    = do x <- getConfig
+    = do x <- ask
          when (check x) (liftIO final)
          return undefined
 
@@ -95,6 +96,6 @@ printError = chPrintf (const True) stderr
 -- | Write a record to a CSV file.
 writeCsv :: Csv.ToRecord a => a -> Criterion ()
 writeCsv val = do
-  csv <- getConfigItem csvFile
+  csv <- asks csvFile
   forM_ csv $ \fn ->
     liftIO . B.appendFile fn . Csv.encode $ [val]

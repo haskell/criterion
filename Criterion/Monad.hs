@@ -12,13 +12,11 @@
 module Criterion.Monad
     (
       Criterion
-    , getConfig
-    , getConfigItem
     , withConfig
     ) where
 
 import Control.Applicative (Applicative)
-import Control.Monad.Reader (MonadReader, ReaderT, ask, runReaderT)
+import Control.Monad.Reader (MonadReader, ReaderT, runReaderT)
 import Control.Monad.Trans (MonadIO)
 import Criterion.Types (Config)
 
@@ -26,12 +24,6 @@ import Criterion.Types (Config)
 newtype Criterion a = Criterion {
       runCriterion :: ReaderT Config IO a
     } deriving (Functor, Applicative, Monad, MonadReader Config, MonadIO)
-
-getConfig :: Criterion Config
-getConfig = ask
-
-getConfigItem :: (Config -> a) -> Criterion a
-getConfigItem f = f `fmap` getConfig
 
 withConfig :: Config -> Criterion a -> IO a
 withConfig = flip (runReaderT . runCriterion)

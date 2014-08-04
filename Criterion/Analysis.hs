@@ -30,11 +30,12 @@ module Criterion.Analysis
 
 import Control.Arrow (second)
 import Control.Monad (unless, when)
+import Control.Monad.Reader (ask)
 import Control.Monad.Trans
 import Control.Monad.Trans.Either
 import Criterion.IO.Printf (note)
 import Criterion.Measurement (secs)
-import Criterion.Monad (Criterion, getConfig)
+import Criterion.Monad (Criterion)
 import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
@@ -135,7 +136,7 @@ analyseSample :: Int            -- ^ Experiment number.
               -> V.Vector Measured -- ^ Sample data.
               -> EitherT String Criterion Report
 analyseSample i name meas = do
-  Config{..} <- lift getConfig
+  Config{..} <- ask
   let ests  = [Mean,StdDev]
       stime = measure (measTime . rescale) meas
       n     = G.length meas
@@ -180,7 +181,7 @@ regress gen predNames respName meas = do
   unless (null unmeasured) $
     left $ "no data available for " ++ renderNames unmeasured
   let (r:ps)      = map ((`measure` meas) . (fromJust .) . snd) accs
-  Config{..} <- lift getConfig
+  Config{..} <- ask
   (coeffs,r2) <- liftIO $
                  bootstrapRegress gen resamples confInterval olsRegress ps r
   return Regression {

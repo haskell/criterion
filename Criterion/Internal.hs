@@ -22,6 +22,7 @@ module Criterion.Internal
 import Control.DeepSeq (rnf)
 import Control.Exception (evaluate)
 import Control.Monad (foldM, forM_, when)
+import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Trans.Either
 import Data.Binary (encode)
@@ -32,7 +33,7 @@ import Criterion.Analysis (analyseSample, noteOutliers)
 import Criterion.IO (header, hGetReports)
 import Criterion.IO.Printf (note, printError, prolix, writeCsv)
 import Criterion.Measurement
-import Criterion.Monad (Criterion, getConfig, getConfigItem)
+import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types
 import qualified Data.Vector as V
@@ -60,7 +61,7 @@ series k = Just (truncate l, l)
 runBenchmark :: Benchmarkable -> Criterion (V.Vector Measured)
 runBenchmark (Benchmarkable run) = do
   liftIO $ run 1
-  Config{..} <- getConfig
+  Config{..} <- ask
   start <- liftIO $ performGC >> getTime
   let loop [] _ = error "unpossible!"
       loop (iters:niters) acc = do
@@ -89,7 +90,7 @@ runBenchmark (Benchmarkable run) = do
 runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion Report
 runAndAnalyseOne i desc bm = do
   meas <- runBenchmark bm
-  Config{..} <- getConfig
+  Config{..} <- ask
   _ <- prolix "analysing with %d resamples\n" resamples
   erp <- runEitherT $ analyseSample i desc meas
   case erp of
@@ -140,7 +141,7 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Benchmark
               -> Criterion ()
 runAndAnalyse p bs' = do
-  mbRawFile <- getConfigItem rawDataFile
+  mbRawFile <- asks rawDataFile
   (rawFile, handle) <- liftIO $
     case mbRawFile of
       Nothing -> do
@@ -213,7 +214,7 @@ addPrefix pfx desc = pfx ++ '/' : desc
 -- | Write summary JUnit file (if applicable)
 junit :: [Report] -> Criterion ()
 junit rs
-  = do junitOpt <- getConfigItem junitFile
+  = do junitOpt <- asks junitFile
        case junitOpt of
          Just fn -> liftIO $ writeFile fn msg
          Nothing -> return ()

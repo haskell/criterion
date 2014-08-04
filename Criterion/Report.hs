@@ -29,7 +29,8 @@ module Criterion.Report
 import Control.Exception (Exception, IOException, throwIO)
 import Control.Monad (mplus)
 import Control.Monad.IO.Class (MonadIO(liftIO))
-import Criterion.Monad (Criterion, getConfig)
+import Control.Monad.Reader (ask)
+import Criterion.Monad (Criterion)
 import Criterion.Types
 import Data.Aeson.Encode (encodeToTextBuilder)
 import Data.Aeson.Types (toJSON)
@@ -75,7 +76,7 @@ templateDir = unsafePerformIO $ getDataFileName "templates"
 -- configured to do so.
 report :: [Report] -> Criterion ()
 report reports = do
-  Config{..} <- getConfig
+  Config{..} <- ask
   forM_ reportFile $ \name -> liftIO $ do
     tpl <- loadTemplate [".",templateDir] template
     TL.writeFile name =<< formatReport reports tpl
