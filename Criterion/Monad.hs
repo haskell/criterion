@@ -25,5 +25,6 @@ newtype Criterion a = Criterion {
       runCriterion :: ReaderT Config IO a
     } deriving (Functor, Applicative, Monad, MonadReader Config, MonadIO)
 
+-- | Run a 'Criterion' action with the given 'Config'.
 withConfig :: Config -> Criterion a -> IO a
 withConfig = flip (runReaderT . runCriterion)
