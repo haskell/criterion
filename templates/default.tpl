@@ -3,16 +3,11 @@
  <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>criterion report</title>
-    <!--[if lte IE 8]>
-      <script language="javascript" type="text/javascript">
-        {{#include}}js/excanvas-r3.min.js{{/include}}
-      </script>
-    <![endif]-->
     <script language="javascript" type="text/javascript">
-      {{#include}}js/jquery-1.6.4.min.js{{/include}}
+      {{#include}}js/jquery-2.1.1.min.js{{/include}}
     </script>
     <script language="javascript" type="text/javascript">
-      {{#include}}js/jquery.flot-0.7.min.js{{/include}}
+      {{#include}}js/jquery.flot-0.8.3.min.js{{/include}}
     </script>
     <script language="javascript" type="text/javascript">
       {{#include}}js/jquery.criterion.js{{/include}}

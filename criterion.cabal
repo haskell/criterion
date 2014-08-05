@@ -16,17 +16,15 @@ extra-source-files:
   examples/*.cabal
   examples/*.hs
   examples/*.html
-  js-src/excanvas_r3.zip
-  js-src/flot-0.7.zip
-  js-src/jquery-1.6.4.js
+  js-src/flot-0.8.3.zip
+  js-src/jquery-2.1.1.js
 
 data-files:
   templates/*.css
   templates/*.tpl
-  templates/js/excanvas-r3.min.js
-  templates/js/jquery-1.6.4.min.js
+  templates/js/jquery-2.1.1.min.js
   templates/js/jquery.criterion.js
-  templates/js/jquery.flot-0.7.min.js
+  templates/js/jquery.flot-0.8.3.min.js
 
 description:
   This library provides a powerful but simple way to measure software
