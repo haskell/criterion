@@ -22,7 +22,7 @@ html, body {
   color: white;
   font-size: larger;
   font-weight: 300;
-} 
+}
 
 body:before {
   /* Opera fix */
@@ -78,7 +78,7 @@ th.cibound {
   opacity: 0.4;
 }
 
-.citime {
+.confinterval {
   opacity: 0.5;
 }
 

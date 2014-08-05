@@ -66,23 +66,27 @@
   <tbody>
    <tr>
     <td>OLS regression</td>
-    <td></td><td><span class="olstime{{number}}">xxx</span></td><td></td>
+    <td><span class="confinterval olstimelb{{number}}">xxx</span></td>
+    <td><span class="olstimept{{number}}">xxx</span></td>
+    <td><span class="confinterval olstimeub{{number}}">xxx</span></td>
    </tr>
    <tr>
     <td>R&#xb2; goodness-of-fit</td>
-    <td></td><td><span class="olsr2{{number}}">xxx</span></td><td></td>
+    <td><span class="confinterval olsr2lb{{number}}">xxx</span></td>
+    <td><span class="olsr2pt{{number}}">xxx</span></td>
+    <td><span class="confinterval olsr2ub{{number}}">xxx</span></td>
    </tr>
    <tr>
     <td>Mean execution time</td>
-    <td><span class="citime">{{anMean.estLowerBound}}</span></td>
+    <td><span class="confinterval citime">{{anMean.estLowerBound}}</span></td>
     <td><span class="time">{{anMean.estPoint}}</span></td>
-    <td><span class="citime">{{anMean.estUpperBound}}</span></td>
+    <td><span class="confinterval citime">{{anMean.estUpperBound}}</span></td>
    </tr>
    <tr>
     <td>Standard deviation</td>
-    <td><span class="citime">{{anStdDev.estLowerBound}}</span></td>
+    <td><span class="confinterval citime">{{anStdDev.estLowerBound}}</span></td>
     <td><span class="time">{{anStdDev.estPoint}}</span></td>
-    <td><span class="citime">{{anStdDev.estUpperBound}}</span></td>
+    <td><span class="confinterval citime">{{anStdDev.estUpperBound}}</span></td>
    </tr>
   </tbody>
  </table>
@@ -174,11 +178,23 @@ $(function () {
     var rgrs = rpt.reportAnalysis.anRegress[0];
     var scale = units[0];
     var olsTime = rgrs.regCoeffs.iters;
-    $(".olstime" + number).text(function() {
-        return $.renderTime(olsTime);
+    $(".olstimept" + number).text(function() {
+        return $.renderTime(olsTime.estPoint);
       });
-    $(".olsr2" + number).text(function() {
-        return rgrs.regRSquare.toFixed(4);
+    $(".olstimelb" + number).text(function() {
+        return $.renderTime(olsTime.estLowerBound);
+      });
+    $(".olstimeub" + number).text(function() {
+        return $.renderTime(olsTime.estUpperBound);
+      });
+    $(".olsr2pt" + number).text(function() {
+        return rgrs.regRSquare.estPoint.toFixed(3);
+      });
+    $(".olsr2lb" + number).text(function() {
+        return rgrs.regRSquare.estLowerBound.toFixed(3);
+      });
+    $(".olsr2ub" + number).text(function() {
+        return rgrs.regRSquare.estUpperBound.toFixed(3);
       });
     mean *= scale;
     kdetimes = $.scaleBy(scale, kdetimes);
@@ -201,7 +217,7 @@ $(function () {
                  function(secs) { return $.renderTime(secs / scale); });
     var timepairs = new Array(times.length);
     var lastiter = iters[iters.length-1];
-    var olspairs = [[0,0], [lastiter, lastiter * scale * olsTime]];
+    var olspairs = [[0,0], [lastiter, lastiter * scale * olsTime.estPoint]];
     for (var i = 0; i < times.length; i++)
       timepairs[i] = [iters[i],times[i]*scale];
     iterFormatter = function() {
