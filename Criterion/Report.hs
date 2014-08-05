@@ -21,7 +21,7 @@ module Criterion.Report
     , TemplateException(..)
     , loadTemplate
     , includeFile
-    , templateDir
+    , getTemplateDir
     , vector
     , vector2
     ) where
@@ -41,7 +41,6 @@ import Paths_criterion (getDataFileName)
 import Statistics.Function (minMax)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>), (<.>), isPathSeparator)
-import System.IO.Unsafe (unsafePerformIO)
 import Text.Hastache (MuType(..))
 import Text.Hastache.Context (mkGenericContext, mkStrContext, mkStrContextM)
 import qualified Control.Exception as E
@@ -66,11 +65,10 @@ tidyTails KDE{..} = KDE { kdeType   = kdeType
         back     = omitTiny . G.reverse $ kdePDF
         winSize  = G.length kdePDF - front - back
 
--- | The path to the template and other files used for generating
--- reports.
-templateDir :: FilePath
-templateDir = unsafePerformIO $ getDataFileName "templates"
-{-# NOINLINE templateDir #-}
+-- | Return the path to the template and other files used for
+-- generating reports.
+getTemplateDir :: IO FilePath
+getTemplateDir = getDataFileName "templates"
 
 -- | Write out a series of 'Report' values to a single file, if
 -- configured to do so.
@@ -78,7 +76,8 @@ report :: [Report] -> Criterion ()
 report reports = do
   Config{..} <- ask
   forM_ reportFile $ \name -> liftIO $ do
-    tpl <- loadTemplate [".",templateDir] template
+    td <- getTemplateDir
+    tpl <- loadTemplate [td,"."] template
     TL.writeFile name =<< formatReport reports tpl
 
 -- | Format a series of 'Report' values using the given Hastache
@@ -87,10 +86,10 @@ formatReport :: [Report]
              -> T.Text    -- ^ Hastache template.
              -> IO TL.Text
 formatReport reports template = do
-  templates <- getDataFileName "templates"
+  templates <- getTemplateDir
   let context "report"  = return $ MuList $ map inner reports
       context "json"    = return $ MuVariable (encode reports)
-      context "include" = return $ MuLambdaM $ includeFile [templateDir]
+      context "include" = return $ MuLambdaM $ includeFile [templates]
       context _         = return $ MuNothing
       encode v = TL.toLazyText . encodeToTextBuilder . toJSON $ v
       inner r@Report{..} = mkStrContextM $ \nym ->
