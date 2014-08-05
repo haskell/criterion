@@ -48,7 +48,8 @@ import Control.Monad (unless)
 import Control.Monad.Trans (liftIO)
 import Criterion.IO.Printf (printError, writeCsv)
 import Criterion.Internal (runAndAnalyse, runNotAnalyse, addPrefix)
-import Criterion.Main.Options (MatchType(..), Mode(..), defaultConfig, describe)
+import Criterion.Main.Options (MatchType(..), Mode(..), defaultConfig, describe,
+                               version)
 import Criterion.Measurement (initializeTime)
 import Criterion.Monad (withConfig)
 import Criterion.Types
@@ -135,6 +136,7 @@ defaultMainWith defCfg bs = do
   let bsgroup = BenchGroup "" bs
   case wat of
     List -> mapM_ putStrLn . sort . concatMap benchNames $ bs
+    Version -> putStrLn version
     OnlyRun iters matchType benches -> do
       shouldRun <- selectBenches matchType benches bsgroup
       withConfig defaultConfig $

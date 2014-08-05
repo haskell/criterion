@@ -18,6 +18,7 @@ module Criterion.Main.Options
     , defaultConfig
     , parseWith
     , describe
+    , version
     ) where
 
 import Control.Monad (when)
@@ -29,12 +30,14 @@ import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.List (isPrefixOf)
 import Data.Monoid (mempty)
+import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Options.Applicative
 import Options.Applicative.Help (Chunk(..), tabulate)
 import Options.Applicative.Help.Pretty ((.$.))
 import Options.Applicative.Types
 import Text.PrettyPrint.ANSI.Leijen (Doc, text)
+import qualified Paths_criterion as Pkg
 import qualified Data.Map as M
 
 -- | How to match a benchmark name.
@@ -49,6 +52,8 @@ data MatchType = Prefix
 -- | Execution mode for a benchmark program.
 data Mode = List
             -- ^ List all benchmarks.
+          | Version
+            -- ^ Print the version.
           | OnlyRun Int64 MatchType [String]
             -- ^ Run the given benchmarks, without collecting or
             -- analysing performance numbers.
@@ -80,7 +85,8 @@ parseWith :: Config
 parseWith cfg =
     (matchNames (Run <$> config cfg)) <|>
     onlyRun <|>
-    (List <$ switch (long "list" <> short 'l' <> help "list benchmarks"))
+    (List <$ switch (long "list" <> short 'l' <> help "list benchmarks")) <|>
+    (Version <$ switch (long "version" <> help "show version info"))
   where
     onlyRun = matchNames $
       OnlyRun <$> option (long "only-run" <> short 'n' <> metavar "ITERS" <>
@@ -161,7 +167,12 @@ regressParams m = do
 -- | Flesh out a command line parser.
 describe :: Config -> ParserInfo Mode
 describe cfg = info (helper <*> parseWith cfg) $
-    fullDesc <> footerDoc (unChunk regressionHelp)
+    header ("Microbenchmark suite - " <> version) <>
+    fullDesc <>
+    footerDoc (unChunk regressionHelp)
+
+version :: String
+version = "built with criterion " <> showVersion Pkg.version
 
 -- We sort not by name, but by likely frequency of use.
 regressionHelp :: Chunk Doc
