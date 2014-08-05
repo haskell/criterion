@@ -18,7 +18,7 @@ module Criterion.Main.Options
     , defaultConfig
     , parseWith
     , describe
-    , version
+    , versionInfo
     ) where
 
 import Control.Monad (when)
@@ -36,8 +36,8 @@ import Options.Applicative
 import Options.Applicative.Help (Chunk(..), tabulate)
 import Options.Applicative.Help.Pretty ((.$.))
 import Options.Applicative.Types
+import Paths_criterion (version)
 import Text.PrettyPrint.ANSI.Leijen (Doc, text)
-import qualified Paths_criterion as Pkg
 import qualified Data.Map as M
 
 -- | How to match a benchmark name.
@@ -77,7 +77,7 @@ defaultConfig = Config {
     , template     = "default"
     }
 
--- ^ Parse a command line.
+-- | Parse a command line.
 parseWith :: Config
              -- ^ Default configuration to use if options are not
              -- explicitly specified.
@@ -167,12 +167,14 @@ regressParams m = do
 -- | Flesh out a command line parser.
 describe :: Config -> ParserInfo Mode
 describe cfg = info (helper <*> parseWith cfg) $
-    header ("Microbenchmark suite - " <> version) <>
+    header ("Microbenchmark suite - " <> versionInfo) <>
     fullDesc <>
     footerDoc (unChunk regressionHelp)
 
-version :: String
-version = "built with criterion " <> showVersion Pkg.version
+-- | A string describing the version of this benchmark (really, the
+-- version of criterion that was used to build it).
+versionInfo :: String
+versionInfo = "built with criterion " <> showVersion version
 
 -- We sort not by name, but by likely frequency of use.
 regressionHelp :: Chunk Doc
