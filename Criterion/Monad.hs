@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
 -- |
 -- Module      : Criterion.Monad
 -- Copyright   : (c) 2009 Neil Brown
@@ -16,15 +16,23 @@ module Criterion.Monad
     ) where
 
 import Control.Applicative (Applicative)
-import Control.Monad.Reader (MonadReader, ReaderT, runReaderT)
+import Control.Monad.Reader (MonadReader(..), ReaderT, runReaderT)
 import Control.Monad.Trans (MonadIO)
 import Criterion.Types (Config)
 
+data Crit = Crit {
+    config :: {-# UNPACK #-} !Config
+  }
+
 -- | The monad in which most criterion code executes.
 newtype Criterion a = Criterion {
-      runCriterion :: ReaderT Config IO a
-    } deriving (Functor, Applicative, Monad, MonadReader Config, MonadIO)
+      runCriterion :: ReaderT Crit IO a
+    } deriving (Functor, Applicative, Monad, MonadIO)
+
+instance MonadReader Config Criterion where
+    ask     = config `fmap` Criterion ask
+    local f = Criterion . local (Crit . f . config) . runCriterion
 
 -- | Run a 'Criterion' action with the given 'Config'.
 withConfig :: Config -> Criterion a -> IO a
-withConfig = flip (runReaderT . runCriterion)
+withConfig cfg (Criterion act) = runReaderT act (Crit cfg)
