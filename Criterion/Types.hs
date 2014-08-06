@@ -220,6 +220,9 @@ measureKeys = map fst measureAccessors_
 measureAccessors :: Map String (Measured -> Maybe Double, String)
 measureAccessors = fromList measureAccessors_
 
+-- | Normalise every measurement as if 'measIters' was 1.
+--
+-- ('measIters' itself is left unaffected.)
 rescale :: Measured -> Measured
 rescale m@Measured{..} = m {
       measTime               = d measTime
