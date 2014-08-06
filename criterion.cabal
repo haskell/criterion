@@ -98,6 +98,7 @@ library
     ghc-options: -fwarn-tabs
 
 executable criterion
+  buildable:      False
   hs-source-dirs: app
   main-is:        App.hs
 
