@@ -35,7 +35,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Either
 import Criterion.IO.Printf (note)
 import Criterion.Measurement (secs)
-import Criterion.Monad (Criterion)
+import Criterion.Monad (Criterion, getGen)
 import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
@@ -47,7 +47,7 @@ import Statistics.Resampling (resample)
 import Statistics.Sample (mean)
 import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Estimator(..), Sample)
-import System.Random.MWC (GenIO, createSystemRandom)
+import System.Random.MWC (GenIO)
 import qualified Data.List as List
 import qualified Data.Map as Map
 import qualified Data.Vector as V
@@ -140,7 +140,7 @@ analyseSample i name meas = do
   let ests  = [Mean,StdDev]
       stime = measure (measTime . rescale) meas
       n     = G.length meas
-  gen <- liftIO createSystemRandom
+  gen <- lift getGen
   rs <- mapM (\(ps,r) -> regress gen ps r meas) $
         ((["iters"],"time"):regressions)
   resamps <- liftIO $ resample gen ests resamples stime
