@@ -24,4 +24,4 @@ pipes, conduit :: (Monad m) => Int -> m ()
 pipes n = runEffect $ for (each [1..n] >-> P.map (+1) >-> P.filter even) discard
 conduit n = C.sourceList [1..n] $= C.map (+1) $= C.filter even $$ C.sinkNull
 
-main = criterion (10^5)
+main = criterion 10000

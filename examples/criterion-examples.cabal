@@ -25,9 +25,9 @@ executable conduit-vs-pipes
   ghc-options: -Wall -rtsopts
   build-depends:
     base == 4.*,
-    conduit == 1.0.*,
+    conduit >= 1.1,
     criterion,
-    pipes == 4.1.*,
+    pipes >= 4.1,
     transformers
 
 -- Cannot uncomment due to https://github.com/haskell/cabal/issues/1725
