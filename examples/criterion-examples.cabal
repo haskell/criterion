@@ -30,6 +30,14 @@ executable conduit-vs-pipes
     pipes >= 4.1,
     transformers
 
+executable overhead
+  main-is: Overhead.hs
+
+  ghc-options: -Wall -rtsopts
+  build-depends:
+    base == 4.*,
+    criterion
+
 -- Cannot uncomment due to https://github.com/haskell/cabal/issues/1725
 --
 -- executable judy
