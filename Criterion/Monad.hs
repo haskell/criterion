@@ -1,4 +1,3 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
 -- |
 -- Module      : Criterion.Monad
 -- Copyright   : (c) 2009 Neil Brown
@@ -16,33 +15,19 @@ module Criterion.Monad
     , getGen
     ) where
 
-import Control.Applicative (Applicative)
-import Control.Monad.Reader (MonadReader(..), ReaderT, asks, runReaderT)
-import Control.Monad.Trans (MonadIO, liftIO)
+import Control.Monad.Reader (asks, runReaderT)
+import Control.Monad.Trans (liftIO)
+import Criterion.Monad.Internal (Criterion(..), Crit(..))
 import Criterion.Types (Config)
-import Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import Data.IORef (newIORef, readIORef, writeIORef)
 import System.Random.MWC (GenIO, createSystemRandom)
-
-data Crit = Crit {
-    config :: {-# UNPACK #-} !Config
-  , gen    :: {-# UNPACK #-} !(IORef (Maybe GenIO))
-  }
-
--- | The monad in which most criterion code executes.
-newtype Criterion a = Criterion {
-      runCriterion :: ReaderT Crit IO a
-    } deriving (Functor, Applicative, Monad, MonadIO)
-
-instance MonadReader Config Criterion where
-    ask     = config `fmap` Criterion ask
-    local f = Criterion . local fconfig . runCriterion
-      where fconfig c = c { config = f (config c) }
 
 -- | Run a 'Criterion' action with the given 'Config'.
 withConfig :: Config -> Criterion a -> IO a
 withConfig cfg (Criterion act) = do
   g <- newIORef Nothing
-  runReaderT act (Crit cfg g)
+  o <- newIORef Nothing
+  runReaderT act (Crit cfg g o)
 
 -- | Return a random number generator, creating one if necessary.
 --
