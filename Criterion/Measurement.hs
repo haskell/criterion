@@ -20,16 +20,20 @@ module Criterion.Measurement
     , getGCStats
     , secs
     , measure
+    , runBenchmark
     , measured
     , applyGCStats
     ) where
 
 import Criterion.Types (Benchmarkable(..), Measured(..))
 import Data.Int (Int64)
+import Data.List (unfoldr)
 import Data.Word (Word64)
 import GHC.Stats (GCStats(..))
+import System.Mem (performGC)
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
+import qualified Data.Vector as V
 import qualified GHC.Stats as Stats
 
 -- | Try to get GC statistics, bearing in mind that the GHC runtime
@@ -62,6 +66,30 @@ measure (Benchmarkable run) iters = do
            }
   return (m, endTime)
 {-# INLINE measure #-}
+
+-- | Run a single benchmark, and return measurements collected while
+-- executing it.
+runBenchmark :: Benchmarkable -> Double -> IO (V.Vector Measured)
+runBenchmark bm@(Benchmarkable run) timeLimit = do
+  run 1
+  start <- performGC >> getTime
+  let loop [] _ = error "unpossible!"
+      loop (iters:niters) acc = do
+        (m, endTime) <- measure bm iters
+        if endTime - start >= timeLimit
+          then return $! V.reverse (V.fromList acc)
+          else loop niters (m:acc)
+  loop (squish (unfoldr series 1)) []
+
+-- Our series starts its growth very slowly when we begin at 1, so we
+-- eliminate repeated values.
+squish :: (Eq a) => [a] -> [a]
+squish ys = foldr go [] ys
+  where go x xs = x : dropWhile (==x) xs
+
+series :: Double -> Maybe (Int64, Double)
+series k = Just (truncate l, l)
+  where l = k * 1.05
 
 -- | An empty structure.
 measured :: Measured

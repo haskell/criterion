@@ -12,8 +12,7 @@
 
 module Criterion.Internal
     (
-      runBenchmark
-    , runAndAnalyse
+      runAndAnalyse
     , runAndAnalyseOne
     , runNotAnalyse
     , addPrefix
@@ -27,55 +26,26 @@ import Control.Monad.Trans (liftIO)
 import Control.Monad.Trans.Either
 import Data.Binary (encode)
 import Data.Int (Int64)
-import Data.List (unfoldr)
 import qualified Data.ByteString.Lazy as L
 import Criterion.Analysis (analyseSample, noteOutliers)
 import Criterion.IO (header, hGetReports)
 import Criterion.IO.Printf (note, printError, prolix, writeCsv)
-import Criterion.Measurement (getTime, measure, secs)
+import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
-import qualified Data.Vector as V
-import qualified Data.Vector.Generic as G
 import qualified Data.Map as Map
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
                   openBinaryTempFile)
-import System.Mem (performGC)
 import Text.Printf (printf)
-
--- Our series starts its growth very slowly when we begin at 1, so we
--- eliminate repeated values.
-squish :: (Eq a) => [a] -> [a]
-squish ys = foldr go [] ys
-  where go x xs = x : dropWhile (==x) xs
-
-series :: Double -> Maybe (Int64, Double)
-series k = Just (truncate l, l)
-  where l = k * 1.05
-
--- | Run a single benchmark, and return measurements collected while
--- executing it.
-runBenchmark :: Benchmarkable -> Criterion (V.Vector Measured)
-runBenchmark bm@(Benchmarkable run) = do
-  liftIO $ run 1
-  Config{..} <- ask
-  start <- liftIO $ performGC >> getTime
-  let loop [] _ = error "unpossible!"
-      loop (iters:niters) acc = do
-        (m, endTime) <- liftIO $ measure bm iters
-        if endTime - start >= timeLimit
-          then return $! G.reverse (G.fromList acc)
-          else loop niters (m:acc)
-  liftIO $ loop (squish (unfoldr series 1)) []
 
 -- | Run a single benchmark and analyse its performance.
 runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion Report
 runAndAnalyseOne i desc bm = do
-  meas <- runBenchmark bm
   Config{..} <- ask
+  meas <- liftIO $ runBenchmark bm timeLimit
   _ <- prolix "analysing with %d resamples\n" resamples
   erp <- runEitherT $ analyseSample i desc meas
   case erp of
