@@ -32,10 +32,10 @@ import qualified Data.ByteString.Lazy as L
 import Criterion.Analysis (analyseSample, noteOutliers)
 import Criterion.IO (header, hGetReports)
 import Criterion.IO.Printf (note, printError, prolix, writeCsv)
-import Criterion.Measurement
+import Criterion.Measurement (getTime, measure, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
-import Criterion.Types
+import Criterion.Types hiding (measure)
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import qualified Data.Map as Map
@@ -59,28 +59,13 @@ series k = Just (truncate l, l)
 -- | Run a single benchmark, and return measurements collected while
 -- executing it.
 runBenchmark :: Benchmarkable -> Criterion (V.Vector Measured)
-runBenchmark (Benchmarkable run) = do
+runBenchmark bm@(Benchmarkable run) = do
   liftIO $ run 1
   Config{..} <- ask
   start <- liftIO $ performGC >> getTime
   let loop [] _ = error "unpossible!"
       loop (iters:niters) acc = do
-        when forceGC $ performGC
-        startStats <- getGCStats
-        startTime <- getTime
-        startCpuTime <- getCPUTime
-        startCycles <- getCycles
-        run iters
-        endTime <- getTime
-        endCpuTime <- getCPUTime
-        endCycles <- getCycles
-        endStats <- getGCStats
-        let m = applyGCStats endStats startStats $ measured {
-                  measTime   = max 0 (endTime - startTime)
-                , measCpuTime= max 0 (endCpuTime - startCpuTime)
-                , measCycles = max 0 (fromIntegral (endCycles - startCycles))
-                , measIters  = iters
-                }
+        (m, endTime) <- liftIO $ measure bm iters
         if endTime - start >= timeLimit
           then return $! G.reverse (G.fromList acc)
           else loop niters (m:acc)

@@ -13,7 +13,8 @@ main :: IO ()
 main = do
   statsEnabled <- getGCStatsEnabled
   defaultMain $ [
-      bench "getTime" $      whnfIO M.getTime
+      bench "measure" $      whnfIO (M.measure (whnfIO $ return ()) 1)
+    , bench "getTime" $      whnfIO M.getTime
     , bench "getCPUTime" $   whnfIO M.getCPUTime
     , bench "getCycles" $    whnfIO M.getCycles
     , bench "M.getGCStats" $ whnfIO M.getGCStats

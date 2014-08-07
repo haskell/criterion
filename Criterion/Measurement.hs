@@ -1,4 +1,4 @@
-{-# LANGUAGE ForeignFunctionInterface, ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns, ForeignFunctionInterface, ScopedTypeVariables #-}
 
 -- |
 -- Module      : Criterion.Measurement
@@ -19,11 +19,13 @@ module Criterion.Measurement
     , getCycles
     , getGCStats
     , secs
+    , measure
     , measured
     , applyGCStats
     ) where
 
-import Criterion.Types (Measured(..))
+import Criterion.Types (Benchmarkable(..), Measured(..))
+import Data.Int (Int64)
 import Data.Word (Word64)
 import GHC.Stats (GCStats(..))
 import Text.Printf (printf)
@@ -37,6 +39,29 @@ getGCStats :: IO (Maybe GCStats)
 getGCStats =
   (Just `fmap` Stats.getGCStats) `Exc.catch` \(_::Exc.SomeException) ->
   return Nothing
+
+-- | Measure the execution of a benchmark a given number of times.
+measure :: Benchmarkable        -- ^ Operation to benchmark.
+        -> Int64                -- ^ Number of iterations.
+        -> IO (Measured, Double)
+measure (Benchmarkable run) iters = do
+  startStats <- getGCStats
+  startTime <- getTime
+  startCpuTime <- getCPUTime
+  startCycles <- getCycles
+  run iters
+  endTime <- getTime
+  endCpuTime <- getCPUTime
+  endCycles <- getCycles
+  endStats <- getGCStats
+  let !m = applyGCStats endStats startStats $ measured {
+             measTime    = max 0 (endTime - startTime)
+           , measCpuTime = max 0 (endCpuTime - startCpuTime)
+           , measCycles  = max 0 (fromIntegral (endCycles - startCycles))
+           , measIters   = iters
+           }
+  return (m, endTime)
+{-# INLINE measure #-}
 
 -- | An empty structure.
 measured :: Measured
