@@ -20,14 +20,14 @@ module Criterion.Monad.Internal
 import Control.Applicative (Applicative)
 import Control.Monad.Reader (MonadReader(..), ReaderT)
 import Control.Monad.Trans (MonadIO)
-import Criterion.Types (Config, Measured)
+import Criterion.Types (Config)
 import Data.IORef (IORef)
 import System.Random.MWC (GenIO)
 
 data Crit = Crit {
     config   :: !Config
   , gen      :: !(IORef (Maybe GenIO))
-  , overhead :: !(IORef (Maybe Measured))
+  , overhead :: !(IORef (Maybe Double))
   }
 
 -- | The monad in which most criterion code executes.

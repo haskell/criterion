@@ -19,7 +19,7 @@ module Criterion.Monad
 import Control.Monad.Reader (asks, runReaderT)
 import Control.Monad.Trans (liftIO)
 import Control.Monad (when)
-import Criterion.Measurement (measure, runBenchmark)
+import Criterion.Measurement (measure, runBenchmark, secs)
 import Criterion.Monad.Internal (Criterion(..), Crit(..))
 import Criterion.Types hiding (measure)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
@@ -42,34 +42,17 @@ getGen :: Criterion GenIO
 getGen = memoise gen createSystemRandom
 
 -- | Return an estimate of the measurement overhead.
-getOverhead :: Criterion Measured
+getOverhead :: Criterion Double
 getOverhead = do
   verbose <- asks ((> Quiet) . verbosity)
   memoise overhead $ do
-    when verbose . liftIO $ putStrLn "estimating measurement overhead"
     meas <- runBenchmark (whnfIO $ measure (whnfIO $ return ()) 1) 1
     let metric get = G.convert . G.map get $ meas
-        iters = metric (fromIntegral . measIters)
-        regress getter = (/2) . G.head . fst $ olsRegress [metric getter] iters
-        double get = case fromDouble . get . G.head $ meas of
-                       Nothing -> toDouble Nothing
-                       Just _  -> regress get
-        int get = case fromInt . get . G.head $ meas of
-                       Nothing -> toInt Nothing
-                       Just _  -> round $ regress (fromIntegral . get)
-    return Measured {
-        measTime               = regress measTime
-      , measCpuTime            = regress measCpuTime
-      , measCycles             = round $ regress (fromIntegral . measCycles)
-      , measIters              = 1
-      , measAllocated          = int measAllocated
-      , measNumGcs             = int measNumGcs
-      , measBytesCopied        = int measBytesCopied
-      , measMutatorWallSeconds = double measMutatorWallSeconds
-      , measMutatorCpuSeconds  = double measMutatorCpuSeconds
-      , measGcWallSeconds      = double measGcWallSeconds
-      , measGcCpuSeconds       = double measGcCpuSeconds
-      }
+    let o = G.head . fst $
+            olsRegress [metric (fromIntegral . measIters)] (metric measTime)
+    when verbose . liftIO $
+      putStrLn $ "measurement overhead " ++ secs o
+    return o
 
 -- | Memoise the result of an 'IO' action.
 --

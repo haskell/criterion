@@ -35,7 +35,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Either
 import Criterion.IO.Printf (note)
 import Criterion.Measurement (secs)
-import Criterion.Monad (Criterion, getGen)
+import Criterion.Monad (Criterion, getGen, getOverhead)
 import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
@@ -137,8 +137,10 @@ analyseSample :: Int            -- ^ Experiment number.
               -> EitherT String Criterion Report
 analyseSample i name meas = do
   Config{..} <- ask
+  overhead <- lift getOverhead
   let ests  = [Mean,StdDev]
-      stime = measure (measTime . rescale) meas
+      stime = G.filter (>0) . measure (measTime . rescale . fixTime) $ meas
+      fixTime m = m { measTime = measTime m - overhead }
       n     = G.length meas
   gen <- lift getGen
   rs <- mapM (\(ps,r) -> regress gen ps r meas) $
@@ -148,6 +150,7 @@ analyseSample i name meas = do
       ov = outlierVariance estMean estStdDev (fromIntegral n)
       an = SampleAnalysis {
                anRegress    = rs
+             , anOverhead   = overhead
              , anMean       = estMean
              , anStdDev     = estStdDev
              , anOutlierVar = ov

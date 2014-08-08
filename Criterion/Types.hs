@@ -521,10 +521,14 @@ instance Binary OutlierVariance where
 instance NFData OutlierVariance where
     rnf OutlierVariance{..} = rnf ovEffect `seq` rnf ovDesc `seq` rnf ovFraction
 
+-- | Results of a linear regression.
 data Regression = Regression {
     regResponder  :: String
+    -- ^ Name of the responding variable.
   , regCoeffs     :: Map String B.Estimate
+    -- ^ Map from name to value of predictor coefficients.
   , regRSquare    :: B.Estimate
+    -- ^ R&#0178; goodness-of-fit estimate.
   } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance FromJSON Regression
@@ -541,23 +545,33 @@ instance NFData Regression where
 -- | Result of a bootstrap analysis of a non-parametric sample.
 data SampleAnalysis = SampleAnalysis {
       anRegress    :: [Regression]
+      -- ^ Estimates calculated via linear regression.
+    , anOverhead   :: Double
+      -- ^ Estimated measurement overhead, in seconds.  Estimation is
+      -- performed via linear regression.
     , anMean       :: B.Estimate
+      -- ^ Estimated mean.
     , anStdDev     :: B.Estimate
+      -- ^ Estimated standard deviation.
     , anOutlierVar :: OutlierVariance
+      -- ^ Description of the effects of outliers on the estimated
+      -- variance.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance FromJSON SampleAnalysis
 instance ToJSON SampleAnalysis
 
 instance Binary SampleAnalysis where
-    put SampleAnalysis{..} =
-      put anRegress >> put anMean >> put anStdDev >> put anOutlierVar
-    get = SampleAnalysis <$> get <*> get <*> get <*> get
+    put SampleAnalysis{..} = do
+      put anRegress; put anOverhead; put anMean; put anStdDev; put anOutlierVar
+    get = SampleAnalysis <$> get <*> get <*> get <*> get <*> get
 
 instance NFData SampleAnalysis where
     rnf SampleAnalysis{..} =
-        rnf anRegress `seq` rnf anMean `seq` rnf anStdDev `seq` rnf anOutlierVar
+        rnf anRegress `seq` rnf anOverhead `seq` rnf anMean `seq`
+        rnf anStdDev `seq` rnf anOutlierVar
 
+-- | Data for a KDE chart of performance.
 data KDE = KDE {
       kdeType   :: String
     , kdeValues :: U.Vector Double
@@ -574,15 +588,24 @@ instance Binary KDE where
 instance NFData KDE where
     rnf KDE{..} = rnf kdeType `seq` rnf kdeValues `seq` rnf kdePDF
 
+-- | Report of a sample analysis.
 data Report = Report {
       reportNumber   :: Int
+      -- ^ A simple index indicating that this is the /n/th report.
     , reportName     :: String
+      -- ^ The name of this report.
     , reportKeys     :: [String]
       -- ^ See 'measureKeys'.
     , reportMeasured :: V.Vector Measured
+      -- ^ Raw measurements. These are /not/ corrected for the
+      -- estimated measurement overhead that can be found via the
+      -- 'anOverhead' field of 'reportAnalysis'.
     , reportAnalysis :: SampleAnalysis
+      -- ^ Report analysis.
     , reportOutliers :: Outliers
+      -- ^ Analysis of outliers.
     , reportKDEs     :: [KDE]
+      -- ^ Data for a KDE of times.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance FromJSON Report
