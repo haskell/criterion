@@ -13,12 +13,15 @@ Haskell easy.
 * The simple API hides a lot of automation and details that you
   shouldn't need to worry about.
 
-* Sophisticated, high-resolution analysis can measure operations
-  that run in as little as a few hundred picoseconds.
+* Sophisticated, high-resolution analysis can accurately measure
+  operations that run in as little as a few hundred picoseconds.
 
 * Output to active HTML (with Javascript charts), CSV, and JSON.
   Write your own report templates to customize exactly how your
   results are presented.
+
+* Linear regression model allows measurement of the effects of garbage
+  collection and other factors.
 
 * Measurements are cross-validated to ensure that sources of
   significant noise (usually other activity on the system) can be

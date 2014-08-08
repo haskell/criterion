@@ -416,7 +416,7 @@ env = Environment
 
 -- | Create a single benchmark.
 bench :: String                 -- ^ A name to identify the benchmark.
-      -> Benchmarkable
+      -> Benchmarkable          -- ^ An activity to be benchmarked.
       -> Benchmark
 bench = Benchmark
 
