@@ -116,6 +116,7 @@ for the given number of iterations. The line "behind" the values is a
 linear regression generated from this data.  Ideally, all measurements
 will be on (or very near) this line.
 
+
 ## Understanding the data under a chart
 
 Underneath the chart for each benchmark is a small table of
@@ -173,7 +174,7 @@ The first two rows are the results of a linear regression run on the measurement
   the accuracy of the linear model.  A value below 0.9 is outright
   worrisome.
 
-* "**Mean execution time**" and "**standard deviation**" are
+* "**Mean execution time**" and "**Standard deviation**" are
   statistics calculated (more or less) from execution time divided by
   number of iterations.
 
@@ -186,7 +187,34 @@ within between the lower and upper bounds.  When the main estimate is
 of good quality, the lower and upper bounds will be close to its
 value.
 
-# How to write a benchmark
+
+# Reading command line output
+
+Before you look at HTML reports, you'll probably start by inspecting
+the report that criterion prints in your terminal window.
+
+~~~~
+benchmarking ByteString/HashMap/random
+time                 4.046 ms   (4.020 ms .. 4.072 ms)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 4.017 ms   (4.010 ms .. 4.027 ms)
+std dev              27.12 μs   (20.45 μs .. 38.17 μs)
+~~~~
+
+The first column is a name; the second is an estimate. The third and
+fourth, in parentheses, are the 95% lower and upper bounds on the
+estimate.
+
+* `time` corresponds to the "OLS regression" field in the HTML table
+  above.
+
+* `R²` is the goodness-of-fit metric for `time`.
+
+* `mean` and `std dev` have the same meanings as "Mean execution time"
+  and "Standard deviation" in the HTML table.
+
+
+# How to write a benchmark suite
 
 A criterion benchmark suite consists of a series of
 [`Benchmark`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#t:Benchmark)
@@ -248,8 +276,9 @@ main = defaultMain [
 We use
 [`nfIO`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:nfIO)
 to specify that after we run the `IO` action, its result must be
-evaluated to **normal form**, i.e. so that all of its internal
-constructors are fully evaluated, and it contains no thunks.
+evaluated to <a name="normal-form">**normal form**</a>, i.e. so that
+all of its internal constructors are fully evaluated, and it contains
+no thunks.
 
 ~~~~ {.haskell}
 nfIO :: NFData a => IO a -> IO ()
@@ -269,8 +298,9 @@ Rules of thumb for when to use `nfIO`:
 
 In addition to `nfIO`, criterion provides a
 [`whnfIO`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:whnfIO)
-function that evaluates the result of an action only to the point that
-the outermost constructor is known (using `seq`).
+function that evaluates the result of an action only deep enough for
+the outermost constructor to be known (using `seq`).  This is known as
+<a name="weak-head-normal-form">**weak head normal form** (WHNF)</a>.
 
 ~~~~ {.haskell}
 whnfIO :: IO a -> IO ()
@@ -324,8 +354,8 @@ of this problem, where the first two benchmarks run between 40 and
 40,000 times faster than they "should".
 
 As always, if you see numbers that look wildly out of whack, you
-shouldn't rejoice that you have magic fast performance---be skeptical
-and investigate!
+shouldn't rejoice that you have magically achieved fast
+performance---be skeptical and investigate!
 
 <div class="bs-callout bs-callout-info">
 #### Defeating let-floating
@@ -340,3 +370,128 @@ You should not react by simply throwing `-fno-full-laziness` into
 every GHC-and-criterion command line, as let-floating helps with
 performance more often than it hurts with benchmarking.
 </div>
+
+
+# Benchmarking pure functions
+
+Lazy evaluation makes it tricky to benchmark pure code. If we tried to
+saturate a function with all of its arguments and evaluate it
+repeatedly, laziness would ensure that we'd only do "real work" the
+first time through our benchmarking loop.  The expression would be
+overwritten with that result, and no further work would happen on
+subsequent loops through our benchmarking harness.
+
+We can defeat laziness by benchmarking an *unsaturated* function---one
+that has been given *all but one* of its arguments.
+
+This is why the
+[`nf`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:nf)
+function accepts two arguments: the first is the almost-saturated
+function we want to benchmark, and the second is the final argument to
+give it.
+
+~~~~ {.haskell}
+nf :: NFData b => (a -> b) -> a -> Benchmarkable
+~~~~
+
+As the
+[`NFData`](http://hackage.haskell.org/package/deepseq/docs/Control-DeepSeq.html#t:NFData)
+constraint suggests, `nf` applies the argument to the function, then
+evaluates the result to <a href="#normal-form">normal form</a>.
+
+The
+[`whnf`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:whnf)
+function evaluates the result of a function only to <a
+href="#weak-head-normal-form">weak head normal form</a> (WHNF).
+
+~~~~ {.haskell}
+whnf :: (a -> b) -> a -> Benchmarkable
+~~~~
+
+If we go back to our first example, we can now fully understand what's
+going on.
+
+~~~~ {.haskell}
+main = defaultMain [
+  bgroup "fib" [ bench "1"  $ whnf fib 1
+               , bench "5"  $ whnf fib 5
+               , bench "9"  $ whnf fib 9
+               , bench "11" $ whnf fib 11
+               ]
+  ]
+~~~~
+([examples/Fibber.hs](https://github.com/bos/criterion/blob/master/examples/Fibber.hs))
+
+We can get away with using `whnf` here because we know that an
+`Integer` has only one constructor, so there's no deeper buried
+structure that we'd have to reach using `nf`.
+
+As with benchmarking `IO` actions, there's no clear-cut case for when
+to use `whfn` versus `nf`, especially when a result may be lazily
+generated.
+
+Guidelines for thinking about when to use `nf` or `whnf`:
+
+* If a result is a lazy structure (or a mix of strict and lazy, such
+  as a balanced tree with lazy leaves), how much of it would a
+  real-world caller use?  You should be trying to evaluate as much of
+  the result as a realistic consumer would.  Blindly using `nf` could
+  cause way too much unnecessary computation.
+
+* If a result is something simple like an `Int`, you're probably safe
+  using `whnf`---but then again, there should be no additional cost to
+  using `nf` in these cases.
+
+
+# Tips, tricks, and pitfalls
+
+While criterion tries hard to automate as much of the benchmarking
+process as possible, there are some things you will want to pay
+attention to.
+
+* Measurements are only as good as the environment in which they're
+  gathered.  Try to make sure your computer is quiet when measuring
+  data.
+
+* Be judicious in when you choose `nf` and `whnf`.  Always think about
+  what the result of a function is, and how much of it you want to
+  evaluate.
+
+* Simply rerunning a benchmark can lead to variations of a few percent
+  in numbers.  This variation can have many causes, including address
+  space layout randomization, recompilation between runs, cache
+  effects, CPU thermal throttling, and the phase of the moon.  Don't
+  treat your first measurement as golden!
+
+* Keep an eye out for completely bogus numbers, as in the case of
+  `-fno-full-laziness` above.
+
+
+## How to sniff out bogus results
+
+If some external factors are making your measurements noisy, criterion
+tries to make it easy to tell.  At the level of raw data, noisy
+measurements will show up as "outliers", but you shouldn't need to
+inspect the raw data directly.
+
+The easiest yellow flag to spot is the R² goodness-of-fit measure
+dropping below 0.9.  If this happens, scrutinise your data carefully.
+
+Another easy pattern to look for is severe outliers in the raw
+measurement chart when you're using `--output`.  These should be easy
+to spot: they'll be points sitting far from the linear regression line
+(usually above it).
+
+If the lower and upper bounds on an estimate aren't "tight" (close to
+the estimate), this suggests that noise might be having some kind of
+negative effect.
+
+A warning about "variance introduced by outliers" may be printed.
+This indicates the degree to which the standard deviation is inflated
+by outlying measurements, as in the following snippet (notice that the
+lower and upper bounds aren't all that tight, too).
+
+~~~~
+std dev              652.0 ps   (507.7 ps .. 942.1 ps)
+variance introduced by outliers: 91% (severely inflated)
+~~~~
