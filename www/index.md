@@ -1,6 +1,7 @@
 % criterion: a Haskell microbenchmarking library
 % Benchmarking made easy for Haskell.
   <a href="tutorial.html" class="btn btn-primary btn-lg" role="button">Tutorial</a>
+  <a href="report.html" class="btn btn-info btn-lg" role="button">Example</a>
 
 
 
@@ -26,6 +27,52 @@ Haskell easy.
 * Measurements are cross-validated to ensure that sources of
   significant noise (usually other activity on the system) can be
   identified.
+
+
+# Download
+
+Get the source code:
+
+~~~~
+cabal get criterion
+~~~~
+
+Or install from source:
+
+~~~~
+cabal update
+cabal install -j --disable-tests criterion
+~~~~
+
+Or use the bleeding edge:
+
+~~~~
+git clone https://github.com/bos/criterion
+cd criterion
+cabal install
+~~~~
+
+
+# A complete example
+
+~~~~ {.haskell}
+import Criterion.Main
+
+fib m | m < 0     = error "negative!"
+      | otherwise = go m
+  where go 0 = 0
+        go 1 = 1
+        go n = go (n-1) + go (n-2)
+
+main = defaultMain [
+  bgroup "fib" [ bench "1"  $ whnf fib 1
+               , bench "5"  $ whnf fib 5
+               , bench "11" $ whnf fib 11
+               ]
+  ]
+~~~~
+([examples/Fibber.hs](https://github.com/bos/criterion/blob/master/examples/Fibber.hs))
+
 
 <div class="jumbotron" style="margin-top: 40px;">
 <h2 style="margin-top: 20px;">Ready to jump in?</h2>
