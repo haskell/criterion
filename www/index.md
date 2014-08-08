@@ -7,6 +7,8 @@
 `criterion` is a library that makes accurate microbenchmarking in
 Haskell easy.
 
+<a href="fibber.html" target="_blank"><img src="fibber-screenshot.png"></img></a>
+
 
 # Features
 
