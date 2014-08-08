@@ -101,10 +101,12 @@ runBenchmark bm@(Benchmarkable run) timeLimit = do
         -- We try to honour the time limit, but we also have more
         -- important constraints:
         --
-        -- * Generate enough data that bootstrapping won't simply crash
+        -- We must generate enough data that bootstrapping won't
+        -- simply crash.
         --
-        -- * Enough measurements that have long spans of execution to
-        --   outweigh the (rather high) cost of measurement
+        -- We need to generate enough measurements that have long
+        -- spans of execution to outweigh the (rather high) cost of
+        -- measurement.
         if endTime - start >= timeLimit &&
            overThresh > threshold * 10 &&
            count >= (4 :: Int)
