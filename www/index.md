@@ -17,9 +17,9 @@ Haskell easy.
 * Sophisticated, high-resolution analysis can accurately measure
   operations that run in as little as a few hundred picoseconds.
 
-* Output to active HTML (with Javascript charts), CSV, and JSON.
-  Write your own report templates to customize exactly how your
-  results are presented.
+* [Output to active HTML](report.html) (with Javascript charts), CSV,
+  and JSON.  Write your own report templates to customize exactly how
+  your results are presented.
 
 * Linear regression model allows measurement of the effects of garbage
   collection and other factors.
@@ -54,6 +54,8 @@ cabal install
 
 
 # A complete example
+
+This is a complete program that defines a group of three benchmarks.
 
 ~~~~ {.haskell}
 import Criterion.Main

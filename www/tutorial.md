@@ -124,10 +124,10 @@ information that looks like this.
 
 <table>
   <thead>
-   <tr><th></th>
-   <th style="opacity:0.6;font-weight:500;" title="0.95 confidence level">lower bound</th>
-   <th style="font-weight:500">estimate</th>
-   <th style="opacity:0.6;font-weight:500;" title="0.95 confidence level">upper bound</th>
+   <tr style="font-weight:700"><th></th>
+   <th style="opacity:0.6" title="0.95 confidence level">lower bound</th>
+   <th>estimate</th>
+   <th style="opacity:0.6" title="0.95 confidence level">upper bound</th>
   </tr></thead>
   <tbody>
    <tr>
@@ -443,6 +443,140 @@ Guidelines for thinking about when to use `nf` or `whnf`:
   using `nf` in these cases.
 
 
+# Using the criterion command line
+
+By default, a criterion benchmark suite simply runs all of its
+benchmarks.  However, criterion accepts a number of arguments to
+control its behaviour.  Run your program with `--help` for a complete
+list.
+
+
+## Specifying benchmarks to run
+
+The most common thing you'll want to do is specify which benchmarks
+you want to run.  You can do this by simply enumerating each
+benchmark.
+
+~~~~ {.haskell}
+./Fibber 'fib/fib 1'
+~~~~
+
+By default, any names you specify are treated as prefixes to match, so
+you can specify an entire group of benchmarks via a name like
+`"fib/"`.  Use the `--match` option to control this behaviour.
+
+
+## Listing benchmarks
+
+If you've forgotten the names of your benchmarks, run your program
+with `--list` and it will print them all.
+
+
+## How long to spend measuring data
+
+By default, each benchmark runs for 5 seconds.
+
+You can control this using the `--time-limit` option, which specifies
+the minimum number of seconds (decimal fractions are acceptable) that
+a benchmark will spend gathering data.  The actual amount of time
+spent may be longer, if more data is needed.
+
+
+## Writing out data
+
+Criterion provides several ways to save data.
+
+The friendliest is as HTML, using `--output`.  Files written using
+`--output` are actually generated from Mustache-style templates.  The
+only other template provided by default is `json`, so if you run with
+`--template json --output mydata.json`, you'll get a big JSON dump of
+your data.
+
+You can also write out a basic CSV file using `--csv`, and a
+JUnit-compatible XML file using `--junit`.  (The contents of these
+files are likely to change in the not-too-distant future.)
+
+
+# Linear regression
+
+If you want to perform linear regressions on metrics other than
+elapsed time, use the `--regress` option.  This can be tricky to use
+if you are not familiar with linear regression, but here's a thumbnail
+sketch.
+
+The purpose of linear regression is to predict how much one variable
+(the *responder*) will change in response to a change in one or more
+others (the *predictors*).
+
+On each step through through a benchmark loop, criterion changes the number of
+iterations.  This is the most obvious choice for a predictor
+variable.  This variable is named `iters`.
+
+If we want to regress CPU time (`cpuTime`) against iterations, we can
+use `cpuTime:iters` as the argument to `--regress`.  This generates
+some additional output on the command line:
+
+~~~~
+time                 31.31 ms   (30.44 ms .. 32.22 ms)
+                     0.997 R²   (0.994 R² .. 0.999 R²)
+mean                 30.56 ms   (30.01 ms .. 30.99 ms)
+std dev              1.029 ms   (754.3 μs .. 1.503 ms)
+
+cpuTime:             0.997 R²   (0.994 R² .. 0.999 R²)
+  iters              3.129e-2   (3.039e-2 .. 3.221e-2)
+  y                  -4.698e-3  (-1.194e-2 .. 1.329e-3)
+~~~~
+
+After the block of normal data, we see a series of new rows.
+
+On the first line of the new block is an R² goodness-of-fit measure,
+so we can see how well our choice of regression fits the data.
+
+On the second line, we get the slope of the `cpuTime`/`iters` curve,
+or (stated another way) how much `cpuTime` each iteration costs.
+
+The last entry is the $y$-axis intercept.
+
+
+## Measuring garbage collector statistics
+
+By default, GHC does not collect statistics about the operation of its
+garbage collector.  If you want to measure and regress against GC
+statistics, you must explicitly enable statistics collection at
+runtime using `+RTS -T`.
+
+
+## Useful regressions
+
+<table>
+  <thead><tr style="font-weight:500">
+    <th align="left">regression</th>
+    <th align="left">`--regress`</th>
+    <th align="left">notes</th>
+  </tr></thead>
+  <tbody><tr>
+    <td>CPU cycles</td>
+	<td>`cycles:iters`</td>
+	<td></td>
+  </tr>
+  <tr>
+    <td>Bytes allocated</td>
+	<td>`allocated:iters`</td>
+	<td>`+RTS -T`</td>
+  </tr>
+  <tr>
+    <td>Number of garbage collections</td>
+	<td>`numGcs:iters`</td>
+	<td>`+RTS -T`</td>
+  </tr>
+  <tr>
+    <td>CPU frequency</td>
+	<td>`cycles:time`</td>
+	<td></td>
+  </tr></tbody>
+</table>
+
+
 # Tips, tricks, and pitfalls
 
 While criterion tries hard to automate as much of the benchmarking
@@ -465,6 +599,11 @@ attention to.
 
 * Keep an eye out for completely bogus numbers, as in the case of
   `-fno-full-laziness` above.
+
+* When you need trustworthy results from a benchmark suite, run each
+  measurement as a separate invocation of your program.  When you run
+  a number of benchmarks during a single program invocation, you will
+  sometimes see them interfere with each other.
 
 
 ## How to sniff out bogus results
