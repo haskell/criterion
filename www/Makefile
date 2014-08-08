@@ -1,7 +1,8 @@
 bootstrap := bootstrap-3.1.1-dist
 
 files := index.html tutorial.html
-deps = bootstrap-custom.css background.jpg
+deps = bootstrap-custom.css background.jpg fibber-screenshot.png fibber.html \
+	report.html
 install := $(files) $(deps)
 destdir := $(HOME)/public_html/criterion
 
