@@ -94,16 +94,25 @@ runBenchmark :: Benchmarkable
 runBenchmark bm@(Benchmarkable run) timeLimit = do
   run 1
   start <- performGC >> getTime
-  let loop [] _ _ = error "unpossible!"
-      loop (iters:niters) !prev acc = do
+  let loop [] !_ !_ _ = error "unpossible!"
+      loop (iters:niters) prev count acc = do
         (m, endTime) <- measure bm iters
         let overThresh = max 0 (measTime m - threshold) + prev
-        if endTime - start >= timeLimit && overThresh > threshold * 10
+        -- We try to honour the time limit, but we also have more
+        -- important constraints:
+        --
+        -- * Generate enough data that bootstrapping won't simply crash
+        --
+        -- * Enough measurements that have long spans of execution to
+        --   outweigh the (rather high) cost of measurement
+        if endTime - start >= timeLimit &&
+           overThresh > threshold * 10 &&
+           count >= (4 :: Int)
           then do
             let !v = V.reverse (V.fromList acc)
             return (v, endTime - start)
-          else loop niters overThresh (m:acc)
-  loop (squish (unfoldr series 1)) 0 []
+          else loop niters overThresh (count+1) (m:acc)
+  loop (squish (unfoldr series 1)) 0 0 []
 
 -- Our series starts its growth very slowly when we begin at 1, so we
 -- eliminate repeated values.
