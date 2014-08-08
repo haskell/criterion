@@ -34,7 +34,7 @@ import Control.Monad.Reader (ask)
 import Control.Monad.Trans
 import Control.Monad.Trans.Either
 import Criterion.IO.Printf (note, prolix)
-import Criterion.Measurement (secs)
+import Criterion.Measurement (secs, threshold)
 import Criterion.Monad (Criterion, getGen, getOverhead)
 import Criterion.Types
 import Data.Int (Int64)
@@ -144,7 +144,7 @@ analyseSample i name meas = do
       -- deviations.  Without this, the numbers look nonsensical when
       -- very brief actions are measured.
       stime     = measure (measTime . rescale) .
-                  G.filter ((>= 0.03) . measTime) . G.map fixTime .
+                  G.filter ((>= threshold) . measTime) . G.map fixTime .
                   G.tail $ meas
       fixTime m = m { measTime = measTime m - overhead / 2 }
       n         = G.length meas
