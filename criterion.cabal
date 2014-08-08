@@ -32,11 +32,13 @@ description:
   analysing benchmarks and a set of driver functions that makes it
   easy to build and run benchmarks, and to analyse their results.
   .
-  The fastest way to get started is to read the documentation and
-  examples in the Criterion.Main module.
+  The fastest way to get started is to read the
+  <http://www.serpentine.com/criterion/tutorial.html online tutorial>,
+  followed by the documentation and examples in the "Criterion.Main"
+  module.
   .
-  For an example of the kinds of reports that criterion generates, see
-  <http://bos.github.com/criterion/>.
+  For examples of the kinds of reports that criterion generates, see
+  <http://www.serpentine.com/criterion the home page>.
 
 library
   exposed-modules:

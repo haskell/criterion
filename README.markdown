@@ -3,11 +3,10 @@
 This package provides the Criterion module, a Haskell library for
 measuring and analysing software performance.
 
-To get started, read the documentation for the
-[Criterion.Main](http://hackage.haskell.org/packages/archive/criterion/latest/doc/html/Criterion-Main.html)
-module, and take a look at the programs in the
-[examples](https://github.com/bos/criterion/tree/master/examples)
-directory.
+To get started, read the [online
+tutorial](http://www.serpentine.com/criterion/tutorial.html), and take
+a look at the programs in the
+[examples](/bos/criterion/tree/master/examples) directory.
 
 
 # Building and installing
