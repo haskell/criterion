@@ -44,7 +44,7 @@ getGen = memoise gen createSystemRandom
 -- | Return an estimate of the measurement overhead.
 getOverhead :: Criterion Double
 getOverhead = do
-  verbose <- asks ((> Quiet) . verbosity)
+  verbose <- asks ((== Verbose) . verbosity)
   memoise overhead $ do
     meas <- runBenchmark (whnfIO $ measure (whnfIO $ return ()) 1) 1
     let metric get = G.convert . G.map get $ meas

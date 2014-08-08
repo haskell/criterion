@@ -33,7 +33,7 @@ import Control.Monad (unless, when)
 import Control.Monad.Reader (ask)
 import Control.Monad.Trans
 import Control.Monad.Trans.Either
-import Criterion.IO.Printf (note)
+import Criterion.IO.Printf (note, prolix)
 import Criterion.Measurement (secs)
 import Criterion.Monad (Criterion, getGen, getOverhead)
 import Criterion.Types
@@ -138,10 +138,19 @@ analyseSample :: Int            -- ^ Experiment number.
 analyseSample i name meas = do
   Config{..} <- ask
   overhead <- lift getOverhead
-  let ests  = [Mean,StdDev]
-      stime = G.filter (>0) . measure (measTime . rescale . fixTime) $ meas
-      fixTime m = m { measTime = measTime m - overhead }
-      n     = G.length meas
+  let ests      = [Mean,StdDev]
+      -- The use of filter here throws away very-low-quality
+      -- measurements when bootstrapping the mean and standard
+      -- deviations.  Without this, the numbers look nonsensical when
+      -- very brief actions are measured.
+      stime     = measure (measTime . rescale) .
+                  G.filter ((>= 0.03) . measTime) . G.map fixTime .
+                  G.tail $ meas
+      fixTime m = m { measTime = measTime m - overhead / 2 }
+      n         = G.length meas
+      s         = G.length stime
+  _ <- lift $ prolix "bootstrapping with %d of %d samples (%d%%)\n"
+              s n ((s * 100) `quot` n)
   gen <- lift getGen
   rs <- mapM (\(ps,r) -> regress gen ps r meas) $
         ((["iters"],"time"):regressions)
