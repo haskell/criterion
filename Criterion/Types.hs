@@ -409,8 +409,8 @@ env :: NFData env =>
     -- ^ Create the environment.  The environment will be evaluated to
     -- normal form before being passed to the benchmark.
     -> (env -> Benchmark)
-    -- ^ Receive make the newly created environment, and make it
-    -- available to the given benchmarks.
+    -- ^ Take the newly created environment and make it available to
+    -- the given benchmarks.
     -> Benchmark
 env = Environment
 
