@@ -5,10 +5,11 @@ measuring and analysing software performance.
 
 <a href="http://www.serpentine.com/criterion/fibber.html" target="_blank"><img src="http://www.serpentine.com/criterion/fibber-screenshot.png"></img></a>
 
-To get started, read the [online
-tutorial](http://www.serpentine.com/criterion/tutorial.html), and take
-a look at the programs in the
-[examples](/bos/criterion/tree/master/examples) directory.
+To get started, read the <a
+href="http://www.serpentine.com/criterion/tutorial.html"
+target="_blank">online tutorial</a>, and take a look at the programs
+in the <a href="/bos/criterion/tree/master/examples"
+target="_blank">examples directory</a>.
 
 
 # Building and installing
@@ -27,7 +28,7 @@ Master [github repository](https://github.com/bos/criterion):
 
 * `git clone https://github.com/bos/criterion.git`
 
-There's also a [Mercurial mirror](http://bitbucket.org/bos/criterion):
+There's also a [Mercurial mirror](https://bitbucket.org/bos/criterion):
 
 * `hg clone https://bitbucket.org/bos/criterion`
 
