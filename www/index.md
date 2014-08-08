@@ -1,7 +1,6 @@
 % criterion: a Haskell microbenchmarking library
 % Benchmarking made easy for Haskell.
-  <a href="tutorial.html" class="btn btn-primary btn-lg" role="button">Tutorial</a>
-  <a href="report.html" class="btn btn-info btn-lg" role="button">Example</a>
+  <a href="tutorial.html" class="btn btn-primary btn-lg" role="button">Tutorial</a> <a href="report.html" target="_blank" class="btn btn-info btn-lg" role="button">Example</a>
 
 
 
