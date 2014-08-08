@@ -10,6 +10,7 @@ install: $(files)
 	-mkdir -p $(HOME)/public_html/criterion
 	cp -a $(install) $(HOME)/public_html/criterion
 	cp -a $(bootstrap) $(HOME)/public_html/criterion
+        -chcon -R -t httpd_sys_content_t $(destdir)
 
 %.html: %.md template.html $(deps)
 	pandoc $< -o $@ --smart --template template.html \
