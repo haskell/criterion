@@ -71,21 +71,26 @@ measure (Benchmarkable run) iters = do
 -- | The amount of time a benchmark must run for in order for us to
 -- have some trust in the raw measurement.
 --
--- We set this threshold so that we can perform enough measurements to
--- later perform meaningful statistical analyses.
+-- We set this threshold so that we can generate enough data to later
+-- perform meaningful statistical analyses.
+--
+-- The threshold is 30 milliseconds. One use of 'runBenchmark' must
+-- accumulate more than 300 milliseconds of total measurements above
+-- this threshold before it will finish.
 threshold :: Double
 threshold = 0.03
 {-# INLINE threshold #-}
 
 -- | Run a single benchmark, and return measurements collected while
--- executing it.
+-- executing it, along with the amount of time the measurement process
+-- took.
 runBenchmark :: Benchmarkable
              -> Double
              -- ^ Lower bound on how long the benchmarking process
              -- should take.  In practice, this time limit may be
              -- exceeded in order to generate enough data to perform
              -- meaningful statistical analyses.
-             -> IO (V.Vector Measured)
+             -> IO (V.Vector Measured, Double)
 runBenchmark bm@(Benchmarkable run) timeLimit = do
   run 1
   start <- performGC >> getTime
@@ -94,7 +99,9 @@ runBenchmark bm@(Benchmarkable run) timeLimit = do
         (m, endTime) <- measure bm iters
         let overThresh = max 0 (measTime m - threshold) + prev
         if endTime - start >= timeLimit && overThresh > threshold * 10
-          then return $! V.reverse (V.fromList acc)
+          then do
+            let !v = V.reverse (V.fromList acc)
+            return (v, endTime - start)
           else loop niters overThresh (m:acc)
   loop (squish (unfoldr series 1)) 0 []
 

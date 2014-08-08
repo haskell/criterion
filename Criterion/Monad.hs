@@ -46,7 +46,7 @@ getOverhead :: Criterion Double
 getOverhead = do
   verbose <- asks ((== Verbose) . verbosity)
   memoise overhead $ do
-    meas <- runBenchmark (whnfIO $ measure (whnfIO $ return ()) 1) 1
+    (meas,_) <- runBenchmark (whnfIO $ measure (whnfIO $ return ()) 1) 1
     let metric get = G.convert . G.map get $ meas
     let o = G.head . fst $
             olsRegress [metric (fromIntegral . measIters)] (metric measTime)

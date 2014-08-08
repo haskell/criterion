@@ -20,7 +20,7 @@ module Criterion.Internal
 
 import Control.DeepSeq (rnf)
 import Control.Exception (evaluate)
-import Control.Monad (foldM, forM_, when)
+import Control.Monad (foldM, forM_, void, when)
 import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (liftIO)
 import Control.Monad.Trans.Either
@@ -45,7 +45,9 @@ import Text.Printf (printf)
 runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion Report
 runAndAnalyseOne i desc bm = do
   Config{..} <- ask
-  meas <- liftIO $ runBenchmark bm timeLimit
+  (meas,timeTaken) <- liftIO $ runBenchmark bm timeLimit
+  when (timeTaken > timeLimit * 1.25) .
+    void $ prolix "measurement took %s\n" (secs timeTaken)
   _ <- prolix "analysing with %d resamples\n" resamples
   erp <- runEitherT $ analyseSample i desc meas
   case erp of
