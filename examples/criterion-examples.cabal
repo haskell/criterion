@@ -54,6 +54,22 @@ executable overhead
     base == 4.*,
     criterion
 
+executable bad-read-file
+  main-is: BadReadFile.hs
+
+  ghc-options: -Wall -rtsopts
+  build-depends:
+    base == 4.*,
+    criterion
+
+executable good-read-file
+  main-is: GoodReadFile.hs
+
+  ghc-options: -Wall -rtsopts
+  build-depends:
+    base == 4.*,
+    criterion
+
 -- Cannot uncomment due to https://github.com/haskell/cabal/issues/1725
 --
 -- executable judy

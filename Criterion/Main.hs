@@ -25,7 +25,7 @@ module Criterion.Main
     -- $rnf
 
     -- * Types
-      Benchmarkable(..)
+      Benchmarkable(run)
     , Benchmark
     -- * Creating a benchmark suite
     , env

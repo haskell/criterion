@@ -13,7 +13,7 @@
 module Criterion
     (
     -- * Benchmarkable code
-      Benchmarkable(..)
+      Benchmarkable(run)
     -- * Creating a benchmark suite
     , Benchmark
     , env

@@ -12,9 +12,8 @@ cabal install -j --disable-tests criterion
 ~~~~
 
 Depending on how many prerequisites you already have installed, and
-what your Cabal configuration looks like, the build may take a few
-minutes: a few seconds for `criterion`, and the rest for its
-dependencies.
+what your Cabal configuration looks like, the build will probably take
+just a few minutes.
 
 
 # Getting started
@@ -162,9 +161,10 @@ The first two rows are the results of a linear regression run on the measurement
 * "**OLS regression**" estimates the time needed for a single
   execution of the activity being benchmarked, using an
   [ordinary least-squares regression model](https://en.wikipedia.org/wiki/Ordinary_least_squares).
-  This number should be similar to the "mean estimate" row beneath it.
-  It is usually more accurate, as it more effectively eliminates
-  measurement overhead and other constant factors.
+  This number should be similar to the "mean execution time" row a
+  couple of rows beneath.  The OLS estimate is usually more accurate
+  than the mean, as it more effectively eliminates measurement
+  overhead and other constant factors.
 
 * "**R² goodness-of-fit**" is a measure of how accurately the linear
   regression model fits the observed measurements. If the measurements
@@ -185,3 +185,150 @@ tells us that when randomly resampling the data, 95% of estimates fell
 within between the lower and upper bounds.  When the main estimate is
 of good quality, the lower and upper bounds will be close to its
 value.
+
+# How to write a benchmark
+
+A criterion benchmark suite consists of a series of
+[`Benchmark`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#t:Benchmark)
+values.
+
+~~~~ {.haskell}
+main = defaultMain [
+  bgroup "fib" [ bench "1"  $ whnf fib 1
+               , bench "5"  $ whnf fib 5
+               , bench "9"  $ whnf fib 9
+               , bench "11" $ whnf fib 11
+               ]
+  ]
+~~~~
+
+
+We group related benchmarks together using the
+[`bgroup`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:bgroup)
+function.  Its first argument is a name for the group of benchmarks.
+
+~~~~ {.haskell}
+bgroup :: String -> [Benchmark] -> Benchmark
+~~~~
+
+All the magic happens with the
+[`bench`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:bench)
+function.  The first argument to `bench` is a name that describes the
+activity we're benchmarking.
+
+~~~~ {.haskell}
+bench :: String -> Benchmarkable -> Benchmark
+bench = Benchmark
+~~~~
+
+The
+[`Benchmarkable`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#t:Benchmarkable)
+type is a container for code that can be benchmarked.
+
+By default, criterion allows two kinds of code to be benchmarked.
+
+* Any `IO` action can be benchmarked directly.
+
+* With a little trickery, we can benchmark pure functions.
+
+
+## Benchmarking an `IO` action
+
+This function shows how we can benchmark an `IO` action.
+
+~~~~ {.haskell}
+import Criterion.Main
+
+main = defaultMain [
+    bench "readFile" $ nfIO (readFile "GoodReadFile.hs")
+  ]
+~~~~
+([examples/GoodReadFile.hs](https://github.com/bos/criterion/blob/master/examples/GoodReadFile.hs))
+
+We use
+[`nfIO`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:nfIO)
+to specify that after we run the `IO` action, its result must be
+evaluated to **normal form**, i.e. so that all of its internal
+constructors are fully evaluated, and it contains no thunks.
+
+~~~~ {.haskell}
+nfIO :: NFData a => IO a -> IO ()
+~~~~
+
+Rules of thumb for when to use `nfIO`:
+
+* Any time that lazy I/O is involved, use `nfIO` to avoid resource
+  leaks.
+
+* If you're not sure how much evaluation will have been performed on
+  the result of an action, use `nfIO` to be certain that it's fully
+  evaluated.
+
+
+## `IO` and `seq`
+
+In addition to `nfIO`, criterion provides a
+[`whnfIO`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:whnfIO)
+function that evaluates the result of an action only to the point that
+the outermost constructor is known (using `seq`).
+
+~~~~ {.haskell}
+whnfIO :: IO a -> IO ()
+~~~~
+
+This function is useful if your `IO` action returns a simple value
+like an `Int`, or something more complex like a
+[`Map`](http://hackage.haskell.org/package/containers/docs/Data-Map-Lazy.html#t:Map)
+where evaluating the outermost constructor will do "enough work".
+
+
+# Be careful with lazy I/O!
+
+Experienced Haskell programmers don't use lazy I/O very often, and
+here's an example of why: if you try to run the benchmark below, it
+will probably *crash*.
+
+~~~~ {.haskell}
+import Criterion.Main
+
+main = defaultMain [
+    bench "whnfIO readFile" $ whnfIO (readFile "BadReadFile.hs")
+  ]
+~~~~
+([examples/BadReadFile.hs](https://github.com/bos/criterion/blob/master/examples/BadReadFile.hs))
+
+The reason for the crash is that `readFile` reads the contents of a
+file lazily: it can't close the file handle until whoever opened the
+file reads the whole thing.  Since `whnfIO` only evaluates the very
+first constructor after the file is opened, the benchmarking loop
+causes a large number of open files to accumulate, until the
+inevitable occurs:
+
+~~~~
+$ ./BadReadFile
+benchmarking whnfIO readFile
+openFile: resource exhausted (Too many open files)
+~~~~
+
+
+# Beware "pretend" I/O!
+
+GHC is an aggressive compiler.  If you have an `IO` action that
+doesn't really interact with the outside world, *and* it has just the
+right structure, GHC may notice that a substantial amount of its
+computation can be memoised via "let-floating".
+
+There exists a
+[somewhat contrived example](https://github.com/bos/criterion/blob/master/examples/ConduitVsPipes.hs)
+of this problem, where the first two benchmarks run between 40 and
+40,000 times faster than they "should".
+
+As always, if you see numbers that look wildly out of whack, you
+shouldn't rejoice that you have magic fast performance---be skeptical
+and investigate!
+
+For this particular misbehaving benchmark suite, GHC has an option
+named
+[`-fno-full-laziness`](https://www.haskell.org/ghc/docs/latest/html/users_guide/options-optimise.html)
+that will turn off let-floating and restore the first two benchmarks
+to performing as expected.
