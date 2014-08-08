@@ -19,11 +19,11 @@ To build and install criterion, just run
 # Get involved!
 
 Please report bugs via the
-[github issue tracker](https://github.com/bos/criterion).
+[github issue tracker](https://github.com/bos/criterion/issues).
 
 Master [github repository](https://github.com/bos/criterion):
 
-* `git clone git://github.com/bos/criterion.git`
+* `git clone https://github.com/bos/criterion.git`
 
 There's also a [Mercurial mirror](http://bitbucket.org/bos/criterion):
 
