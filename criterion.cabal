@@ -146,4 +146,4 @@ test-suite tests
 
 source-repository head
   type:     git
-  location: git://github.com/bos/criterion.git
+  location: https://github.com/bos/criterion.git
