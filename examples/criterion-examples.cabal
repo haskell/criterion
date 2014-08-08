@@ -30,6 +30,22 @@ executable conduit-vs-pipes
     pipes >= 4.1,
     transformers
 
+executable maps
+  main-is: Maps.hs
+
+  ghc-options: -Wall -rtsopts
+  build-depends:
+    base == 4.*,
+    bytestring,
+    containers,
+    critbit,
+    criterion,
+    hashable,
+    mwc-random,
+    unordered-containers,
+    vector,
+    vector-algorithms
+
 executable overhead
   main-is: Overhead.hs
 
