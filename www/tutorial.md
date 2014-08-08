@@ -327,8 +327,16 @@ As always, if you see numbers that look wildly out of whack, you
 shouldn't rejoice that you have magic fast performance---be skeptical
 and investigate!
 
-For this particular misbehaving benchmark suite, GHC has an option
-named
+<div class="bs-callout bs-callout-info">
+#### Defeating let-floating
+
+Fortunately for this particular misbehaving benchmark suite, GHC has
+an option named
 [`-fno-full-laziness`](https://www.haskell.org/ghc/docs/latest/html/users_guide/options-optimise.html)
 that will turn off let-floating and restore the first two benchmarks
-to performing as expected.
+to performing in line with the second two.
+
+You should not react by simply throwing `-fno-full-laziness` into
+every GHC-and-criterion command line, as let-floating helps with
+performance more often than it hurts with benchmarking.
+</div>
