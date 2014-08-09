@@ -75,6 +75,6 @@ double criterion_getcputime(void)
 
     GetProcessTimes(GetCurrentProcess(), &creation, &exit, &kernel, &user);
 
-    time = to_quad_100ns(user_time) + to_quad_100ns(kernel_time);
+    time = to_quad_100ns(user) + to_quad_100ns(kernel);
     return time / 1e7;
 }
