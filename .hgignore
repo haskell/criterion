@@ -1,5 +1,6 @@
 ^(?:examples/)?(?:\.cabal-sandbox|cabal\.sandbox\.config|dist)$
 \.(?:aux|eventlog|h[ip]|log|[oa]|orig|prof|png|ps|rej|swp)$
+^www/bootstrap-[0-9].*$
 ~$
 ^www/(?:index|tutorial)\.html$
 syntax: glob
