@@ -15,8 +15,8 @@ body {
     background-color: #f5f5f5;
 }
 
-a > code { color: #02d; }
-a > code:hover { color: #44f; }
+a[href] > code { color: #02d; }
+a[href] > code:hover { color: #44f; }
 div.nav.bs-docs-sidenav > ul { list-style-type: none; }
 div.nav.bs-docs-sidenav > ul > li > ul { list-style-type: none; }
 
