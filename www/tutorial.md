@@ -276,7 +276,7 @@ main = defaultMain [
 We use
 [`nfIO`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:nfIO)
 to specify that after we run the `IO` action, its result must be
-evaluated to <a name="normal-form">**normal form**</a>, i.e. so that
+evaluated to <span id="normal-form">normal form</span>, i.e. so that
 all of its internal constructors are fully evaluated, and it contains
 no thunks.
 
@@ -300,7 +300,7 @@ In addition to `nfIO`, criterion provides a
 [`whnfIO`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:whnfIO)
 function that evaluates the result of an action only deep enough for
 the outermost constructor to be known (using `seq`).  This is known as
-<a name="weak-head-normal-form">**weak head normal form** (WHNF)</a>.
+<span id="weak-head-normal-form">**weak head normal form** (WHNF)</span>.
 
 ~~~~ {.haskell}
 whnfIO :: IO a -> IO ()
