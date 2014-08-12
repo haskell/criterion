@@ -1,4 +1,4 @@
-bootstrap := bootstrap-3.1.1-dist
+bootstrap := bootstrap-3.2.0-dist
 
 files := index.html tutorial.html
 deps = bootstrap-custom.css background.jpg fibber-screenshot.png fibber.html \
