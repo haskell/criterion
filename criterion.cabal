@@ -86,7 +86,7 @@ library
     hastache >= 0.6.0,
     mtl >= 2,
     mwc-random >= 0.8.0.3,
-    optparse-applicative,
+    optparse-applicative < 0.10,
     parsec >= 3.1.0,
     statistics >= 0.13.2.1,
     text >= 0.11,
