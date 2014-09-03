@@ -89,30 +89,31 @@ parseWith cfg =
     (Version <$ switch (long "version" <> help "show version info"))
   where
     onlyRun = matchNames $
-      OnlyRun <$> option (long "only-run" <> short 'n' <> metavar "ITERS" <>
-                          help "run benchmarks, don't analyse")
+      OnlyRun <$> option auto
+                  (long "only-run" <> short 'n' <> metavar "ITERS" <>
+                   help "run benchmarks, don't analyse")
     matchNames wat = wat
-      <*> option (long "match" <> short 'm' <> metavar "MATCH" <>
-                  value Prefix <> reader match <>
-                  help "how to match benchmark names")
+      <*> option match
+          (long "match" <> short 'm' <> metavar "MATCH" <> value Prefix <>
+           help "how to match benchmark names")
       <*> many (argument str (metavar "NAME..."))
 
 config :: Config -> Parser Config
 config Config{..} = Config
-  <$> option (long "ci" <> short 'I' <> metavar "CI" <> value confInterval <>
-              reader (range 0.001 0.999) <>
-              help "confidence interval")
+  <$> option (range 0.001 0.999)
+      (long "ci" <> short 'I' <> metavar "CI" <> value confInterval <>
+       help "confidence interval")
   <*> (not <$> switch (long "no-gc" <> short 'G' <>
                        help "do not collect garbage between iterations"))
-  <*> option (long "time-limit" <> short 'L' <> metavar "SECS" <>
-              value timeLimit <> reader (range 0.1 86400) <>
-              help "time limit to run a benchmark")
-  <*> option (long "resamples" <> metavar "COUNT" <> value resamples <>
-              reader (range 1 1000000) <>
-              help "number of bootstrap resamples to perform")
-  <*> many (option (long "regress" <> metavar "RESP:PRED.." <>
-                    reader regressParams <>
-                    help "regressions to perform"))
+  <*> option (range 0.1 86400)
+      (long "time-limit" <> short 'L' <> metavar "SECS" <> value timeLimit <>
+       help "time limit to run a benchmark")
+  <*> option (range 1 1000000)
+      (long "resamples" <> metavar "COUNT" <> value resamples <>
+       help "number of bootstrap resamples to perform")
+  <*> many (option regressParams
+            (long "regress" <> metavar "RESP:PRED.." <>
+             help "regressions to perform"))
   <*> outputOption rawDataFile (long "raw" <>
                                 help "file to write raw data to")
   <*> outputOption reportFile (long "output" <> short 'o' <>
@@ -121,9 +122,10 @@ config Config{..} = Config
                             help "file to write CSV summary to")
   <*> outputOption junitFile (long "junit" <>
                               help "file to write JUnit summary to")
-  <*> (toEnum <$> option (long "verbosity" <> short 'v' <> metavar "LEVEL" <>
-                          value (fromEnum verbosity) <> reader (range 0 2) <>
-                          help "verbosity level"))
+  <*> (toEnum <$> option (range 0 2)
+                  (long "verbosity" <> short 'v' <> metavar "LEVEL" <>
+                   value (fromEnum verbosity) <>
+                   help "verbosity level"))
   <*> strOption (long "template" <> short 't' <> metavar "FILE" <>
                  value template <>
                  help "template to use for report")
