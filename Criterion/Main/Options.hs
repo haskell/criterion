@@ -111,9 +111,9 @@ config Config{..} = Config
   <*> option (range 1 1000000)
       (long "resamples" <> metavar "COUNT" <> value resamples <>
        help "number of bootstrap resamples to perform")
-  <*> many (option regressParams
-            (long "regress" <> metavar "RESP:PRED.." <>
-             help "regressions to perform"))
+  <*> ((regressions ++) <$> many (option regressParams
+                                 (long "regress" <> metavar "RESP:PRED.." <>
+                                  help "regressions to perform")))
   <*> outputOption rawDataFile (long "raw" <>
                                 help "file to write raw data to")
   <*> outputOption reportFile (long "output" <> short 'o' <>
