@@ -134,26 +134,29 @@ outputOption :: Maybe String -> Mod OptionFields String -> Parser (Maybe String)
 outputOption file m =
   optional (strOption (m <> metavar "FILE" <> maybe mempty value file))
 
-range :: (Show a, Read a, Ord a) => a -> a -> String -> ReadM a
-range lo hi s =
-    case reads s of
-      [(i, "")]
-        | i >= lo && i <= hi -> return i
-        | otherwise -> readerError $ show i ++ " is outside range " ++
-                                     show (lo,hi)
-      _             -> readerError $ show s ++ " is not a number"
+range :: (Show a, Read a, Ord a) => a -> a -> ReadM a
+range lo hi = do
+  s <- readerAsk
+  case reads s of
+    [(i, "")]
+      | i >= lo && i <= hi -> return i
+      | otherwise -> readerError $ show i ++ " is outside range " ++
+                                   show (lo,hi)
+    _             -> readerError $ show s ++ " is not a number"
 
-match :: String -> ReadM MatchType
-match m
-    | mm `isPrefixOf` "pfx"    = return Prefix
-    | mm `isPrefixOf` "prefix" = return Prefix
-    | mm `isPrefixOf` "glob"   = return Glob
-    | otherwise                = readerError $
-                                 show m ++ " is not a known match type"
-    where mm = map toLower m
+match :: ReadM MatchType
+match = do
+  m <- readerAsk
+  case map toLower m of
+    mm | mm `isPrefixOf` "pfx"    -> return Prefix
+       | mm `isPrefixOf` "prefix" -> return Prefix
+       | mm `isPrefixOf` "glob"   -> return Glob
+       | otherwise                -> readerError $
+                                     show m ++ " is not a known match type"
 
-regressParams :: String -> ReadM ([String], String)
-regressParams m = do
+regressParams :: ReadM ([String], String)
+regressParams = do
+  m <- readerAsk
   let repl ','   = ' '
       repl c     = c
       tidy       = reverse . dropWhile isSpace . reverse . dropWhile isSpace
@@ -163,8 +166,7 @@ regressParams m = do
   when (null ps) $
     readerError "no predictors specified"
   let ret = (words . map repl . drop 1 $ ps, tidy r)
-  either readerError (ReadM . Right . const ()) $ uncurry validateAccessors ret
-  return ret
+  either readerError (const (return ret)) $ uncurry validateAccessors ret
 
 -- | Flesh out a command line parser.
 describe :: Config -> ParserInfo Mode
