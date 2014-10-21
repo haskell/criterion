@@ -23,7 +23,7 @@ import Control.Exception (evaluate)
 import Control.Monad (foldM, forM_, void, when)
 import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (liftIO)
-import Control.Monad.Trans.Either
+import Control.Monad.Trans.Except
 import Data.Binary (encode)
 import Data.Int (Int64)
 import qualified Data.ByteString.Lazy as L
@@ -49,7 +49,7 @@ runAndAnalyseOne i desc bm = do
   when (timeTaken > timeLimit * 1.25) .
     void $ prolix "measurement took %s\n" (secs timeTaken)
   _ <- prolix "analysing with %d resamples\n" resamples
-  erp <- runEitherT $ analyseSample i desc meas
+  erp <- runExceptT $ analyseSample i desc meas
   case erp of
     Left err -> printError "*** Error: %s\n" err
     Right rpt@Report{..} -> do

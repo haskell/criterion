@@ -32,7 +32,7 @@ import Control.Arrow (second)
 import Control.Monad (unless, when)
 import Control.Monad.Reader (ask)
 import Control.Monad.Trans
-import Control.Monad.Trans.Either
+import Control.Monad.Trans.Except
 import Criterion.IO.Printf (note, prolix)
 import Criterion.Measurement (secs, threshold)
 import Criterion.Monad (Criterion, getGen, getOverhead)
@@ -134,7 +134,7 @@ scale f s@SampleAnalysis{..} = s {
 analyseSample :: Int            -- ^ Experiment number.
               -> String         -- ^ Experiment name.
               -> V.Vector Measured -- ^ Sample data.
-              -> EitherT String Criterion Report
+              -> ExceptT String Criterion Report
 analyseSample i name meas = do
   Config{..} <- ask
   overhead <- lift getOverhead
@@ -184,14 +184,14 @@ regress :: GenIO
         -> [String]             -- ^ Predictor names.
         -> String               -- ^ Responder name.
         -> V.Vector Measured
-        -> EitherT String Criterion Regression
+        -> ExceptT String Criterion Regression
 regress gen predNames respName meas = do
   when (G.null meas) $
-    left "no measurements"
-  accs <- hoistEither $ validateAccessors predNames respName
+    throwE "no measurements"
+  accs <- ExceptT . return $ validateAccessors predNames respName
   let unmeasured = [n | (n, Nothing) <- map (second ($ G.head meas)) accs]
   unless (null unmeasured) $
-    left $ "no data available for " ++ renderNames unmeasured
+    throwE $ "no data available for " ++ renderNames unmeasured
   let (r:ps)      = map ((`measure` meas) . (fromJust .) . snd) accs
   Config{..} <- ask
   (coeffs,r2) <- liftIO $
