@@ -94,16 +94,18 @@ formatReport reports templateName = do
 
     jQuery <- T.readFile =<< JQuery.file
     flot <- T.readFile =<< Flot.file Flot.Flot
+    flotErrorbars <- T.readFile =<< Flot.file Flot.FlotErrorbars
 
     -- includes, only top level
     templates <- getTemplateDir
     template <- includeTemplate (includeFile [templates]) template0
 
     let context = object
-            [ "json"      .= reports
-            , "report"    .= map inner reports
-            , "js-jquery" .= jQuery
-            , "js-flot"   .= flot
+            [ "json"              .= reports
+            , "report"            .= map inner reports
+            , "js-jquery"         .= jQuery
+            , "js-flot"           .= flot
+            , "js-flot-errorbars" .= flotErrorbars
             ]
 
     return (renderMustache template context)

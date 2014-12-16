@@ -10,6 +10,9 @@
       {{{js-flot}}}
     </script>
     <script language="javascript" type="text/javascript">
+      {{{js-flot-errorbars}}}
+    </script>
+    <script language="javascript" type="text/javascript">
       {{#include}}js/jquery.criterion.js{{/include}}
     </script>
     <style type="text/css">
@@ -277,25 +280,37 @@ $(function () {
   var benches = [{{#report}}"{{name}}",{{/report}}];
   var ylabels = [{{#report}}[-{{number}},'<a href="#b{{number}}">{{name}}</a>'],{{/report}}];
   var means = $.scaleTimes([{{#report}}{{anMean.estPoint}},{{/report}}]);
+  var stddevs = [{{#report}}{{anStdDev.estPoint}},{{/report}}];
+  stddevs = $.scaleBy(means[1], stddevs);
   var xs = [];
   var prev = null;
+  var colors = ["#edc240","#afd8f8","#cb4b4b","#4da74d","#9440ed"];
+  var max_time = 0;
   for (var i = 0; i < means[0].length; i++) {
     var name = benches[i].split(/\//);
     name.pop();
     name = name.join('/');
     if (name != prev) {
-      xs.push({ label: name, data: [[means[0][i], -i]]});
+      var color = colors[xs.length / 2 % colors.length];
+      xs.push({ data: [[means[0][i], -i]], label: name, color: color,
+                bars: { show: true, horizontal: true, barWidth: 0.75,
+                        align: "center" } });
+      xs.push({ data: [[means[0][i], -i, stddevs[i]]], color: color,
+                lines: { show: false },
+                points: { radius: 0, errorbars: "x",
+                          xerr: { show: true, radius: 5,
+                                  lowerCap: "-", upperCap: "-" } } });
       prev = name;
+    } else {
+      xs[xs.length - 2].data.push([means[0][i], -i]);
+      xs[xs.length - 1].data.push([means[0][i], -i, stddevs[i]]);
     }
-    else
-      xs[xs.length-1].data.push([means[0][i],-i]);
+    max_time = Math.max(max_time, means[0][i] + stddevs[i]);
   }
   var oq = $("#overview");
-  o = $.plot(oq, xs, { bars: { show: true, horizontal: true,
-                               barWidth: 0.75, align: "center" },
-                       grid: { borderColor: "#777", hoverable: true },
+  o = $.plot(oq, xs, { grid: { borderColor: "#777", hoverable: true },
                        legend: { show: xs.length > 1 },
-                       xaxis: { max: Math.max.apply(undefined,means[0]) * 1.02 },
+                       xaxis: { max: max_time * 1.02 },
                        yaxis: { ticks: ylabels, tickColor: '#ffffff' } });
   if (benches.length > 3)
     o.getPlaceholder().height(28*benches.length);
