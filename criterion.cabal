@@ -27,6 +27,7 @@ data-files:
   templates/js/jquery.criterion.js
   templates/js/jquery.flot-0.8.3.min.js
   templates/js/jquery.flot.errorbars.min.js
+  templates/js/jquery.flot.navigate.min.js
 
 description:
   This library provides a powerful but simple way to measure software
