@@ -13,6 +13,9 @@
       {{{js-flot-errorbars}}}
     </script>
     <script language="javascript" type="text/javascript">
+      {{{js-flot-navigate}}}
+    </script>
+    <script language="javascript" type="text/javascript">
       {{#include}}js/jquery.criterion.js{{/include}}
     </script>
     <style type="text/css">
@@ -311,7 +314,9 @@ $(function () {
   o = $.plot(oq, xs, { grid: { borderColor: "#777", hoverable: true },
                        legend: { show: xs.length > 1 },
                        xaxis: { max: max_time * 1.02 },
-                       yaxis: { ticks: ylabels, tickColor: '#ffffff' } });
+                       yaxis: { ticks: ylabels, tickColor: '#ffffff' },
+                       zoom: { interactive: true, amount: 1.05 },
+                       pan: { interactive: true } });
   if (benches.length > 3)
     o.getPlaceholder().height(28*benches.length);
   o.resize();

@@ -95,6 +95,7 @@ formatReport reports templateName = do
     jQuery <- T.readFile =<< JQuery.file
     flot <- T.readFile =<< Flot.file Flot.Flot
     flotErrorbars <- T.readFile =<< Flot.file Flot.FlotErrorbars
+    flotNavigate <- T.readFile =<< Flot.file Flot.FlotNavigate
 
     -- includes, only top level
     templates <- getTemplateDir
@@ -106,6 +107,7 @@ formatReport reports templateName = do
             , "js-jquery"         .= jQuery
             , "js-flot"           .= flot
             , "js-flot-errorbars" .= flotErrorbars
+            , "js-flot-navigate"  .= flotNavigate
             ]
 
     return (renderMustache template context)
