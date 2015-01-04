@@ -4,10 +4,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>criterion report</title>
     <script language="javascript" type="text/javascript">
-      {{#include}}js/jquery-2.1.1.min.js{{/include}}
+      {{js-jquery}}
     </script>
     <script language="javascript" type="text/javascript">
-      {{#include}}js/jquery.flot-0.8.3.min.js{{/include}}
+      {{js-flot}}
     </script>
     <script language="javascript" type="text/javascript">
       {{#include}}js/jquery.criterion.js{{/include}}

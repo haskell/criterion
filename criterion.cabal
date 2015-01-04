@@ -85,6 +85,8 @@ library
     filepath,
     Glob >= 0.7.2,
     hastache >= 0.6.0,
+    js-flot,
+    js-jquery,
     mtl >= 2,
     mwc-random >= 0.8.0.3,
     optparse-applicative >= 0.11,
