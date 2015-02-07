@@ -53,12 +53,15 @@ module Criterion.Types
     , nf
     , nfIO
     , whnfIO
+    , reportOwnerToName
+    , addOwner
     -- * Result types
     , Outliers(..)
     , OutlierEffect(..)
     , OutlierVariance(..)
     , Regression(..)
     , KDE(..)
+    , ReportOwner(..)
     , Report(..)
     , SampleAnalysis(..)
     ) where
@@ -613,6 +616,48 @@ instance Binary KDE where
 instance NFData KDE where
     rnf KDE{..} = rnf kdeType `seq` rnf kdeValues `seq` rnf kdePDF
 
+-- | `ReportOwner` keeps track of all `BenchGroup`s a `Report` belongs to
+data ReportOwner = ROBench String
+                 | ROGroup String ReportOwner
+                 | ROVersus String String String
+                 | RONull
+                 deriving (Eq, Read, Show, Typeable, Data, Generic)
+
+instance FromJSON ReportOwner
+instance ToJSON ReportOwner
+
+instance Binary ReportOwner where
+  put RONull           = putWord8 0 
+  put (ROBench s)      = putWord8 1 >> put s
+  put (ROGroup a b)    = putWord8 2 >> put a >> put b
+  put (ROVersus a b c) = putWord8 3 >> put a >> put b >> put c
+
+  get = do
+    t <- getWord8
+    case t of
+     0 -> return RONull
+     1 -> ROBench <$> get
+     2 -> ROGroup <$> get <*> get
+     3 -> ROVersus <$> get <*> get <*> get
+     _ -> error "Failed to parse binary"
+
+addOwner :: ReportOwner
+         -> ReportOwner
+         -> ReportOwner
+addOwner RONull r = r
+addOwner (ROGroup g x) r = ROGroup g $ addOwner x r
+addOwner r@(ROVersus _ _ _) _ = r
+addOwner _ _ = error "addOwner: shouldn't happen"
+
+reportOwnerToName :: ReportOwner
+                  -> String
+reportOwnerToName RONull = ""
+reportOwnerToName (ROBench s) = s
+reportOwnerToName (ROVersus s e a) = s ++ "/" ++ e ++ "/" ++ a
+reportOwnerToName (ROGroup d r)
+  | null d = reportOwnerToName r
+  | otherwise = d ++ "/" ++ reportOwnerToName r
+
 -- | Report of a sample analysis.
 data Report = Report {
       reportNumber   :: Int
@@ -631,6 +676,7 @@ data Report = Report {
       -- ^ Analysis of outliers.
     , reportKDEs     :: [KDE]
       -- ^ Data for a KDE of times.
+    , reportOwner    :: ReportOwner
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance FromJSON Report
@@ -640,9 +686,9 @@ instance Binary Report where
     put Report{..} =
       put reportNumber >> put reportName >> put reportKeys >>
       put reportMeasured >> put reportAnalysis >> put reportOutliers >>
-      put reportKDEs
+      put reportKDEs >> put reportOwner
 
-    get = Report <$> get <*> get <*> get <*> get <*> get <*> get <*> get
+    get = Report <$> get <*> get <*> get <*> get <*> get <*> get <*> get <*> get
 
 instance NFData Report where
     rnf Report{..} =

@@ -132,10 +132,11 @@ scale f s@SampleAnalysis{..} = s {
 
 -- | Perform an analysis of a measurement.
 analyseSample :: Int            -- ^ Experiment number.
-              -> String         -- ^ Experiment name.
+              -> ReportOwner    -- ^ Experiment name.
               -> V.Vector Measured -- ^ Sample data.
               -> EitherT String Criterion Report
-analyseSample i name meas = do
+analyseSample i ro meas = do
+  let name = reportOwnerToName ro
   Config{..} <- ask
   overhead <- lift getOverhead
   let ests      = [Mean,StdDev]
@@ -172,6 +173,7 @@ analyseSample i name meas = do
     , reportAnalysis = an
     , reportOutliers = classifyOutliers stime
     , reportKDEs     = [uncurry (KDE "time") (kde 128 stime)]
+    , reportOwner    = ro
     }
 
 -- | Regress the given predictors against the responder.

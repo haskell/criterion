@@ -43,14 +43,15 @@ import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
 import Text.Printf (printf)
 
 -- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion Report
-runAndAnalyseOne i desc bm = do
+runAndAnalyseOne :: Int -> ReportOwner -> Benchmarkable -> Criterion Report
+runAndAnalyseOne i ro bm = do
+  let desc = reportOwnerToName ro
   Config{..} <- ask
   (meas,timeTaken) <- liftIO $ runBenchmark bm timeLimit
   when (timeTaken > timeLimit * 1.25) .
     void $ prolix "measurement took %s\n" (secs timeTaken)
   _ <- prolix "analysing with %d resamples\n" resamples
-  erp <- runEitherT $ analyseSample i desc meas
+  erp <- runEitherT $ analyseSample i ro meas
   case erp of
     Left err -> printError "*** Error: %s\n" err
     Right rpt@Report{..} -> do
@@ -110,34 +111,35 @@ runAndAnalyse p bs' = do
         return (file, handle)
   liftIO $ L.hPut handle header
 
-  let go !k (pfx, Environment mkenv mkbench) = do
+  let go !k (ro, Environment mkenv mkbench) = do
         e <- liftIO $ do
                ee <- mkenv
                evaluate (rnf ee)
                return ee
-        go k (pfx, mkbench e)
-      go !k (pfx, Benchmark desc b)
-          | p desc'   = do _ <- note "benchmarking %s\n" desc'
-                           rpt <- runAndAnalyseOne k desc' b
-                           liftIO $ L.hPut handle (encode rpt)
-                           return $! k + 1
+        go k (ro, mkbench e)
+      go !k (ro, Benchmark desc b)
+          | p name   = do _ <- note "benchmarking %s\n" $ reportOwnerToName ro'
+                          rpt <- runAndAnalyseOne k ro' b
+                          liftIO $ L.hPut handle (encode rpt)
+                          return $! k + 1
           | otherwise = return (k :: Int)
-          where desc' = addPrefix pfx desc
-      go !k (pfx, BenchGroup desc bs) =
-          foldM go k [(addPrefix pfx desc, b) | b <- bs]
-      go !k (pfx, BenchVersus desc envs algs)
-         | p desc'   = do
+          where ro' = addOwner ro $ ROBench desc
+                name = reportOwnerToName ro'
+      go !k (ro, BenchGroup desc bs) =
+          foldM go k [(addOwner ro $ ROGroup desc RONull, b) | b <- bs]
+      go !k (ro, BenchVersus desc envs algs)
+         | p name   = do
              envs' <- mapM mkEnv envs
              liftIO $ evaluate (rnf envs')
-             foldM go k [(desc', bench name $ a e)
+             foldM go k [(ro', bench undefined $ a e)
                          |(aN, a) <- algs, (eN, e) <-envs',
-                          let name = aN ++ "/" ++ eN]
+                          let ro' = addOwner ro $ ROVersus desc aN eN]
          | otherwise = return (k :: Int)
-         where desc' = addPrefix pfx desc
-               mkEnv (t, mkenv) = liftIO $ do
+         where mkEnv (t, mkenv) = liftIO $ do
                  e <- mkenv
                  return (t, e)
-  _ <- go 0 ("", bs')
+               name = reportOwnerToName ro
+  _ <- go 0 (RONull, bs')
 
   rpts <- (either fail return =<<) . liftIO $ do
     hSeek handle AbsoluteSeek 0
