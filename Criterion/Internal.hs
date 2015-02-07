@@ -124,6 +124,18 @@ runAndAnalyse p bs' = do
           where desc' = addPrefix pfx desc
       go !k (pfx, BenchGroup desc bs) =
           foldM go k [(addPrefix pfx desc, b) | b <- bs]
+      go !k (pfx, BenchVersus desc envs algs)
+         | p desc'   = do
+             envs' <- mapM mkEnv envs
+             liftIO $ evaluate (rnf envs')
+             foldM go k [(desc', bench name $ a e)
+                         |(aN, a) <- algs, (eN, e) <-envs',
+                          let name = aN ++ "/" ++ eN]
+         | otherwise = return (k :: Int)
+         where desc' = addPrefix pfx desc
+               mkEnv (t, mkenv) = liftIO $ do
+                 e <- mkenv
+                 return (t, e)
   _ <- go 0 ("", bs')
 
   rpts <- (either fail return =<<) . liftIO $ do

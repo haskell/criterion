@@ -45,6 +45,8 @@ module Criterion.Types
     , env
     , bench
     , bgroup
+    , bversus
+    , vsList
     , benchNames
     -- ** Evaluation control
     , whnf
@@ -61,6 +63,7 @@ module Criterion.Types
     , SampleAnalysis(..)
     ) where
 
+import Control.Arrow ((&&&))
 import Control.Applicative ((<$>), (<*>))
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (evaluate)
@@ -324,10 +327,14 @@ impure strategy a = Benchmarkable go
 -- * A single 'Benchmarkable' item with a name, created with 'bench'.
 --
 -- * A (possibly nested) group of 'Benchmark's, created with 'bgroup'.
+--
+-- * TODO: Fill me in
 data Benchmark where
     Environment  :: NFData env => IO env -> (env -> Benchmark) -> Benchmark
     Benchmark    :: String -> Benchmarkable -> Benchmark
     BenchGroup   :: String -> [Benchmark] -> Benchmark
+    BenchVersus  :: NFData a => String -> [(String, IO a)] ->
+                    [(String, a -> Benchmarkable)] -> Benchmark
 
 -- | Run a benchmark (or collection of benchmarks) in the given
 -- environment.  The purpose of an environment is to lazily create
@@ -426,17 +433,33 @@ bgroup :: String                -- ^ A name to identify the group of benchmarks.
        -> Benchmark
 bgroup = BenchGroup
 
+bversus :: NFData a =>
+           String
+        -> [(String, IO a)]
+        -> [(String, a -> Benchmarkable)]
+        -> Benchmark
+bversus = BenchVersus
+
+vsList :: (NFData a, Show a) =>
+          String
+       -> [a]
+       -> [(String, a -> Benchmarkable)]
+       -> Benchmark
+vsList d l = bversus d $ map (show &&& return) l
+
 -- | Retrieve the names of all benchmarks.  Grouped benchmarks are
 -- prefixed with the name of the group they're in.
 benchNames :: Benchmark -> [String]
 benchNames (Environment _ b) = benchNames (b undefined)
 benchNames (Benchmark d _)   = [d]
 benchNames (BenchGroup d bs) = map ((d ++ "/") ++) . concatMap benchNames $ bs
+benchNames (BenchVersus d a b) = [d ++ "/" ++ i ++ "/" ++ j|(i,_)<-a, (j,_)<-b]
 
 instance Show Benchmark where
     show (Environment _ b) = "Environment _ " ++ show (b undefined)
     show (Benchmark d _)   = "Benchmark " ++ show d
     show (BenchGroup d _)  = "BenchGroup " ++ show d
+    show (BenchVersus d _ _) = "BenchVersus " ++ show d
 
 measure :: (U.Unbox a) => (Measured -> a) -> V.Vector Measured -> U.Vector a
 measure f v = U.convert . V.map f $ v

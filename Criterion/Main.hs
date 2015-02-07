@@ -31,6 +31,7 @@ module Criterion.Main
     , env
     , bench
     , bgroup
+    , bversus
     -- ** Running a benchmark
     , nf
     , whnf
@@ -99,6 +100,7 @@ selectBenches matchType benches bsgroup = do
   let go pfx (Environment _ b)     = go pfx (b undefined)
       go pfx (BenchGroup pfx' bms) = concatMap (go (addPrefix pfx pfx')) bms
       go pfx (Benchmark desc _)    = [addPrefix pfx desc]
+      go pfx (BenchVersus desc _ _) = [addPrefix pfx desc]
   toRun <- either parseError return . makeMatcher matchType $ benches
   unless (null benches || any toRun (go "" bsgroup)) $
     parseError "none of the specified names matches a benchmark"
