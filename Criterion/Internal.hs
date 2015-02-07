@@ -133,7 +133,7 @@ runAndAnalyse p bs' = do
              liftIO $ evaluate (rnf envs')
              foldM go k [(ro', bench undefined $ a e)
                          |(aN, a) <- algs, (eN, e) <-envs',
-                          let ro' = addOwner ro $ ROVersus desc aN eN]
+                          let ro' = addOwner ro $ ROVersus desc (show eN) aN]
          | otherwise = return (k :: Int)
          where mkEnv (t, mkenv) = liftIO $ do
                  e <- mkenv
@@ -151,7 +151,7 @@ runAndAnalyse p bs' = do
 
   report rpts
   junit rpts
-  vscsv bs' rpts
+  vscsv rpts
 
 -- | Run a benchmark without analysing its performance.
 runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.

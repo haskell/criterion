@@ -113,7 +113,7 @@ data Config = Config {
     , junitFile    :: Maybe FilePath
       -- ^ File to write JUnit-compatible XML results to.
     , vsCsvFile    :: Maybe FilePath
-      -- ^ CSV file to write 'versus'-type benchmark groups to.
+      -- ^ Prefix of CSV files to write 'versus'-type benchmark groups to.
     , verbosity    :: Verbosity
       -- ^ Verbosity level to use when running and analysing
       -- benchmarks.
@@ -333,12 +333,12 @@ impure strategy a = Benchmarkable go
 --
 -- * A (possibly nested) group of 'Benchmark's, created with 'bgroup'.
 --
--- * TODO: Fill me in
+-- * A 'versus'-type benchmark group used to compare algorithms
 data Benchmark where
     Environment  :: NFData env => IO env -> (env -> Benchmark) -> Benchmark
     Benchmark    :: String -> Benchmarkable -> Benchmark
     BenchGroup   :: String -> [Benchmark] -> Benchmark
-    BenchVersus  :: NFData a => String -> [(String, IO a)] ->
+    BenchVersus  :: (Num l, Show l, NFData l, NFData a) => String -> [(l, IO a)] ->
                     [(String, a -> Benchmarkable)] -> Benchmark
 
 -- | Run a benchmark (or collection of benchmarks) in the given
@@ -438,19 +438,29 @@ bgroup :: String                -- ^ A name to identify the group of benchmarks.
        -> Benchmark
 bgroup = BenchGroup
 
-bversus :: NFData a =>
+-- | Group of benchmarks used to compare performance of different algorithms
+-- on a same set of data
+bversus :: (Num l, Show l, NFData l, NFData a) =>
            String
-        -> [(String, IO a)]
+        -- ^ Name of a benchmark group
+        -> [(l, IO a)]
+        -- ^ Set of test data together with labels
         -> [(String, a -> Benchmarkable)]
+        -- ^ Set of labeled algorithms
         -> Benchmark
 bversus = BenchVersus
 
-vsList :: (NFData a, Show a) =>
+-- | Simplified wrapper for @bversus@
+-- Example:
+-- > vsList "sum" [10,20..100] [ ("prelude", sum)
+-- >                           , ("strict", rnf $ foldl' (+) 0)
+-- >                           ]
+vsList :: (Num a, Show a, NFData a) =>
           String
        -> [a]
        -> [(String, a -> Benchmarkable)]
        -> Benchmark
-vsList d l = bversus d $ map (show &&& return) l
+vsList d l = bversus d $ map (id &&& return) l
 
 -- | Retrieve the names of all benchmarks.  Grouped benchmarks are
 -- prefixed with the name of the group they're in.
@@ -458,7 +468,7 @@ benchNames :: Benchmark -> [String]
 benchNames (Environment _ b) = benchNames (b undefined)
 benchNames (Benchmark d _)   = [d]
 benchNames (BenchGroup d bs) = map ((d ++ "/") ++) . concatMap benchNames $ bs
-benchNames (BenchVersus d a b) = [d ++ "/" ++ i ++ "/" ++ j|(i,_)<-a, (j,_)<-b]
+benchNames (BenchVersus d a b) = [d ++ "/" ++ show i ++ "/" ++ j|(i,_)<-a, (j,_)<-b]
 
 instance Show Benchmark where
     show (Environment _ b) = "Environment _ " ++ show (b undefined)
@@ -616,7 +626,7 @@ instance Binary KDE where
 instance NFData KDE where
     rnf KDE{..} = rnf kdeType `seq` rnf kdeValues `seq` rnf kdePDF
 
--- | `ReportOwner` keeps track of all `BenchGroup`s a `Report` belongs to
+-- | @ReportOwner@ keeps track of all @BenchGroup@s a @Report@ belongs to
 data ReportOwner = ROBench String
                  | ROGroup String ReportOwner
                  | ROVersus String String String
@@ -639,7 +649,7 @@ instance Binary ReportOwner where
      1 -> ROBench <$> get
      2 -> ROGroup <$> get <*> get
      3 -> ROVersus <$> get <*> get <*> get
-     _ -> error "Failed to parse binary"
+     _ -> fail "Failed to parse binary"
 
 addOwner :: ReportOwner
          -> ReportOwner
@@ -677,6 +687,7 @@ data Report = Report {
     , reportKDEs     :: [KDE]
       -- ^ Data for a KDE of times.
     , reportOwner    :: ReportOwner
+      -- ^ Trail of all groups a report belongs to
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance FromJSON Report

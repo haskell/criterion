@@ -23,11 +23,12 @@ import Data.Csv as Csv
 import qualified Data.Map as M
 import Data.List (isPrefixOf, stripPrefix, find)
 import Statistics.Resampling.Bootstrap (Estimate)
-  
-vscsv :: Benchmark
-      -> [Report]
+
+data VersusReport = VersusReport String [((String, String), Estimate)]
+
+vscsv :: [Report]
       -> Criterion ()
-vscsv b r = do
+vscsv r = do
   -- liftIO $ print b
   -- liftIO $ forM_ r $ \i -> putStr (reportName i) >> putStr " -> " >> print (anMean $ reportAnalysis i)
   return ()
