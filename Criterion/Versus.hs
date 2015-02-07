@@ -12,7 +12,7 @@
 
 module Criterion.Versus
        (
-         getVsNames
+         versusReports
        , vscsv
        ) where
 
@@ -21,16 +21,38 @@ import Criterion.Monad (Criterion)
 import Control.Monad.Trans (liftIO)
 import Control.Monad
 import Data.Csv as Csv
+import qualified Data.Map as M
+import Data.List (isPrefixOf, stripPrefix, find)
+import Statistics.Resampling.Bootstrap (Estimate)
 
-getVsNames :: Benchmark -> [String]
-getVsNames (Environment _ b)   = getVsNames $ b undefined
-getVsNames (Benchmark _ _)     = []
-getVsNames (BenchGroup d b)    = map ((d ++ "/") ++) $ b >>= getVsNames
-getVsNames (BenchVersus d _ _) = [d]
+getVs :: String
+      -> Benchmark
+      -> [Benchmark]
+getVs p (Environment _ b)     = getVs p $ b undefined
+getVs _ (Benchmark _ _)       = []
+getVs p (BenchGroup d b)      = b >>= getVs (p++d++"/")
+getVs p (BenchVersus d e a)   = [BenchVersus (p++d) e a]
 
+data VersusReport = VersusReport [String, ]
+
+versusReport :: Benchmark
+          -> [Report]
+          -> Maybe VersusReport
+versusReport bnch reps = do
+  let vss = getVs "" bnch
+      vss' = zip vss $ replicate M.empty
+      f m Report {reportName = n, reportAnalysis = a} =
+        case find (\i -> isPrefixOf a n) vss of
+         Just s  -> M.update () s m 
+         Nothing -> m
+         where 
+      vs  = foldl f vss' reps
+  
+  
 vscsv :: Benchmark
       -> [Report]
       -> Criterion ()
 vscsv b r = do
   liftIO $ print b
   liftIO $ forM_ r $ \i -> putStr (reportName i) >> putStr " -> " >> print (anMean $ reportAnalysis i)
+
