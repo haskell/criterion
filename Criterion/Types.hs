@@ -109,6 +109,8 @@ data Config = Config {
       -- ^ File to write CSV summary to.
     , junitFile    :: Maybe FilePath
       -- ^ File to write JUnit-compatible XML results to.
+    , vsCsvFile    :: Maybe FilePath
+      -- ^ CSV file to write 'versus'-type benchmark groups to.
     , verbosity    :: Verbosity
       -- ^ Verbosity level to use when running and analysing
       -- benchmarks.

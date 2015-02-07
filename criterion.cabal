@@ -54,6 +54,7 @@ library
     Criterion.Monad
     Criterion.Report
     Criterion.Types
+    Criterion.Versus
 
   other-modules:
     Criterion.Monad.Internal

@@ -73,6 +73,7 @@ defaultConfig = Config {
     , reportFile   = Nothing
     , csvFile      = Nothing
     , junitFile    = Nothing
+    , vsCsvFile    = Nothing
     , verbosity    = Normal
     , template     = "default"
     }
@@ -122,6 +123,8 @@ config Config{..} = Config
                             help "file to write CSV summary to")
   <*> outputOption junitFile (long "junit" <>
                               help "file to write JUnit summary to")
+  <*> outputOption vsCsvFile (long "vscsv" <>
+                              help "file to write \"versus\"-type benchmark groups to")
   <*> (toEnum <$> option (range 0 2)
                   (long "verbosity" <> short 'v' <> metavar "LEVEL" <>
                    value (fromEnum verbosity) <>

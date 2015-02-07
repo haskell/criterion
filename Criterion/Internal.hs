@@ -34,6 +34,7 @@ import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
+import Criterion.Versus (vscsv)
 import qualified Data.Map as Map
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
@@ -148,6 +149,7 @@ runAndAnalyse p bs' = do
 
   report rpts
   junit rpts
+  vscsv bs' rpts
 
 -- | Run a benchmark without analysing its performance.
 runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.
