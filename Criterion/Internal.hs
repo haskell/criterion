@@ -34,7 +34,7 @@ import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
-import Criterion.Versus (vscsv)
+import Criterion.Versus (vscsv, versusReport)
 import qualified Data.Map as Map
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
@@ -126,12 +126,12 @@ runAndAnalyse p bs' = do
           where ro' = addOwner ro $ ROBench desc
                 name = reportOwnerToName ro'
       go !k (ro, BenchGroup desc bs) =
-          foldM go k [(addOwner ro $ ROGroup desc RONull, b) | b <- bs]
+          foldM go k [(addOwner ro $ ROGroup desc, b) | b <- bs]
       go !k (ro, BenchVersus desc envs algs)
          | p name   = do
              envs' <- mapM mkEnv envs
              liftIO $ evaluate (rnf envs')
-             foldM go k [(ro', bench undefined $ a e)
+             foldM go k [(ro', bench "" $ a e)
                          |(aN, a) <- algs, (eN, e) <-envs',
                           let ro' = addOwner ro $ ROVersus desc (show eN) aN]
          | otherwise = return (k :: Int)
@@ -139,7 +139,7 @@ runAndAnalyse p bs' = do
                  e <- mkenv
                  return (t, e)
                name = reportOwnerToName ro
-  _ <- go 0 (RONull, bs')
+  _ <- go 0 ([], bs')
 
   rpts <- (either fail return =<<) . liftIO $ do
     hSeek handle AbsoluteSeek 0
@@ -148,10 +148,10 @@ runAndAnalyse p bs' = do
     case mbRawFile of
       Just _ -> return rs
       _      -> removeFile rawFile >> return rs
-
+  let vrpts = versusReport rpts
   report rpts
   junit rpts
-  vscsv rpts
+  vscsv vrpts
 
 -- | Run a benchmark without analysing its performance.
 runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.

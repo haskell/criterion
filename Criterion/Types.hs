@@ -61,7 +61,8 @@ module Criterion.Types
     , OutlierVariance(..)
     , Regression(..)
     , KDE(..)
-    , ReportOwner(..)
+    , ReportOwner
+    , ROType(..)
     , Report(..)
     , SampleAnalysis(..)
     ) where
@@ -75,6 +76,7 @@ import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.Map (Map, fromList)
+import Data.List (intercalate)
 import Data.Monoid (Monoid(..))
 import GHC.Generics (Generic)
 import qualified Data.Vector as V
@@ -627,46 +629,44 @@ instance NFData KDE where
     rnf KDE{..} = rnf kdeType `seq` rnf kdeValues `seq` rnf kdePDF
 
 -- | @ReportOwner@ keeps track of all @BenchGroup@s a @Report@ belongs to
-data ReportOwner = ROBench String
-                 | ROGroup String ReportOwner
-                 | ROVersus String String String
-                 | RONull
-                 deriving (Eq, Read, Show, Typeable, Data, Generic)
+type ReportOwner = [ROType]
 
-instance FromJSON ReportOwner
-instance ToJSON ReportOwner
+data ROType = ROBench String
+            | ROGroup String
+            | ROVersus {
+                roTypeVsTag 
+              , roTypeVsEnv
+              , roTypeVsAlg :: String
+              }
+            deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-instance Binary ReportOwner where
-  put RONull           = putWord8 0 
-  put (ROBench s)      = putWord8 1 >> put s
-  put (ROGroup a b)    = putWord8 2 >> put a >> put b
-  put (ROVersus a b c) = putWord8 3 >> put a >> put b >> put c
+instance FromJSON ROType
+instance ToJSON ROType
+
+instance Binary ROType where
+  put (ROBench s)      = putWord8 0 >> put s
+  put (ROGroup a)      = putWord8 1 >> put a
+  put (ROVersus a b c) = putWord8 2 >> put a >> put b >> put c
 
   get = do
     t <- getWord8
     case t of
-     0 -> return RONull
-     1 -> ROBench <$> get
-     2 -> ROGroup <$> get <*> get
-     3 -> ROVersus <$> get <*> get <*> get
+     0 -> ROBench <$> get
+     1 -> ROGroup <$> get
+     2 -> ROVersus <$> get <*> get <*> get
      _ -> fail "Failed to parse binary"
 
 addOwner :: ReportOwner
+         -> ROType
          -> ReportOwner
-         -> ReportOwner
-addOwner RONull r = r
-addOwner (ROGroup g x) r = ROGroup g $ addOwner x r
-addOwner r@(ROVersus _ _ _) _ = r
-addOwner _ _ = error "addOwner: shouldn't happen"
+addOwner = flip (:)
 
 reportOwnerToName :: ReportOwner
                   -> String
-reportOwnerToName RONull = ""
-reportOwnerToName (ROBench s) = s
-reportOwnerToName (ROVersus s e a) = s ++ "/" ++ e ++ "/" ++ a
-reportOwnerToName (ROGroup d r)
-  | null d = reportOwnerToName r
-  | otherwise = d ++ "/" ++ reportOwnerToName r
+reportOwnerToName = intercalate "/" . filter (not . null) . map f . reverse
+  where f (ROVersus d e a) = d ++ "/" ++ e ++ "/" ++ a
+        f (ROGroup d)      = d
+        f (ROBench d)      = d
 
 -- | Report of a sample analysis.
 data Report = Report {

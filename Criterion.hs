@@ -59,4 +59,4 @@ benchmarkWith' cfg bm = do
   initializeTime
   withConfig cfg $ do
     _ <- note "benchmarking...\n"
-    runAndAnalyseOne 0 (ROBench "function") bm
+    runAndAnalyseOne 0 [ROBench "function"] bm
