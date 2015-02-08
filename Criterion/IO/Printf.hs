@@ -94,8 +94,7 @@ printError :: (CritHPrintfType r) => String -> r
 printError = chPrintf (const True) stderr
 
 -- | Write a record to a CSV file.
-writeCsv :: Csv.ToRecord a => a -> Criterion ()
-writeCsv val = do
-  csv <- asks csvFile
-  forM_ csv $ \fn ->
+writeCsv :: Csv.ToRecord a => Maybe FilePath -> a -> Criterion ()
+writeCsv file val = 
+  forM_ file $ \fn ->
     liftIO . B.appendFile fn . Csv.encode $ [val]

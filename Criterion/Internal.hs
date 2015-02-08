@@ -74,10 +74,10 @@ runAndAnalyseOne i ro bm = do
         _ <- bs r2 (regResponder ++ ":") regRSquare
         forM_ (Map.toList regCoeffs) $ \(prd,val) ->
           bs (printf "%.3g") ("  " ++ prd) val
-      writeCsv (desc,
-                estPoint anMean, estLowerBound anMean, estUpperBound anMean,
-                estPoint anStdDev, estLowerBound anStdDev,
-                estUpperBound anStdDev)
+      writeCsv csvFile (desc,
+                        estPoint anMean, estLowerBound anMean,
+                        estUpperBound anMean, estPoint anStdDev,
+                        estLowerBound anStdDev, estUpperBound anStdDev)
       when (verbosity == Verbose || (ovEffect > Slight && verbosity > Quiet)) $ do
         when (verbosity == Verbose) $ noteOutliers reportOutliers
         _ <- note "variance introduced by outliers: %d%% (%s)\n"
@@ -131,9 +131,10 @@ runAndAnalyse p bs' = do
          | p name   = do
              envs' <- mapM mkEnv envs
              liftIO $ evaluate (rnf envs')
-             foldM go k [(ro', bench "" $ a e)
+             foldM go k [(ro', bench name $ a e)
                          |(aN, a) <- algs, (eN, e) <-envs',
-                          let ro' = addOwner ro $ ROVersus desc (show eN) aN]
+                          let name = aN ++ "/" ++ show eN
+                              ro' = addOwner ro $ ROVersus desc (show eN) aN]
          | otherwise = return (k :: Int)
          where mkEnv (t, mkenv) = liftIO $ do
                  e <- mkenv

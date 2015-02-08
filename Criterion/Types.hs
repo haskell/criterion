@@ -634,8 +634,8 @@ type ReportOwner = [ROType]
 data ROType = ROBench String
             | ROGroup String
             | ROVersus {
-                roTypeVsTag 
-              , roTypeVsEnv
+                roTypeVsTag :: String
+              , roTypeVsEnv 
               , roTypeVsAlg :: String
               }
             deriving (Eq, Read, Show, Typeable, Data, Generic)
@@ -664,7 +664,7 @@ addOwner = flip (:)
 reportOwnerToName :: ReportOwner
                   -> String
 reportOwnerToName = intercalate "/" . filter (not . null) . map f . reverse
-  where f (ROVersus d e a) = d ++ "/" ++ e ++ "/" ++ a
+  where f (ROVersus d _ _) = d
         f (ROGroup d)      = d
         f (ROBench d)      = d
 
