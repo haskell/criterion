@@ -34,7 +34,7 @@ import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
-import Criterion.Versus (vscsv, versusReport)
+import Criterion.Versus (vscsv)
 import qualified Data.Map as Map
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
@@ -43,15 +43,14 @@ import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
 import Text.Printf (printf)
 
 -- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: Int -> ReportOwner -> Benchmarkable -> Criterion Report
-runAndAnalyseOne i ro bm = do
-  let desc = reportOwnerToName ro
+runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion Report
+runAndAnalyseOne i desc bm = do
   Config{..} <- ask
   (meas,timeTaken) <- liftIO $ runBenchmark bm timeLimit
   when (timeTaken > timeLimit * 1.25) .
     void $ prolix "measurement took %s\n" (secs timeTaken)
   _ <- prolix "analysing with %d resamples\n" resamples
-  erp <- runEitherT $ analyseSample i ro meas
+  erp <- runEitherT $ analyseSample i desc meas
   case erp of
     Left err -> printError "*** Error: %s\n" err
     Right rpt@Report{..} -> do
@@ -75,9 +74,9 @@ runAndAnalyseOne i ro bm = do
         forM_ (Map.toList regCoeffs) $ \(prd,val) ->
           bs (printf "%.3g") ("  " ++ prd) val
       writeCsv csvFile (desc,
-                        estPoint anMean, estLowerBound anMean,
-                        estUpperBound anMean, estPoint anStdDev,
-                        estLowerBound anStdDev, estUpperBound anStdDev)
+                        estPoint anMean, estLowerBound anMean, estUpperBound anMean,
+                        estPoint anStdDev, estLowerBound anStdDev,
+                        estUpperBound anStdDev)
       when (verbosity == Verbose || (ovEffect > Slight && verbosity > Quiet)) $ do
         when (verbosity == Verbose) $ noteOutliers reportOutliers
         _ <- note "variance introduced by outliers: %d%% (%s)\n"
@@ -111,36 +110,34 @@ runAndAnalyse p bs' = do
         return (file, handle)
   liftIO $ L.hPut handle header
 
-  let go !k (ro, Environment mkenv mkbench) = do
+  let go (!k, !vr) (pfx, Environment mkenv mkbench) = do
         e <- liftIO $ do
                ee <- mkenv
                evaluate (rnf ee)
                return ee
-        go k (ro, mkbench e)
-      go !k (ro, Benchmark desc b)
-          | p name   = do _ <- note "benchmarking %s\n" $ reportOwnerToName ro'
-                          rpt <- runAndAnalyseOne k ro' b
-                          liftIO $ L.hPut handle (encode rpt)
-                          return $! k + 1
-          | otherwise = return (k :: Int)
-          where ro' = addOwner ro $ ROBench desc
-                name = reportOwnerToName ro'
-      go !k (ro, BenchGroup desc bs) =
-          foldM go k [(addOwner ro $ ROGroup desc, b) | b <- bs]
-      go !k (ro, BenchVersus desc envs algs)
-         | p name   = do
+        go (k, vr) (pfx, mkbench e)
+      go (!k, !vr) (pfx, Benchmark desc b)
+          | p desc'   = do _ <- note "benchmarking %s\n" desc'
+                           rpt <- runAndAnalyseOne k desc' b
+                           liftIO $ L.hPut handle (encode rpt)
+                           return $! k + 1
+          | otherwise = return (k :: Int, undefined)
+          where desc' = addPrefix pfx desc
+      go !k (pfx, BenchGroup desc bs) =
+          foldM go k [(addPrefix pfx desc, b) | b <- bs]
+      go !k (pfx, BenchVersus desc envs algs)
+         | p desc'   = do
              envs' <- mapM mkEnv envs
-             liftIO $ evaluate (rnf envs')
-             foldM go k [(ro', bench name $ a e)
+             liftIO $ evaluate $ rnf envs'
+             foldM go k [(desc', bench name $ a e)
                          |(aN, a) <- algs, (eN, e) <-envs',
-                          let name = aN ++ "/" ++ show eN
-                              ro' = addOwner ro $ ROVersus desc (show eN) aN]
+                          let name = aN ++ "/" ++ show eN]
          | otherwise = return (k :: Int)
-         where mkEnv (t, mkenv) = liftIO $ do
+         where desc' = addPrefix pfx desc
+               mkEnv (t, mkenv) = liftIO $ do
                  e <- mkenv
                  return (t, e)
-               name = reportOwnerToName ro
-  _ <- go 0 ([], bs')
+  _ <- go 0 ("", bs')
 
   rpts <- (either fail return =<<) . liftIO $ do
     hSeek handle AbsoluteSeek 0
@@ -149,10 +146,10 @@ runAndAnalyse p bs' = do
     case mbRawFile of
       Just _ -> return rs
       _      -> removeFile rawFile >> return rs
-  let vrpts = versusReport rpts
+
   report rpts
   junit rpts
-  vscsv vrpts
+  vscsv bs' rpts
 
 -- | Run a benchmark without analysing its performance.
 runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.

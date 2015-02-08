@@ -35,6 +35,7 @@ data VersusReport = VersusReport {
     , vsReportData :: [(String, [Estimate])]
     } deriving (Eq, Show, Read)
 
+{-
 isVersus :: Report -> Bool
 isVersus r = case reportOwner r of
               (_ : ROVersus _ _ _ : _) -> True
@@ -72,3 +73,8 @@ vscsv rpts = do
     writeCsv file [vsReportDescription r]
     writeCsv file $ "Name" : vsReportDataPoints r
     --forM_ d $ \(a, f) -> writeCsv file $ a : map (show.estPoint.snd) f
+-}
+
+vscsv = undefined
+
+versusReport = undefined

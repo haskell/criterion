@@ -53,16 +53,12 @@ module Criterion.Types
     , nf
     , nfIO
     , whnfIO
-    , reportOwnerToName
-    , addOwner
     -- * Result types
     , Outliers(..)
     , OutlierEffect(..)
     , OutlierVariance(..)
     , Regression(..)
     , KDE(..)
-    , ReportOwner
-    , ROType(..)
     , Report(..)
     , SampleAnalysis(..)
     ) where
@@ -76,7 +72,6 @@ import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.Map (Map, fromList)
-import Data.List (intercalate)
 import Data.Monoid (Monoid(..))
 import GHC.Generics (Generic)
 import qualified Data.Vector as V
@@ -115,7 +110,7 @@ data Config = Config {
     , junitFile    :: Maybe FilePath
       -- ^ File to write JUnit-compatible XML results to.
     , vsCsvFile    :: Maybe FilePath
-      -- ^ Prefix of CSV files to write 'versus'-type benchmark groups to.
+      -- ^ CSV file to write 'versus'-type benchmark groups to.
     , verbosity    :: Verbosity
       -- ^ Verbosity level to use when running and analysing
       -- benchmarks.
@@ -335,13 +330,13 @@ impure strategy a = Benchmarkable go
 --
 -- * A (possibly nested) group of 'Benchmark's, created with 'bgroup'.
 --
--- * A 'versus'-type benchmark group used to compare algorithms
+-- * TODO: Fill me in
 data Benchmark where
     Environment  :: NFData env => IO env -> (env -> Benchmark) -> Benchmark
     Benchmark    :: String -> Benchmarkable -> Benchmark
     BenchGroup   :: String -> [Benchmark] -> Benchmark
-    BenchVersus  :: (Num l, Show l, NFData l, NFData a) => String -> [(l, IO a)] ->
-                    [(String, a -> Benchmarkable)] -> Benchmark
+    BenchVersus  :: (NFData a, Show l, Num l, NFData l) => String ->
+                    [(l, IO a)] -> [(String, a -> Benchmarkable)] -> Benchmark
 
 -- | Run a benchmark (or collection of benchmarks) in the given
 -- environment.  The purpose of an environment is to lazily create
@@ -440,24 +435,14 @@ bgroup :: String                -- ^ A name to identify the group of benchmarks.
        -> Benchmark
 bgroup = BenchGroup
 
--- | Group of benchmarks used to compare performance of different algorithms
--- on a same set of data
-bversus :: (Num l, Show l, NFData l, NFData a) =>
+bversus :: (NFData a, Show l, Num l) =>
            String
-        -- ^ Name of a benchmark group
         -> [(l, IO a)]
-        -- ^ Set of test data together with labels
         -> [(String, a -> Benchmarkable)]
-        -- ^ Set of labeled algorithms
         -> Benchmark
 bversus = BenchVersus
 
--- | Simplified wrapper for @bversus@
--- Example:
--- > vsList "sum" [10,20..100] [ ("prelude", sum)
--- >                           , ("strict", rnf $ foldl' (+) 0)
--- >                           ]
-vsList :: (Num a, Show a, NFData a) =>
+vsList :: (NFData a, Show a, Num a) =>
           String
        -> [a]
        -> [(String, a -> Benchmarkable)]
@@ -470,7 +455,8 @@ benchNames :: Benchmark -> [String]
 benchNames (Environment _ b) = benchNames (b undefined)
 benchNames (Benchmark d _)   = [d]
 benchNames (BenchGroup d bs) = map ((d ++ "/") ++) . concatMap benchNames $ bs
-benchNames (BenchVersus d a b) = [d ++ "/" ++ show i ++ "/" ++ j|(i,_)<-a, (j,_)<-b]
+benchNames (BenchVersus d a b) = [d ++ "/" ++ show i ++ "/" ++ show j
+                                 |(i,_) <- a, (j,_) <- b]
 
 instance Show Benchmark where
     show (Environment _ b) = "Environment _ " ++ show (b undefined)
@@ -628,46 +614,6 @@ instance Binary KDE where
 instance NFData KDE where
     rnf KDE{..} = rnf kdeType `seq` rnf kdeValues `seq` rnf kdePDF
 
--- | @ReportOwner@ keeps track of all @BenchGroup@s a @Report@ belongs to
-type ReportOwner = [ROType]
-
-data ROType = ROBench String
-            | ROGroup String
-            | ROVersus {
-                roTypeVsTag :: String
-              , roTypeVsEnv 
-              , roTypeVsAlg :: String
-              }
-            deriving (Eq, Read, Show, Typeable, Data, Generic)
-
-instance FromJSON ROType
-instance ToJSON ROType
-
-instance Binary ROType where
-  put (ROBench s)      = putWord8 0 >> put s
-  put (ROGroup a)      = putWord8 1 >> put a
-  put (ROVersus a b c) = putWord8 2 >> put a >> put b >> put c
-
-  get = do
-    t <- getWord8
-    case t of
-     0 -> ROBench <$> get
-     1 -> ROGroup <$> get
-     2 -> ROVersus <$> get <*> get <*> get
-     _ -> fail "Failed to parse binary"
-
-addOwner :: ReportOwner
-         -> ROType
-         -> ReportOwner
-addOwner = flip (:)
-
-reportOwnerToName :: ReportOwner
-                  -> String
-reportOwnerToName = intercalate "/" . filter (not . null) . map f . reverse
-  where f (ROVersus d _ _) = d
-        f (ROGroup d)      = d
-        f (ROBench d)      = d
-
 -- | Report of a sample analysis.
 data Report = Report {
       reportNumber   :: Int
@@ -686,8 +632,6 @@ data Report = Report {
       -- ^ Analysis of outliers.
     , reportKDEs     :: [KDE]
       -- ^ Data for a KDE of times.
-    , reportOwner    :: ReportOwner
-      -- ^ Trail of all groups a report belongs to
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance FromJSON Report
@@ -697,9 +641,9 @@ instance Binary Report where
     put Report{..} =
       put reportNumber >> put reportName >> put reportKeys >>
       put reportMeasured >> put reportAnalysis >> put reportOutliers >>
-      put reportKDEs >> put reportOwner
+      put reportKDEs
 
-    get = Report <$> get <*> get <*> get <*> get <*> get <*> get <*> get <*> get
+    get = Report <$> get <*> get <*> get <*> get <*> get <*> get <*> get
 
 instance NFData Report where
     rnf Report{..} =
