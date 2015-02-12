@@ -138,7 +138,7 @@ runAndAnalyse p bs' = do
                    , vsReportIndices = [((aN, eN), i)|
                                         (i, (_, _, aN, eN)) <- zip [k..] indices]
                    }
-             (k', _) <- foldM go (k, undefined)
+             (k', _) <- foldM go (k, [])
                         [(desc', bench name $ a e)
                         | (a, e, aN, eN) <- indices
                         , let name = aN ++ "/" ++ show eN]

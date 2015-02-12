@@ -28,6 +28,7 @@ import Data.Function (on)
 import Data.Csv as Csv
 import Data.List (groupBy, sortBy)
 import Statistics.Resampling.Bootstrap (Estimate(..))
+import Data.Aeson (ToJSON(..))
 
 data VersusReport where
   VersusReport :: (Show l, Ord l) => {
@@ -38,6 +39,15 @@ data VersusReport where
   } -> VersusReport
 deriving instance Show VersusReport
 
+instance ToJSON VersusReport where
+  toJSON VersusReport{
+      vsReportDescription = desc
+    , vsReportDataPoints  = dp
+    , vsReportData        = d
+    , vsReportIndices     = i
+    } =
+    toJSON (desc, map show dp, d)
+
 vscsv :: [VersusReport] -> Criterion ()
 vscsv = mapM_ f
   where f VersusReport{
@@ -47,7 +57,7 @@ vscsv = mapM_ f
           file <- asks vsCsvFile
           writeCsv file [d]
           writeCsv file $ "name":(map show p)
-          forM_ r $ \(a, m) -> writeCsv file $ a:(map show m)
+          forM_ r $ \(a, m) -> writeCsv file $ a:(map (show . estPoint) m)
 
 versusReports :: [VersusReport] -> [Report] -> [VersusReport]
 versusReports vrpts rpts = map (vsReport rpts) vrpts
