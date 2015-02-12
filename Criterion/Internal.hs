@@ -34,7 +34,7 @@ import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
-import Criterion.Versus (vscsv)
+import Criterion.Versus (vscsv, versusReports, VersusReport(..))
 import qualified Data.Map as Map
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
@@ -120,24 +120,35 @@ runAndAnalyse p bs' = do
           | p desc'   = do _ <- note "benchmarking %s\n" desc'
                            rpt <- runAndAnalyseOne k desc' b
                            liftIO $ L.hPut handle (encode rpt)
-                           return $! k + 1
-          | otherwise = return (k :: Int, undefined)
+                           return $! (k + 1, vr)
+          | otherwise = return (k :: Int, vr)
           where desc' = addPrefix pfx desc
-      go !k (pfx, BenchGroup desc bs) =
-          foldM go k [(addPrefix pfx desc, b) | b <- bs]
-      go !k (pfx, BenchVersus desc envs algs)
+      go (!k, !vr) (pfx, BenchGroup desc bs) =
+          foldM go (k, vr) [(addPrefix pfx desc, b) | b <- bs]
+      go (!k, !vr) (pfx, BenchVersus desc envs algs)
          | p desc'   = do
              envs' <- mapM mkEnv envs
              liftIO $ evaluate $ rnf envs'
-             foldM go k [(desc', bench name $ a e)
-                         |(aN, a) <- algs, (eN, e) <-envs',
-                          let name = aN ++ "/" ++ show eN]
-         | otherwise = return (k :: Int)
+             let indices = [(a, e, aN, eN) | (aN, a) <- algs
+                                           , (eN, e) <- envs']
+                 vs = VersusReport {
+                     vsReportDescription = desc'
+                   , vsReportData = []
+                   , vsReportDataPoints = map fst envs
+                   , vsReportIndices = [((aN, eN), i)|
+                                        (i, (_, _, aN, eN)) <- zip [k..] indices]
+                   }
+             (k', _) <- foldM go (k, undefined)
+                        [(desc', bench name $ a e)
+                        | (a, e, aN, eN) <- indices
+                        , let name = aN ++ "/" ++ show eN]
+             return (k', vs:vr)
+         | otherwise = return (k :: Int, vr)
          where desc' = addPrefix pfx desc
                mkEnv (t, mkenv) = liftIO $ do
                  e <- mkenv
                  return (t, e)
-  _ <- go 0 ("", bs')
+  (_, vsRpts) <- go (0, []) ("", bs')
 
   rpts <- (either fail return =<<) . liftIO $ do
     hSeek handle AbsoluteSeek 0
@@ -146,10 +157,10 @@ runAndAnalyse p bs' = do
     case mbRawFile of
       Just _ -> return rs
       _      -> removeFile rawFile >> return rs
-
+  let vsRpts' = versusReports vsRpts rpts
   report rpts
   junit rpts
-  vscsv bs' rpts
+  vscsv vsRpts'
 
 -- | Run a benchmark without analysing its performance.
 runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.

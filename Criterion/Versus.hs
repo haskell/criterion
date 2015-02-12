@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, RecordWildCards #-}
+{-# LANGUAGE BangPatterns, GADTs, StandaloneDeriving #-}
 -- |
 -- Module      : Criterion
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan
@@ -13,7 +13,8 @@
 module Criterion.Versus
        (
          vscsv
-       , versusReport
+       , versusReports
+       , VersusReport(..)
        ) where
 
 import Criterion.Types
@@ -25,56 +26,42 @@ import Control.Monad.Reader (asks)
 import Control.Arrow ((&&&))
 import Data.Function (on)
 import Data.Csv as Csv
-import qualified Data.Map as M
-import Data.List (groupBy)
+import Data.List (groupBy, sortBy)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 
-data VersusReport = VersusReport {
-      vsReportDescription :: String
-    , vsReportDataPoints :: [String]
-    , vsReportData :: [(String, [Estimate])]
-    } deriving (Eq, Show, Read)
+data VersusReport where
+  VersusReport :: (Show l, Ord l) => {
+    vsReportDescription :: String
+  , vsReportDataPoints :: [l]
+  , vsReportData :: [(String, [Estimate])]
+  , vsReportIndices :: [((String, l), Int)]
+  } -> VersusReport
+deriving instance Show VersusReport
 
-{-
-isVersus :: Report -> Bool
-isVersus r = case reportOwner r of
-              (_ : ROVersus _ _ _ : _) -> True
-              _                        -> False
+vscsv :: [VersusReport] -> Criterion ()
+vscsv = mapM_ f
+  where f VersusReport{
+            vsReportDescription = d
+          , vsReportData        = r
+          , vsReportDataPoints  = p} = do
+          file <- asks vsCsvFile
+          writeCsv file [d]
+          writeCsv file $ "name":(map show p)
+          forM_ r $ \(a, m) -> writeCsv file $ a:(map show m)
 
-vs :: Report -> ReportOwner
-vs = tail . reportOwner
+versusReports :: [VersusReport] -> [Report] -> [VersusReport]
+versusReports vrpts rpts = map (vsReport rpts) vrpts
 
-alg :: Report -> String
-alg = roTypeVsAlg . head . vs
-
-benv :: Report -> String
-benv = roTypeVsEnv . head . vs
-
-eqVs :: ReportOwner -> ReportOwner -> Bool
-eqVs (ROVersus d1 _ _:t1) (ROVersus d2 _ _ :t2) = d1 == d2 && t1 == t2
-eqVs _ _ = error "eqVs: shouldn't happen"
+vsReport :: [Report] -> VersusReport -> VersusReport
+vsReport rpts vr@VersusReport{vsReportIndices = indices} =
+  vr{vsReportData = map f l}
+  where
+    alg = fst . fst
+    env = snd . fst
+    l   = groupBy' ((==) `on` alg) alg indices
+    rpts' = sortBy (compare `on` reportNumber) rpts
+    f (alg, idx) = (alg, [anMean . reportAnalysis $ rpts'!!i
+                         | (_, i)<-sortBy (compare `on` env) idx])
 
 groupBy' :: (a -> a -> Bool) -> (a -> b) -> [a] -> [(b, [a])]
 groupBy' f g = map (g . head &&& id) . groupBy f
-
-versusReport :: [Report] -> [VersusReport]
-versusReport = map mkVsReport . groupBy' (eqVs `on` vs) vs . filter isVersus
-  where mkVsReport (ro, rpts) = VersusReport {
-           vsReportDescription = reportOwnerToName ro
-         , vsReportDataPoints  = map benv . snd $ head ralg
-         , vsReportData        = []
-         }
-         where ralg = groupBy' ((==) `on` alg) alg rpts
-
-vscsv :: [VersusReport] -> Criterion ()
-vscsv rpts = do
-  file <- asks vsCsvFile
-  forM_ rpts $ \r -> do
-    writeCsv file [vsReportDescription r]
-    writeCsv file $ "Name" : vsReportDataPoints r
-    --forM_ d $ \(a, f) -> writeCsv file $ a : map (show.estPoint.snd) f
--}
-
-vscsv = undefined
-
-versusReport = undefined

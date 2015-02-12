@@ -335,7 +335,7 @@ data Benchmark where
     Environment  :: NFData env => IO env -> (env -> Benchmark) -> Benchmark
     Benchmark    :: String -> Benchmarkable -> Benchmark
     BenchGroup   :: String -> [Benchmark] -> Benchmark
-    BenchVersus  :: (NFData a, Show l, Num l, NFData l) => String ->
+    BenchVersus  :: (NFData a, Show l, Ord l, NFData l) => String ->
                     [(l, IO a)] -> [(String, a -> Benchmarkable)] -> Benchmark
 
 -- | Run a benchmark (or collection of benchmarks) in the given
@@ -435,14 +435,14 @@ bgroup :: String                -- ^ A name to identify the group of benchmarks.
        -> Benchmark
 bgroup = BenchGroup
 
-bversus :: (NFData a, Show l, Num l) =>
+bversus :: (NFData a, Show l, Ord l, NFData l) =>
            String
         -> [(l, IO a)]
         -> [(String, a -> Benchmarkable)]
         -> Benchmark
 bversus = BenchVersus
 
-vsList :: (NFData a, Show a, Num a) =>
+vsList :: (NFData a, Show a, Ord a) =>
           String
        -> [a]
        -> [(String, a -> Benchmarkable)]
