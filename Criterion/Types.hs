@@ -435,12 +435,26 @@ bgroup :: String                -- ^ A name to identify the group of benchmarks.
        -> Benchmark
 bgroup = BenchGroup
 
+-- | Perform several algorithms on a set of data samples
+-- and compare their performance.
+-- 
+-- __Example.__ Compare performance of different summation algorithms:
+-- 
+-- > main = defaultMain [
+-- >          bversus "sum"
+-- >            [ (i, return [1..i]) | i<-[(100::Int), 200 .. 600]]
+-- >            [ ("prelude", nf sum)
+-- >            , ("foldr1", nf $ foldr1 (+))
+-- >            , ("foldl'", nf $ foldl' (+) 0)
+-- >            ]
+-- >          ]
 bversus :: (NFData a, Show l, Ord l, NFData l) =>
-           String
-        -> [(l, IO a)]
-        -> [(String, a -> Benchmarkable)]
+           String                          -- ^ A name to identify group
+        -> [(l, IO a)]                     -- ^ A set of test data
+        -> [(String, a -> Benchmarkable)]  -- ^ A set of algorithms
         -> Benchmark
 bversus = BenchVersus
+
 
 vsList :: (NFData a, Show a, Ord a) =>
           String

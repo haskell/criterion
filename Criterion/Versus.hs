@@ -45,7 +45,6 @@ instance ToJSON VersusReport where
       vsReportDescription = desc
     , vsReportDataPoints  = dp
     , vsReportData        = d
-    , vsReportIndices     = i
     } = object [ "name"       .= toJSON desc
                , "dataPoints" .= toJSON (map show dp)
                , "data"       .= toJSON (map mkArr d)]
@@ -72,12 +71,12 @@ vsReport :: [Report] -> VersusReport -> VersusReport
 vsReport rpts vr@VersusReport{vsReportIndices = indices} =
   vr{vsReportData = map f l}
   where
-    alg = fst . fst
-    env = snd . fst
-    l   = groupBy' ((==) `on` alg) alg indices
+    valg = fst . fst
+    venv = snd . fst
+    l    = groupBy' ((==) `on` valg) valg indices
     rpts' = sortBy (compare `on` reportNumber) rpts
     f (alg, idx) = (alg, [anMean . reportAnalysis $ rpts'!!i
-                         | (_, i)<-sortBy (compare `on` env) idx])
+                         | (_, i)<-sortBy (compare `on` venv) idx])
 
 groupBy' :: (a -> a -> Bool) -> (a -> b) -> [a] -> [(b, [a])]
 groupBy' f g = map (g . head &&& id) . groupBy f

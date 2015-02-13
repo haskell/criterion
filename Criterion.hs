@@ -19,6 +19,7 @@ module Criterion
     , env
     , bench
     , bgroup
+    , bversus
     -- ** Running a benchmark
     , nf
     , whnf

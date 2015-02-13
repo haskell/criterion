@@ -95,12 +95,13 @@ formatReport reports vsreports template = do
       context "vsjson"   = return $ MuVariable $ encode vsreports'
       context "include"  = return $ MuLambdaM $ includeFile [templates]
       context "vsreport" = return $ MuList $ map vsinner vsreports'
-      context _         = return $ MuNothing
+      context _          = return MuNothing
       encode v = TL.toLazyText . encodeToTextBuilder . toJSON $ v
-      vsinner (n, r@VersusReport{..}) = mkStrContextM $ \case
+      vsinner (n, VersusReport{..}) = mkStrContextM $ \case
                            "number"   -> return . MuVariable $ encode n
                            "name"     -> return . MuVariable . H.htmlEscape .
                                          TL.pack $ vsReportDescription
+                           _          -> return MuNothing
       inner r@Report{..} = mkStrContextM $ \nym ->
                          case nym of
                            "name"     -> return . MuVariable . H.htmlEscape .

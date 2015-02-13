@@ -181,7 +181,17 @@ runNotAnalyse iters p bs' = goQuickly "" bs'
             where desc' = addPrefix pfx desc
         goQuickly pfx (BenchGroup desc bs) =
             mapM_ (goQuickly (addPrefix pfx desc)) bs
-
+        goQuickly pfx (BenchVersus desc envs algs) = do
+            envs' <- mapM mkEnv envs
+            liftIO $ evaluate $ rnf envs'
+            mapM_ (goQuickly pfx') [bench name $ a e
+                                   | (aN, a) <- algs, (eN, e) <- envs'
+                                   , let name = aN ++ "/" ++ show eN]
+            where mkEnv (t, mkenv) = liftIO $ do
+                    e <- mkenv
+                    return (t, e)
+                  pfx' = addPrefix pfx desc
+        
         runOne (Benchmarkable run) = liftIO (run iters)
 
 -- | Add the given prefix to a name.  If the prefix is empty, the name
