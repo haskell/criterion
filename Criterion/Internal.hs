@@ -158,7 +158,7 @@ runAndAnalyse p bs' = do
       Just _ -> return rs
       _      -> removeFile rawFile >> return rs
   let vsRpts' = versusReports vsRpts rpts
-  report rpts
+  report rpts vsRpts'
   junit rpts
   vscsv vsRpts'
 

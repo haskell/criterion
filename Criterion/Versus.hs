@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, GADTs, StandaloneDeriving #-}
+{-# LANGUAGE BangPatterns, GADTs, StandaloneDeriving, OverloadedStrings #-}
 -- |
 -- Module      : Criterion
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan
@@ -25,10 +25,10 @@ import Control.Monad.Trans (liftIO)
 import Control.Monad.Reader (asks)
 import Control.Arrow ((&&&))
 import Data.Function (on)
-import Data.Csv as Csv
+import qualified Data.Csv as Csv
 import Data.List (groupBy, sortBy)
 import Statistics.Resampling.Bootstrap (Estimate(..))
-import Data.Aeson (ToJSON(..))
+import Data.Aeson (ToJSON(..), object, encode, (.=))
 
 data VersusReport where
   VersusReport :: (Show l, Ord l) => {
@@ -39,14 +39,19 @@ data VersusReport where
   } -> VersusReport
 deriving instance Show VersusReport
 
+{- This instance is actually incomplete -}
 instance ToJSON VersusReport where
   toJSON VersusReport{
       vsReportDescription = desc
     , vsReportDataPoints  = dp
     , vsReportData        = d
     , vsReportIndices     = i
-    } =
-    toJSON (desc, map show dp, d)
+    } = object [ "name"       .= toJSON desc
+               , "dataPoints" .= toJSON (map show dp)
+               , "data"       .= toJSON (map mkArr d)]
+        where
+          mkArr (alg, p) = object [ "alg"  .= toJSON alg
+                                  , "data" .= toJSON p]
 
 vscsv :: [VersusReport] -> Criterion ()
 vscsv = mapM_ f
@@ -58,6 +63,7 @@ vscsv = mapM_ f
           writeCsv file [d]
           writeCsv file $ "name":(map show p)
           forM_ r $ \(a, m) -> writeCsv file $ a:(map (show . estPoint) m)
+
 
 versusReports :: [VersusReport] -> [Report] -> [VersusReport]
 versusReports vrpts rpts = map (vsReport rpts) vrpts

@@ -1,5 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, OverloadedStrings,
-    RecordWildCards, ScopedTypeVariables #-}
+    RecordWildCards, ScopedTypeVariables, LambdaCase #-}
 
 -- |
 -- Module      : Criterion.Report
@@ -32,6 +32,7 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Reader (ask)
 import Criterion.Monad (Criterion)
 import Criterion.Types
+import Criterion.Versus
 import Data.Aeson.Encode (encodeToTextBuilder)
 import Data.Aeson.Types (toJSON)
 import Data.Data (Data, Typeable)
@@ -72,26 +73,34 @@ getTemplateDir = getDataFileName "templates"
 
 -- | Write out a series of 'Report' values to a single file, if
 -- configured to do so.
-report :: [Report] -> Criterion ()
-report reports = do
+report :: [Report] -> [VersusReport] -> Criterion ()
+report reports vsreports = do
   Config{..} <- ask
   forM_ reportFile $ \name -> liftIO $ do
     td <- getTemplateDir
     tpl <- loadTemplate [td,"."] template
-    TL.writeFile name =<< formatReport reports tpl
+    TL.writeFile name =<< formatReport reports vsreports tpl
 
 -- | Format a series of 'Report' values using the given Hastache
 -- template.
 formatReport :: [Report]
+             -> [VersusReport]
              -> T.Text    -- ^ Hastache template.
              -> IO TL.Text
-formatReport reports template = do
+formatReport reports vsreports template = do
   templates <- getTemplateDir
-  let context "report"  = return $ MuList $ map inner reports
-      context "json"    = return $ MuVariable (encode reports)
-      context "include" = return $ MuLambdaM $ includeFile [templates]
+  let vsreports' = zip [(1::Int)..] vsreports
+      context "report"   = return $ MuList $ map inner reports
+      context "json"     = return $ MuVariable (encode reports)
+      context "vsjson"   = return $ MuVariable $ encode vsreports'
+      context "include"  = return $ MuLambdaM $ includeFile [templates]
+      context "vsreport" = return $ MuList $ map vsinner vsreports'
       context _         = return $ MuNothing
       encode v = TL.toLazyText . encodeToTextBuilder . toJSON $ v
+      vsinner (n, r@VersusReport{..}) = mkStrContextM $ \case
+                           "number"   -> return . MuVariable $ encode n
+                           "name"     -> return . MuVariable . H.htmlEscape .
+                                         TL.pack $ vsReportDescription
       inner r@Report{..} = mkStrContextM $ \nym ->
                          case nym of
                            "name"     -> return . MuVariable . H.htmlEscape .
