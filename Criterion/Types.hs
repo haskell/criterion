@@ -88,8 +88,10 @@ data Config = Config {
       -- ^ Confidence interval for bootstrap estimation (greater than
       -- 0, less than 1).
     , forceGC      :: Bool
-      -- ^ Force garbage collection between every benchmark run.  This
-      -- leads to more stable results.
+      -- ^ /Obsolete, unused/.  This option used to force garbage
+      -- collection between every benchmark run, but it no longer has
+      -- an effect (we now unconditionally force garbage collection).
+      -- This option remains solely for backwards API compatibility.
     , timeLimit    :: Double
       -- ^ Number of seconds to run a single benchmark.  (In practice,
       -- execution time will very slightly exceed this limit.)
