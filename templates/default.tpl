@@ -26,12 +26,18 @@
       <div id="main" class="body">
     <h1>criterion performance measurements</h1>
 
+{{#vsreport}}
+<h2>{{name}}</h2>
+<div id="vsp_{{number}}" class="vschart"
+     style="width:900;height:278px;">
+</div>
+{{/vsreport}}
+
 <h2>overview</h2>
 
 <p><a href="#grokularation">want to understand this report?</a></p>
 
 <div id="overview" class="ovchart" style="width:900px;height:100px;"></div>
-
 {{#report}}
 <h2><a name="b{{number}}">{{name}}</a></h2>
  <table width="100%">
@@ -271,9 +277,31 @@ $(function () {
       $.addTooltip("#cycles" + number, function(x,y) { return x + ' cycles'; });
     }
   };
+  function vsreport(rpt) {
+    var number = rpt[0];
+    var name = rpt[1].name;
+    var points = rpt[1].dataPoints;
+    var data = rpt[1].data;
+    var pl = $("#vsp_" + number);
+    var pldata = [];
+    data.forEach(function(dat) {
+      var arr = [];
+      for(var i = 0; i < points.length; i++) {
+        arr.push([points[i], dat.data[i].estPoint]);
+      }
+      pldata.push({ label: dat.alg, 
+                    data: arr,
+                    points: { show: true },
+                    lines: { show: true }
+                 });
+    });
+    console.log(pldata);
+    $.plot(pl, pldata);
+  };
   var reports = {{json}};
+  var vsreports = {{vsjson}};
   reports.map(mangulate);
-
+  vsreports.map(vsreport);
   var benches = [{{#report}}"{{name}}",{{/report}}];
   var ylabels = [{{#report}}[-{{number}},'<a href="#b{{number}}">{{name}}</a>'],{{/report}}];
   var means = $.scaleTimes([{{#report}}{{anMean.estPoint}},{{/report}}]);

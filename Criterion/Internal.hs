@@ -34,6 +34,7 @@ import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
+import Criterion.Versus (vscsv, versusReports, VersusReport(..))
 import qualified Data.Map as Map
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
@@ -72,10 +73,10 @@ runAndAnalyseOne i desc bm = do
         _ <- bs r2 (regResponder ++ ":") regRSquare
         forM_ (Map.toList regCoeffs) $ \(prd,val) ->
           bs (printf "%.3g") ("  " ++ prd) val
-      writeCsv (desc,
-                estPoint anMean, estLowerBound anMean, estUpperBound anMean,
-                estPoint anStdDev, estLowerBound anStdDev,
-                estUpperBound anStdDev)
+      writeCsv csvFile (desc,
+                        estPoint anMean, estLowerBound anMean, estUpperBound anMean,
+                        estPoint anStdDev, estLowerBound anStdDev,
+                        estUpperBound anStdDev)
       when (verbosity == Verbose || (ovEffect > Slight && verbosity > Quiet)) $ do
         when (verbosity == Verbose) $ noteOutliers reportOutliers
         _ <- note "variance introduced by outliers: %d%% (%s)\n"
@@ -109,22 +110,45 @@ runAndAnalyse p bs' = do
         return (file, handle)
   liftIO $ L.hPut handle header
 
-  let go !k (pfx, Environment mkenv mkbench) = do
+  let go (!k, !vr) (pfx, Environment mkenv mkbench) = do
         e <- liftIO $ do
                ee <- mkenv
                evaluate (rnf ee)
                return ee
-        go k (pfx, mkbench e)
-      go !k (pfx, Benchmark desc b)
+        go (k, vr) (pfx, mkbench e)
+      go (!k, !vr) (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "benchmarking %s\n" desc'
                            rpt <- runAndAnalyseOne k desc' b
                            liftIO $ L.hPut handle (encode rpt)
-                           return $! k + 1
-          | otherwise = return (k :: Int)
+                           return $! (k + 1, vr)
+          | otherwise = return (k :: Int, vr)
           where desc' = addPrefix pfx desc
-      go !k (pfx, BenchGroup desc bs) =
-          foldM go k [(addPrefix pfx desc, b) | b <- bs]
-  _ <- go 0 ("", bs')
+      go (!k, !vr) (pfx, BenchGroup desc bs) =
+          foldM go (k, vr) [(addPrefix pfx desc, b) | b <- bs]
+      go (!k, !vr) (pfx, BenchVersus desc envs algs)
+         | p desc'   = do
+             envs' <- mapM mkEnv envs
+             liftIO $ evaluate $ rnf envs'
+             let indices = [(a, e, aN, eN) | (aN, a) <- algs
+                                           , (eN, e) <- envs']
+                 vs = VersusReport {
+                     vsReportDescription = desc'
+                   , vsReportData = []
+                   , vsReportDataPoints = map fst envs
+                   , vsReportIndices = [((aN, eN), i)|
+                                        (i, (_, _, aN, eN)) <- zip [k..] indices]
+                   }
+             (k', _) <- foldM go (k, [])
+                        [(desc', bench name $ a e)
+                        | (a, e, aN, eN) <- indices
+                        , let name = aN ++ "/" ++ show eN]
+             return (k', vs:vr)
+         | otherwise = return (k :: Int, vr)
+         where desc' = addPrefix pfx desc
+               mkEnv (t, mkenv) = liftIO $ do
+                 e <- mkenv
+                 return (t, e)
+  (_, vsRpts) <- go (0, []) ("", bs')
 
   rpts <- (either fail return =<<) . liftIO $ do
     hSeek handle AbsoluteSeek 0
@@ -133,9 +157,10 @@ runAndAnalyse p bs' = do
     case mbRawFile of
       Just _ -> return rs
       _      -> removeFile rawFile >> return rs
-
-  report rpts
+  let vsRpts' = versusReports vsRpts rpts
+  report rpts vsRpts'
   junit rpts
+  vscsv vsRpts'
 
 -- | Run a benchmark without analysing its performance.
 runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.
@@ -156,7 +181,17 @@ runNotAnalyse iters p bs' = goQuickly "" bs'
             where desc' = addPrefix pfx desc
         goQuickly pfx (BenchGroup desc bs) =
             mapM_ (goQuickly (addPrefix pfx desc)) bs
-
+        goQuickly pfx (BenchVersus desc envs algs) = do
+            envs' <- mapM mkEnv envs
+            liftIO $ evaluate $ rnf envs'
+            mapM_ (goQuickly pfx') [bench name $ a e
+                                   | (aN, a) <- algs, (eN, e) <- envs'
+                                   , let name = aN ++ "/" ++ show eN]
+            where mkEnv (t, mkenv) = liftIO $ do
+                    e <- mkenv
+                    return (t, e)
+                  pfx' = addPrefix pfx desc
+        
         runOne (Benchmarkable run) = liftIO (run iters)
 
 -- | Add the given prefix to a name.  If the prefix is empty, the name

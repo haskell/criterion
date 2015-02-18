@@ -31,6 +31,7 @@ module Criterion.Main
     , env
     , bench
     , bgroup
+    , bversus
     -- ** Running a benchmark
     , nf
     , whnf
@@ -46,6 +47,7 @@ module Criterion.Main
 
 import Control.Monad (unless)
 import Control.Monad.Trans (liftIO)
+import Control.Monad.Reader (asks)
 import Criterion.IO.Printf (printError, writeCsv)
 import Criterion.Internal (runAndAnalyse, runNotAnalyse, addPrefix)
 import Criterion.Main.Options (MatchType(..), Mode(..), defaultConfig, describe,
@@ -99,6 +101,7 @@ selectBenches matchType benches bsgroup = do
   let go pfx (Environment _ b)     = go pfx (b undefined)
       go pfx (BenchGroup pfx' bms) = concatMap (go (addPrefix pfx pfx')) bms
       go pfx (Benchmark desc _)    = [addPrefix pfx desc]
+      go pfx (BenchVersus desc _ _) = [addPrefix pfx desc]
   toRun <- either parseError return . makeMatcher matchType $ benches
   unless (null benches || any toRun (go "" bsgroup)) $
     parseError "none of the specified names matches a benchmark"
@@ -144,8 +147,9 @@ defaultMainWith defCfg bs = do
     Run cfg matchType benches -> do
       shouldRun <- selectBenches matchType benches bsgroup
       withConfig cfg $ do
-        writeCsv ("Name","Mean","MeanLB","MeanUB","Stddev","StddevLB",
-                  "StddevUB")
+        file <- asks csvFile
+        writeCsv file ("Name","Mean","MeanLB","MeanUB","Stddev","StddevLB",
+                       "StddevUB")
         liftIO initializeTime
         runAndAnalyse shouldRun bsgroup
 
