@@ -15,7 +15,6 @@ module Criterion.Internal
       runAndAnalyse
     , runAndAnalyseOne
     , runNotAnalyse
-    , addPrefix
     ) where
 
 import Control.DeepSeq (rnf)
@@ -158,15 +157,6 @@ runNotAnalyse iters p bs' = goQuickly "" bs'
             mapM_ (goQuickly (addPrefix pfx desc)) bs
 
         runOne (Benchmarkable run) = liftIO (run iters)
-
--- | Add the given prefix to a name.  If the prefix is empty, the name
--- is returned unmodified.  Otherwise, the prefix and name are
--- separated by a @\'\/\'@ character.
-addPrefix :: String             -- ^ Prefix.
-          -> String             -- ^ Name.
-          -> String
-addPrefix ""  desc = desc
-addPrefix pfx desc = pfx ++ '/' : desc
 
 -- | Write summary JUnit file (if applicable)
 junit :: [Report] -> Criterion ()
