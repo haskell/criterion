@@ -108,12 +108,14 @@ runAndAnalyse p bs' = do
         return (file, handle)
   liftIO $ L.hPut handle header
 
-  let go !k (pfx, Environment mkenv mkbench) = do
-        e <- liftIO $ do
-               ee <- mkenv
-               evaluate (rnf ee)
-               return ee
-        go k (pfx, mkbench e)
+  let go !k (pfx, Environment mkenv mkbench)
+          | or (map (p . addPrefix pfx) (benchNames $ mkbench undefined)) = do
+              e <- liftIO $ do
+                     ee <- mkenv
+                     evaluate (rnf ee)
+                     return ee
+              go k (pfx, mkbench e)
+          | otherwise = return (k :: Int)
       go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "benchmarking %s\n" desc'
                            rpt <- runAndAnalyseOne k desc' b
@@ -145,9 +147,11 @@ runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.
               -> Criterion ()
 runNotAnalyse iters p bs' = goQuickly "" bs'
   where goQuickly :: String -> Benchmark -> Criterion ()
-        goQuickly pfx (Environment mkenv mkbench) = do
-            e <- liftIO mkenv
-            goQuickly pfx (mkbench e)
+        goQuickly pfx (Environment mkenv mkbench)
+            | or (map (p . addPrefix pfx) (benchNames $ mkbench undefined)) = do
+                e <- liftIO mkenv
+                goQuickly pfx (mkbench e)
+            | otherwise = return ()
         goQuickly pfx (Benchmark desc b)
             | p desc'   = do _ <- note "benchmarking %s\n" desc'
                              runOne b
