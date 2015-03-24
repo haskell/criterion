@@ -89,6 +89,10 @@ runAndAnalyseOne i desc bm = do
                    (if estConfidenceLevel == 0.95 then ""
                     else printf ", ci %.3f" estConfidenceLevel)
 
+-- | Determine whether an Environment benchmark should be run.
+shouldRunEnv :: (String -> Bool) -> String -> (s -> Benchmark) -> Bool
+shouldRunEnv p pfx mkbench =
+  any (p . addPrefix pfx) . benchNames . mkbench $ undefined
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
@@ -109,7 +113,7 @@ runAndAnalyse p bs' = do
   liftIO $ L.hPut handle header
 
   let go !k (pfx, Environment mkenv mkbench)
-          | or (map (p . addPrefix pfx) (benchNames $ mkbench undefined)) = do
+          | shouldRunEnv p pfx mkbench = do
               e <- liftIO $ do
                      ee <- mkenv
                      evaluate (rnf ee)
@@ -148,7 +152,7 @@ runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.
 runNotAnalyse iters p bs' = goQuickly "" bs'
   where goQuickly :: String -> Benchmark -> Criterion ()
         goQuickly pfx (Environment mkenv mkbench)
-            | or (map (p . addPrefix pfx) (benchNames $ mkbench undefined)) = do
+            | shouldRunEnv p pfx mkbench = do
                 e <- liftIO mkenv
                 goQuickly pfx (mkbench e)
             | otherwise = return ()
