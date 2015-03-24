@@ -1,4 +1,5 @@
-{-# LANGUAGE BangPatterns, ForeignFunctionInterface, ScopedTypeVariables #-}
+{-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface,
+    ScopedTypeVariables #-}
 
 -- |
 -- Module      : Criterion.Measurement
@@ -171,7 +172,11 @@ secs k
     | k < 0      = '-' : secs (-k)
     | k >= 1     = k        `with` "s"
     | k >= 1e-3  = (k*1e3)  `with` "ms"
+#ifdef mingw32_HOST_OS
+    | k >= 1e-6  = (k*1e6)  `with` "us"
+#else
     | k >= 1e-6  = (k*1e6)  `with` "μs"
+#endif
     | k >= 1e-9  = (k*1e9)  `with` "ns"
     | k >= 1e-12 = (k*1e12) `with` "ps"
     | k >= 1e-15 = (k*1e15) `with` "fs"
