@@ -45,6 +45,7 @@ module Criterion.Types
     , env
     , bench
     , bgroup
+    , addPrefix
     , benchNames
     -- ** Evaluation control
     , whnf
@@ -88,8 +89,10 @@ data Config = Config {
       -- ^ Confidence interval for bootstrap estimation (greater than
       -- 0, less than 1).
     , forceGC      :: Bool
-      -- ^ Force garbage collection between every benchmark run.  This
-      -- leads to more stable results.
+      -- ^ /Obsolete, unused/.  This option used to force garbage
+      -- collection between every benchmark run, but it no longer has
+      -- an effect (we now unconditionally force garbage collection).
+      -- This option remains solely for backwards API compatibility.
     , timeLimit    :: Double
       -- ^ Number of seconds to run a single benchmark.  (In practice,
       -- execution time will very slightly exceed this limit.)
@@ -426,12 +429,21 @@ bgroup :: String                -- ^ A name to identify the group of benchmarks.
        -> Benchmark
 bgroup = BenchGroup
 
+-- | Add the given prefix to a name.  If the prefix is empty, the name
+-- is returned unmodified.  Otherwise, the prefix and name are
+-- separated by a @\'\/\'@ character.
+addPrefix :: String             -- ^ Prefix.
+          -> String             -- ^ Name.
+          -> String
+addPrefix ""  desc = desc
+addPrefix pfx desc = pfx ++ '/' : desc
+
 -- | Retrieve the names of all benchmarks.  Grouped benchmarks are
 -- prefixed with the name of the group they're in.
 benchNames :: Benchmark -> [String]
 benchNames (Environment _ b) = benchNames (b undefined)
 benchNames (Benchmark d _)   = [d]
-benchNames (BenchGroup d bs) = map ((d ++ "/") ++) . concatMap benchNames $ bs
+benchNames (BenchGroup d bs) = map (addPrefix d) . concatMap benchNames $ bs
 
 instance Show Benchmark where
     show (Environment _ b) = "Environment _ " ++ show (b undefined)

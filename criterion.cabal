@@ -1,5 +1,5 @@
 name:           criterion
-version:        1.0.0.2
+version:        1.0.2.0
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
@@ -13,6 +13,7 @@ build-type:     Simple
 cabal-version:  >= 1.8
 extra-source-files:
   README.markdown
+  changelog.md
   examples/*.cabal
   examples/*.hs
   examples/*.html
@@ -72,7 +73,7 @@ library
 
   build-depends:
     aeson >= 0.8,
-    ansi-wl-pprint,
+    ansi-wl-pprint >= 0.6.7.2,
     base >= 4.5 && < 5,
     binary >= 0.5.1.0,
     bytestring >= 0.9 && < 1.0,
@@ -80,18 +81,18 @@ library
     containers,
     deepseq >= 1.1.0.0,
     directory,
-    either,
     filepath,
     Glob >= 0.7.2,
     hastache >= 0.6.0,
     mtl >= 2,
     mwc-random >= 0.8.0.3,
-    optparse-applicative,
+    optparse-applicative >= 0.11,
     parsec >= 3.1.0,
-    statistics >= 0.13.2.1,
+    statistics >= 0.13.2.2,
     text >= 0.11,
     time,
     transformers,
+    transformers-compat >= 0.4,
     vector >= 0.7.1,
     vector-algorithms >= 0.4
   if impl(ghc < 7.6)

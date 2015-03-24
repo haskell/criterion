@@ -15,7 +15,6 @@ module Criterion.Internal
       runAndAnalyse
     , runAndAnalyseOne
     , runNotAnalyse
-    , addPrefix
     ) where
 
 import Control.DeepSeq (rnf)
@@ -23,7 +22,7 @@ import Control.Exception (evaluate)
 import Control.Monad (foldM, forM_, void, when)
 import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (liftIO)
-import Control.Monad.Trans.Either
+import Control.Monad.Trans.Except
 import Data.Binary (encode)
 import Data.Int (Int64)
 import qualified Data.ByteString.Lazy as L
@@ -49,7 +48,7 @@ runAndAnalyseOne i desc bm = do
   when (timeTaken > timeLimit * 1.25) .
     void $ prolix "measurement took %s\n" (secs timeTaken)
   _ <- prolix "analysing with %d resamples\n" resamples
-  erp <- runEitherT $ analyseSample i desc meas
+  erp <- runExceptT $ analyseSample i desc meas
   case erp of
     Left err -> printError "*** Error: %s\n" err
     Right rpt@Report{..} -> do
@@ -90,6 +89,10 @@ runAndAnalyseOne i desc bm = do
                    (if estConfidenceLevel == 0.95 then ""
                     else printf ", ci %.3f" estConfidenceLevel)
 
+-- | Determine whether an Environment benchmark should be run.
+shouldRunEnv :: (String -> Bool) -> String -> (s -> Benchmark) -> Bool
+shouldRunEnv p pfx mkbench =
+  any (p . addPrefix pfx) . benchNames . mkbench $ undefined
 
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
@@ -109,12 +112,14 @@ runAndAnalyse p bs' = do
         return (file, handle)
   liftIO $ L.hPut handle header
 
-  let go !k (pfx, Environment mkenv mkbench) = do
-        e <- liftIO $ do
-               ee <- mkenv
-               evaluate (rnf ee)
-               return ee
-        go k (pfx, mkbench e)
+  let go !k (pfx, Environment mkenv mkbench)
+          | shouldRunEnv p pfx mkbench = do
+              e <- liftIO $ do
+                     ee <- mkenv
+                     evaluate (rnf ee)
+                     return ee
+              go k (pfx, mkbench e)
+          | otherwise = return (k :: Int)
       go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "benchmarking %s\n" desc'
                            rpt <- runAndAnalyseOne k desc' b
@@ -146,9 +151,11 @@ runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.
               -> Criterion ()
 runNotAnalyse iters p bs' = goQuickly "" bs'
   where goQuickly :: String -> Benchmark -> Criterion ()
-        goQuickly pfx (Environment mkenv mkbench) = do
-            e <- liftIO mkenv
-            goQuickly pfx (mkbench e)
+        goQuickly pfx (Environment mkenv mkbench)
+            | shouldRunEnv p pfx mkbench = do
+                e <- liftIO mkenv
+                goQuickly pfx (mkbench e)
+            | otherwise = return ()
         goQuickly pfx (Benchmark desc b)
             | p desc'   = do _ <- note "benchmarking %s\n" desc'
                              runOne b
@@ -158,15 +165,6 @@ runNotAnalyse iters p bs' = goQuickly "" bs'
             mapM_ (goQuickly (addPrefix pfx desc)) bs
 
         runOne (Benchmarkable run) = liftIO (run iters)
-
--- | Add the given prefix to a name.  If the prefix is empty, the name
--- is returned unmodified.  Otherwise, the prefix and name are
--- separated by a @\'\/\'@ character.
-addPrefix :: String             -- ^ Prefix.
-          -> String             -- ^ Name.
-          -> String
-addPrefix ""  desc = desc
-addPrefix pfx desc = pfx ++ '/' : desc
 
 -- | Write summary JUnit file (if applicable)
 junit :: [Report] -> Criterion ()
