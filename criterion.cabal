@@ -123,7 +123,9 @@ test-suite sanity
   build-depends:
     HUnit,
     base,
-    bytestring,
+    -- this bytestring dependency seems to be required for test builds to
+    -- work with GHC 7.4
+    bytestring >= 0.10,
     criterion,
     test-framework,
     test-framework-hunit
