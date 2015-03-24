@@ -81,7 +81,6 @@ library
     containers,
     deepseq >= 1.1.0.0,
     directory,
-    either,
     filepath,
     Glob >= 0.7.2,
     hastache >= 0.6.0,
@@ -93,6 +92,7 @@ library
     text >= 0.11,
     time,
     transformers,
+    transformers-compat >= 0.4,
     vector >= 0.7.1,
     vector-algorithms >= 0.4
   if impl(ghc < 7.6)
