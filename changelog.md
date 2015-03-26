@@ -1,3 +1,7 @@
+1.1.0.0
+
+*
+
 1.0.2.0
 
 * Bump lower bound on optparse-applicative to 0.11 to handle yet more
