@@ -638,24 +638,24 @@ instance NFData Report where
       rnf reportMeasured `seq` rnf reportAnalysis `seq` rnf reportOutliers `seq`
       rnf reportKDEs
 
-data DataRecord = Measurement (V.Vector Measured)
+data DataRecord = Measurement Int String (V.Vector Measured)
                 | Analysed Report
                 deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 instance Binary DataRecord where
-  put (Measurement v) = putWord8 0 >> put v
-  put (Analysed r)    = putWord8 1 >> put r
+  put (Measurement i n v) = putWord8 0 >> put i >> put n >> put v
+  put (Analysed r)        = putWord8 1 >> put r
 
   get = do
     w <- getWord8
     case w of
-      0 -> Measurement <$> get
+      0 -> Measurement <$> get <*> get <*> get
       1 -> Analysed    <$> get
       _ -> error ("bad tag " ++ show w)
 
 instance NFData DataRecord where
-  rnf (Measurement v) = rnf v
-  rnf (Analysed r) = rnf r
+  rnf (Measurement i n v) = rnf i `seq` rnf n `seq` rnf v
+  rnf (Analysed r)        = rnf r
 
 instance FromJSON DataRecord
 instance ToJSON DataRecord

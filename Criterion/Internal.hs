@@ -44,18 +44,18 @@ import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
 import Text.Printf (printf)
 
 -- | Run a single benchmark.
-runOne :: Benchmarkable -> Criterion (Vector Measured)
-runOne bm = do
+runOne :: Int -> String -> Benchmarkable -> Criterion DataRecord
+runOne i desc bm = do
   Config{..} <- ask
   (meas,timeTaken) <- liftIO $ runBenchmark bm timeLimit
   when (timeTaken > timeLimit * 1.25) .
     void $ prolix "measurement took %s\n" (secs timeTaken)
-  return meas
+  return (Measurement i desc meas)
 
 -- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion Report
+runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion DataRecord
 runAndAnalyseOne i desc bm = do
-  meas <- runOne bm
+  Measurement _ _ meas <- runOne i desc bm
   Config{..} <- ask
   _ <- prolix "analysing with %d resamples\n" resamples
   erp <- runExceptT $ analyseSample i desc meas
@@ -91,7 +91,7 @@ runAndAnalyseOne i desc bm = do
              (round (ovFraction * 100) :: Int) wibble
         return ()
       _ <- note "\n"
-      return rpt
+      return (Analysed rpt)
       where bs :: (Double -> String) -> String -> Estimate -> Criterion ()
             bs f metric Estimate{..} =
               note "%-20s %-10s (%s .. %s%s)\n" metric
@@ -133,7 +133,7 @@ runAndAnalyse p bs' = do
       go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "benchmarking %s\n" desc'
                            rpt <- runAndAnalyseOne k desc' b
-                           liftIO $ L.hPut handle (encode (Analysed rpt))
+                           liftIO $ L.hPut handle (encode rpt)
                            return $! k + 1
           | otherwise = return (k :: Int)
           where desc' = addPrefix pfx desc
