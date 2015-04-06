@@ -90,7 +90,7 @@ parseWith cfg =
   where
     onlyRun = matchNames $
       OnlyRun <$> option auto
-                  (long "only-run" <> short 'n' <> metavar "ITERS" <>
+                  (long "iters" <> short 'n' <> metavar "ITERS" <>
                    help "Run benchmarks, don't analyse")
     matchNames wat = wat
       <*> option match

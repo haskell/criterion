@@ -1,3 +1,5 @@
+* The "--only-run" option for benchmarks is renamed to "--iters".
+
 1.1.0.0
 
 * The dependency on the either package has been dropped in favour of a
