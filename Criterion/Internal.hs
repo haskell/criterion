@@ -158,13 +158,11 @@ runNotAnalyse iters p bs' = goQuickly "" bs'
             | otherwise = return ()
         goQuickly pfx (Benchmark desc b)
             | p desc'   = do _ <- note "benchmarking %s\n" desc'
-                             runOne b
+                             liftIO $ runRepeatedly b iters
             | otherwise = return ()
             where desc' = addPrefix pfx desc
         goQuickly pfx (BenchGroup desc bs) =
             mapM_ (goQuickly (addPrefix pfx desc)) bs
-
-        runOne (Benchmarkable run) = liftIO (run iters)
 
 -- | Write summary JUnit file (if applicable)
 junit :: [Report] -> Criterion ()

@@ -119,7 +119,7 @@ data Config = Config {
 -- | A pure function or impure action that can be benchmarked. The
 -- 'Int64' parameter indicates the number of times to run the given
 -- function or action.
-newtype Benchmarkable = Benchmarkable (Int64 -> IO ())
+newtype Benchmarkable = Benchmarkable { runRepeatedly :: Int64 -> IO () }
 
 -- | A collection of measurements made while benchmarking.
 --
