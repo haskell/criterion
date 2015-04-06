@@ -14,9 +14,11 @@ module Criterion.Internal
     (
       runAndAnalyse
     , runAndAnalyseOne
-    , runNotAnalyse
+    , runOne
+    , runFixedIters
     ) where
 
+import Control.Applicative ((<$>))
 import Control.DeepSeq (rnf)
 import Control.Exception (evaluate)
 import Control.Monad (foldM, forM_, void, when)
@@ -27,26 +29,34 @@ import Data.Binary (encode)
 import Data.Int (Int64)
 import qualified Data.ByteString.Lazy as L
 import Criterion.Analysis (analyseSample, noteOutliers)
-import Criterion.IO (header, hGetReports)
+import Criterion.IO (header, hGetRecords)
 import Criterion.IO.Printf (note, printError, prolix, writeCsv)
 import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
 import qualified Data.Map as Map
+import Data.Vector (Vector)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
                   openBinaryTempFile)
 import Text.Printf (printf)
 
--- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion Report
-runAndAnalyseOne i desc bm = do
+-- | Run a single benchmark.
+runOne :: Benchmarkable -> Criterion (Vector Measured)
+runOne bm = do
   Config{..} <- ask
   (meas,timeTaken) <- liftIO $ runBenchmark bm timeLimit
   when (timeTaken > timeLimit * 1.25) .
     void $ prolix "measurement took %s\n" (secs timeTaken)
+  return meas
+
+-- | Run a single benchmark and analyse its performance.
+runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion Report
+runAndAnalyseOne i desc bm = do
+  meas <- runOne bm
+  Config{..} <- ask
   _ <- prolix "analysing with %d resamples\n" resamples
   erp <- runExceptT $ analyseSample i desc meas
   case erp of
@@ -123,7 +133,7 @@ runAndAnalyse p bs' = do
       go !k (pfx, Benchmark desc b)
           | p desc'   = do _ <- note "benchmarking %s\n" desc'
                            rpt <- runAndAnalyseOne k desc' b
-                           liftIO $ L.hPut handle (encode rpt)
+                           liftIO $ L.hPut handle (encode (Analysed rpt))
                            return $! k + 1
           | otherwise = return (k :: Int)
           where desc' = addPrefix pfx desc
@@ -133,7 +143,7 @@ runAndAnalyse p bs' = do
 
   rpts <- (either fail return =<<) . liftIO $ do
     hSeek handle AbsoluteSeek 0
-    rs <- hGetReports handle
+    rs <- fmap (map (\(Analysed r) -> r)) <$> hGetRecords handle
     hClose handle
     case mbRawFile of
       Just _ -> return rs
@@ -143,13 +153,13 @@ runAndAnalyse p bs' = do
   junit rpts
 
 -- | Run a benchmark without analysing its performance.
-runNotAnalyse :: Int64            -- ^ Number of loop iterations to run.
+runFixedIters :: Int64            -- ^ Number of loop iterations to run.
               -> (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
                                   -- name.
               -> Benchmark
               -> Criterion ()
-runNotAnalyse iters p bs' = goQuickly "" bs'
+runFixedIters iters p bs' = goQuickly "" bs'
   where goQuickly :: String -> Benchmark -> Criterion ()
         goQuickly pfx (Environment mkenv mkbench)
             | shouldRunEnv p pfx mkbench = do

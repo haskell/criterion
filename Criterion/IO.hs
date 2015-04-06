@@ -13,13 +13,12 @@
 module Criterion.IO
     (
       header
-    , hGetReports
-    , hPutReports
-    , readReports
-    , writeReports
+    , hGetRecords
+    , hPutRecords
+    , readRecords
+    , writeRecords
     ) where
 
-import Criterion.Types (Report(..))
 import Data.Binary (Binary(..), encode)
 #if MIN_VERSION_binary(0, 6, 3)
 import Data.Binary.Get (runGetOrFail)
@@ -41,27 +40,27 @@ header = runPut $ do
   putByteString "criterio"
   mapM_ (putWord16be . fromIntegral) (versionBranch version)
 
--- | Read all reports from the given 'Handle'.
-hGetReports :: Handle -> IO (Either String [Report])
-hGetReports handle = do
+-- | Read all records from the given 'Handle'.
+hGetRecords :: Binary a => Handle -> IO (Either String [a])
+hGetRecords handle = do
   bs <- L.hGet handle (fromIntegral (L.length header))
   if bs == header
     then Right `fmap` readAll handle
     else return $ Left "unexpected header"
 
--- | Write reports to the given 'Handle'.
-hPutReports :: Handle -> [Report] -> IO ()
-hPutReports handle rs = do
+-- | Write records to the given 'Handle'.
+hPutRecords :: Binary a => Handle -> [a] -> IO ()
+hPutRecords handle rs = do
   L.hPut handle header
   mapM_ (L.hPut handle . encode) rs
 
--- | Read all reports from the given file.
-readReports :: FilePath -> IO (Either String [Report])
-readReports path = withFile path ReadMode hGetReports
+-- | Read all records from the given file.
+readRecords :: Binary a => FilePath -> IO (Either String [a])
+readRecords path = withFile path ReadMode hGetRecords
 
--- | Write reports to the given file.
-writeReports :: FilePath -> [Report] -> IO ()
-writeReports path rs = withFile path WriteMode (flip hPutReports rs)
+-- | Write records to the given file.
+writeRecords :: Binary a => FilePath -> [a] -> IO ()
+writeRecords path rs = withFile path WriteMode (flip hPutRecords rs)
 
 #if MIN_VERSION_binary(0, 6, 3)
 readAll :: Binary a => Handle -> IO [a]

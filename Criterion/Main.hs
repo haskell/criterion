@@ -47,7 +47,7 @@ module Criterion.Main
 import Control.Monad (unless)
 import Control.Monad.Trans (liftIO)
 import Criterion.IO.Printf (printError, writeCsv)
-import Criterion.Internal (runAndAnalyse, runNotAnalyse)
+import Criterion.Internal (runAndAnalyse, runFixedIters)
 import Criterion.Main.Options (MatchType(..), Mode(..), defaultConfig, describe,
                                versionInfo)
 import Criterion.Measurement (initializeTime)
@@ -137,7 +137,7 @@ defaultMainWith defCfg bs = do
     OnlyRun iters matchType benches -> do
       shouldRun <- selectBenches matchType benches bsgroup
       withConfig defaultConfig $
-        runNotAnalyse iters shouldRun bsgroup
+        runFixedIters iters shouldRun bsgroup
     Run cfg matchType benches -> do
       shouldRun <- selectBenches matchType benches bsgroup
       withConfig cfg $ do
