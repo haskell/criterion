@@ -85,50 +85,50 @@ parseWith :: Config
 parseWith cfg =
     (matchNames (Run <$> config cfg)) <|>
     onlyRun <|>
-    (List <$ switch (long "list" <> short 'l' <> help "list benchmarks")) <|>
-    (Version <$ switch (long "version" <> help "show version info"))
+    (List <$ switch (long "list" <> short 'l' <> help "List benchmarks")) <|>
+    (Version <$ switch (long "version" <> help "Show version info"))
   where
     onlyRun = matchNames $
       OnlyRun <$> option auto
                   (long "only-run" <> short 'n' <> metavar "ITERS" <>
-                   help "run benchmarks, don't analyse")
+                   help "Run benchmarks, don't analyse")
     matchNames wat = wat
       <*> option match
           (long "match" <> short 'm' <> metavar "MATCH" <> value Prefix <>
-           help "how to match benchmark names")
+           help "How to match benchmark names")
       <*> many (argument str (metavar "NAME..."))
 
 config :: Config -> Parser Config
 config Config{..} = Config
   <$> option (range 0.001 0.999)
       (long "ci" <> short 'I' <> metavar "CI" <> value confInterval <>
-       help "confidence interval")
+       help "Confidence interval")
   <*> (not <$> switch (long "no-gc" <> short 'G' <>
-                       help "do not collect garbage between iterations"))
+                       help "Do not collect garbage between iterations"))
   <*> option (range 0.1 86400)
       (long "time-limit" <> short 'L' <> metavar "SECS" <> value timeLimit <>
-       help "time limit to run a benchmark")
+       help "Time limit to run a benchmark")
   <*> option (range 1 1000000)
       (long "resamples" <> metavar "COUNT" <> value resamples <>
-       help "number of bootstrap resamples to perform")
+       help "Number of bootstrap resamples to perform")
   <*> many (option regressParams
             (long "regress" <> metavar "RESP:PRED.." <>
-             help "regressions to perform"))
+             help "Regressions to perform"))
   <*> outputOption rawDataFile (long "raw" <>
-                                help "file to write raw data to")
+                                help "File to write raw data to")
   <*> outputOption reportFile (long "output" <> short 'o' <>
-                               help "file to write report to")
+                               help "File to write report to")
   <*> outputOption csvFile (long "csv" <>
-                            help "file to write CSV summary to")
+                            help "File to write CSV summary to")
   <*> outputOption junitFile (long "junit" <>
-                              help "file to write JUnit summary to")
+                              help "File to write JUnit summary to")
   <*> (toEnum <$> option (range 0 2)
                   (long "verbosity" <> short 'v' <> metavar "LEVEL" <>
                    value (fromEnum verbosity) <>
-                   help "verbosity level"))
+                   help "Verbosity level"))
   <*> strOption (long "template" <> short 't' <> metavar "FILE" <>
                  value template <>
-                 help "template to use for report")
+                 help "Template to use for report")
 
 outputOption :: Maybe String -> Mod OptionFields String -> Parser (Maybe String)
 outputOption file m =
