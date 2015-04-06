@@ -104,16 +104,18 @@ library
     ghc-options: -fwarn-tabs
 
 executable criterion
-  buildable:      False
   hs-source-dirs: app
   main-is:        App.hs
+  other-modules:
+    Options
 
   ghc-options:
     -Wall -threaded -rtsopts
 
   build-depends:
     base,
-    criterion
+    criterion,
+    optparse-applicative
 
 test-suite sanity
   type:           exitcode-stdio-1.0
