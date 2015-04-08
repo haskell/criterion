@@ -54,7 +54,7 @@ data Mode = List
             -- ^ List all benchmarks.
           | Version
             -- ^ Print the version.
-          | OnlyRun Int64 MatchType [String]
+          | RunIters Int64 MatchType [String]
             -- ^ Run the given benchmarks, without collecting or
             -- analysing performance numbers.
           | Run Config MatchType [String]
@@ -84,12 +84,12 @@ parseWith :: Config
           -> Parser Mode
 parseWith cfg =
     (matchNames (Run <$> config cfg)) <|>
-    onlyRun <|>
+    runIters <|>
     (List <$ switch (long "list" <> short 'l' <> help "List benchmarks")) <|>
     (Version <$ switch (long "version" <> help "Show version info"))
   where
-    onlyRun = matchNames $
-      OnlyRun <$> option auto
+    runIters = matchNames $
+      RunIters <$> option auto
                   (long "iters" <> short 'n' <> metavar "ITERS" <>
                    help "Run benchmarks, don't analyse")
     matchNames wat = wat

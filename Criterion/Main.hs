@@ -134,7 +134,7 @@ defaultMainWith defCfg bs = do
   case wat of
     List -> mapM_ putStrLn . sort . concatMap benchNames $ bs
     Version -> putStrLn versionInfo
-    OnlyRun iters matchType benches -> do
+    RunIters iters matchType benches -> do
       shouldRun <- selectBenches matchType benches bsgroup
       withConfig defaultConfig $
         runFixedIters iters shouldRun bsgroup
