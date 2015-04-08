@@ -52,10 +52,9 @@ runOne i desc bm = do
     void $ prolix "measurement took %s\n" (secs timeTaken)
   return (Measurement i desc meas)
 
--- | Run a single benchmark and analyse its performance.
-runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion DataRecord
-runAndAnalyseOne i desc bm = do
-  Measurement _ _ meas <- runOne i desc bm
+-- | Analyse a single benchmark.
+analyseOne :: Int -> String -> Vector Measured -> Criterion DataRecord
+analyseOne i desc meas = do
   Config{..} <- ask
   _ <- prolix "analysing with %d resamples\n" resamples
   erp <- runExceptT $ analyseSample i desc meas
@@ -98,6 +97,12 @@ runAndAnalyseOne i desc bm = do
                    (f estPoint) (f estLowerBound) (f estUpperBound)
                    (if estConfidenceLevel == 0.95 then ""
                     else printf ", ci %.3f" estConfidenceLevel)
+
+-- | Run a single benchmark and analyse its performance.
+runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion DataRecord
+runAndAnalyseOne i desc bm = do
+  Measurement _ _ meas <- runOne i desc bm
+  analyseOne i desc meas
 
 -- | Determine whether an Environment benchmark should be run.
 shouldRunEnv :: (String -> Bool) -> String -> (s -> Benchmark) -> Bool
