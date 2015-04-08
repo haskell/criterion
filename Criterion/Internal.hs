@@ -23,7 +23,7 @@ import Control.DeepSeq (rnf)
 import Control.Exception (evaluate)
 import Control.Monad (foldM, forM_, void, when)
 import Control.Monad.Reader (ask, asks)
-import Control.Monad.Trans (liftIO)
+import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Except
 import Data.Binary (encode)
 import Data.Int (Int64)
@@ -104,18 +104,13 @@ runAndAnalyseOne i desc bm = do
   Measurement _ _ meas <- runOne i desc bm
   analyseOne i desc meas
 
--- | Determine whether an Environment benchmark should be run.
-shouldRunEnv :: (String -> Bool) -> String -> (s -> Benchmark) -> Bool
-shouldRunEnv p pfx mkbench =
-  any (p . addPrefix pfx) . benchNames . mkbench $ undefined
-
 -- | Run, and analyse, one or more benchmarks.
 runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
                                   -- whether to run a benchmark by its
                                   -- name.
               -> Benchmark
               -> Criterion ()
-runAndAnalyse p bs' = do
+runAndAnalyse select bs = do
   mbRawFile <- asks rawDataFile
   (rawFile, handle) <- liftIO $
     case mbRawFile of
@@ -127,24 +122,10 @@ runAndAnalyse p bs' = do
         return (file, handle)
   liftIO $ L.hPut handle header
 
-  let go !k (pfx, Environment mkenv mkbench)
-          | shouldRunEnv p pfx mkbench = do
-              e <- liftIO $ do
-                     ee <- mkenv
-                     evaluate (rnf ee)
-                     return ee
-              go k (pfx, mkbench e)
-          | otherwise = return (k :: Int)
-      go !k (pfx, Benchmark desc b)
-          | p desc'   = do _ <- note "benchmarking %s\n" desc'
-                           rpt <- runAndAnalyseOne k desc' b
-                           liftIO $ L.hPut handle (encode rpt)
-                           return $! k + 1
-          | otherwise = return (k :: Int)
-          where desc' = addPrefix pfx desc
-      go !k (pfx, BenchGroup desc bs) =
-          foldM go k [(addPrefix pfx desc, b) | b <- bs]
-  _ <- go 0 ("", bs')
+  for select bs $ \idx desc bm -> do
+    _ <- note "benchmarking %s\n" desc
+    rpt <- runAndAnalyseOne idx desc bm
+    liftIO $ L.hPut handle (encode rpt)
 
   rpts <- (either fail return =<<) . liftIO $ do
     hSeek handle AbsoluteSeek 0
@@ -164,20 +145,33 @@ runFixedIters :: Int64            -- ^ Number of loop iterations to run.
                                   -- name.
               -> Benchmark
               -> Criterion ()
-runFixedIters iters p bs' = goQuickly "" bs'
-  where goQuickly :: String -> Benchmark -> Criterion ()
-        goQuickly pfx (Environment mkenv mkbench)
-            | shouldRunEnv p pfx mkbench = do
-                e <- liftIO mkenv
-                goQuickly pfx (mkbench e)
-            | otherwise = return ()
-        goQuickly pfx (Benchmark desc b)
-            | p desc'   = do _ <- note "benchmarking %s\n" desc'
-                             liftIO $ runRepeatedly b iters
-            | otherwise = return ()
-            where desc' = addPrefix pfx desc
-        goQuickly pfx (BenchGroup desc bs) =
-            mapM_ (goQuickly (addPrefix pfx desc)) bs
+runFixedIters iters select bs =
+  for select bs $ \_idx desc bm -> do
+    _ <- note "benchmarking %s\n" desc
+    liftIO $ runRepeatedly bm iters
+
+-- | Iterate over benchmarks.
+for :: MonadIO m => (String -> Bool) -> Benchmark
+    -> (Int -> String -> Benchmarkable -> m ()) -> m ()
+for select bs0 handle = go (0::Int) ("", bs0) >> return ()
+  where
+    go !idx (pfx, Environment mkenv mkbench)
+      | shouldRun pfx mkbench = do
+        e <- liftIO $ do
+          ee <- mkenv
+          evaluate (rnf ee)
+          return ee
+        go idx (pfx, mkbench e)
+      | otherwise = return idx
+    go idx (pfx, Benchmark desc b)
+      | select desc' = do handle idx desc' b; return $! idx + 1
+      | otherwise    = return idx
+      where desc' = addPrefix pfx desc
+    go idx (pfx, BenchGroup desc bs) =
+      foldM go idx [(addPrefix pfx desc, b) | b <- bs]
+
+    shouldRun pfx mkbench =
+      any (select . addPrefix pfx) . benchNames . mkbench $ undefined
 
 -- | Write summary JUnit file (if applicable)
 junit :: [Report] -> Criterion ()
