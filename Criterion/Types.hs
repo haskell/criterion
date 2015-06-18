@@ -385,13 +385,13 @@ data Benchmark where
 -- benchmarks to be run.
 --
 -- > setupEnv = do
--- >   let small = replicate 1000 1
--- >   big <- readFile "/usr/dict/words"
+-- >   let small = replicate 1000 (1 :: Int)
+-- >   big <- map length . words <$> readFile "/usr/dict/words"
 -- >   return (small, big)
 -- >
 -- > main = defaultMain [
 -- >    -- notice the lazy pattern match here!
--- >    env setupEnv $ \ ~(small,big) ->
+-- >    env setupEnv $ \ ~(small,big) -> bgroup "main" [
 -- >    bgroup "small" [
 -- >      bench "length" $ whnf length small
 -- >    , bench "length . filter" $ whnf (length . filter (==1)) small
@@ -400,7 +400,7 @@ data Benchmark where
 -- >      bench "length" $ whnf length big
 -- >    , bench "length . filter" $ whnf (length . filter (==1)) big
 -- >    ]
--- >  ]
+-- >  ] ]
 --
 -- __Discussion.__ The environment created in the example above is
 -- intentionally /not/ ideal.  As Haskell's scoping rules suggest, the
