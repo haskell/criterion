@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, RecordWildCards #-}
+{-# LANGUAGE BangPatterns, CPP, RecordWildCards #-}
 -- |
 -- Module      : Criterion
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan
@@ -18,7 +18,6 @@ module Criterion.Internal
     , runFixedIters
     ) where
 
-import Control.Applicative ((<$>))
 import Control.DeepSeq (rnf)
 import Control.Exception (evaluate)
 import Control.Monad (foldM, forM_, void, when)
@@ -42,6 +41,10 @@ import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
                   openBinaryTempFile)
 import Text.Printf (printf)
+
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative ((<$>))
+#endif
 
 -- | Run a single benchmark.
 runOne :: Int -> String -> Benchmarkable -> Criterion DataRecord

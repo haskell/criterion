@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, RecordWildCards #-}
+{-# LANGUAGE CPP, DeriveDataTypeable, DeriveGeneric, RecordWildCards #-}
 
 -- |
 -- Module      : Criterion.Main.Options
@@ -29,7 +29,6 @@ import Data.Char (isSpace, toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.List (isPrefixOf)
-import Data.Monoid (mempty)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Options.Applicative
@@ -39,6 +38,10 @@ import Options.Applicative.Types
 import Paths_criterion (version)
 import Text.PrettyPrint.ANSI.Leijen (Doc, text)
 import qualified Data.Map as M
+
+#if !MIN_VERSION_base(4,8,0)
+import Data.Monoid (mempty)
+#endif
 
 -- | How to match a benchmark name.
 data MatchType = Prefix

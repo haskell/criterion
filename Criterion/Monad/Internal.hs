@@ -1,4 +1,4 @@
-{-# LANGUAGE GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
+{-# LANGUAGE CPP, GeneralizedNewtypeDeriving, MultiParamTypeClasses #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
 
 -- |
@@ -17,12 +17,15 @@ module Criterion.Monad.Internal
     , Crit(..)
     ) where
 
-import Control.Applicative (Applicative)
 import Control.Monad.Reader (MonadReader(..), ReaderT)
 import Control.Monad.Trans (MonadIO)
 import Criterion.Types (Config)
 import Data.IORef (IORef)
 import System.Random.MWC (GenIO)
+
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative (Applicative)
+#endif
 
 data Crit = Crit {
     config   :: !Config
