@@ -1,4 +1,4 @@
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GADTs, RecordWildCards #-}
+{-# LANGUAGE CPP, DeriveDataTypeable, DeriveGeneric, GADTs, RecordWildCards #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
 
 -- |
@@ -63,7 +63,6 @@ module Criterion.Types
     , DataRecord(..)
     ) where
 
-import Control.Applicative ((<$>), (<*>))
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (evaluate)
 import Data.Aeson (FromJSON(..), ToJSON(..))
@@ -71,11 +70,15 @@ import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.Map (Map, fromList)
-import Data.Monoid (Monoid(..))
 import GHC.Generics (Generic)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Resampling.Bootstrap as B
+
+#if !MIN_VERSION_base(4,8,0)
+import Control.Applicative ((<$>), (<*>))
+import Data.Monoid (Monoid(..))
+#endif
 
 -- | Control the amount of information displayed.
 data Verbosity = Quiet

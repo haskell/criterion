@@ -1,4 +1,4 @@
-{-# LANGUAGE BangPatterns, DeriveDataTypeable, RecordWildCards #-}
+{-# LANGUAGE BangPatterns, CPP, DeriveDataTypeable, RecordWildCards #-}
 -- |
 -- Module      : Criterion.Analysis
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan
@@ -39,7 +39,6 @@ import Criterion.Monad (Criterion, getGen, getOverhead)
 import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
-import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
 import Statistics.Regression (bootstrapRegress, olsRegress)
@@ -54,6 +53,10 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Resampling.Bootstrap as B
+
+#if !MIN_VERSION_base(4,8,0)
+import Data.Monoid (Monoid(..))
+#endif
 
 -- | Classify outliers in a data set, using the boxplot technique.
 classifyOutliers :: Sample -> Outliers

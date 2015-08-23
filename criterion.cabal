@@ -10,7 +10,7 @@ category:       Development, Performance, Testing, Benchmarking
 homepage:       http://www.serpentine.com/criterion
 bug-reports:    https://github.com/bos/criterion/issues
 build-type:     Simple
-cabal-version:  >= 1.8
+cabal-version:  >= 1.8.0.4
 extra-source-files:
   README.markdown
   changelog.md
