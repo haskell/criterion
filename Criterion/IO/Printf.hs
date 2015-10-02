@@ -25,7 +25,7 @@ import Control.Monad.Trans (liftIO)
 import Criterion.Monad (Criterion)
 import Criterion.Types (Config(csvFile, verbosity), Verbosity(..))
 import Data.Foldable (forM_)
-import System.IO (Handle, stderr, stdout)
+import System.IO (Handle, hFlush, stderr, stdout)
 import Text.Printf (PrintfArg)
 import qualified Data.ByteString.Lazy as B
 import qualified Data.Csv as Csv
@@ -47,12 +47,12 @@ class CritHPrintfType a where
 instance CritHPrintfType (Criterion a) where
   chPrintfImpl check (PrintfCont final _)
     = do x <- ask
-         when (check x) (liftIO final)
+         when (check x) (liftIO (final >> hFlush stderr >> hFlush stdout))
          return undefined
 
 instance CritHPrintfType (IO a) where
   chPrintfImpl _ (PrintfCont final _)
-    = final >> return undefined
+    = final >> hFlush stderr >> hFlush stdout >> return undefined
 
 instance (CritHPrintfType r, PrintfArg a) => CritHPrintfType (a -> r) where
   chPrintfImpl check (PrintfCont _ anotherArg) x
