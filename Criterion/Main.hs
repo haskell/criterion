@@ -42,6 +42,7 @@ module Criterion.Main
     , defaultConfig
     -- * Other useful code
     , makeMatcher
+    , runMode
     ) where
 
 import Control.Monad (unless)
@@ -130,7 +131,14 @@ defaultMainWith :: Config
                 -> IO ()
 defaultMainWith defCfg bs = do
   wat <- execParser (describe defCfg)
-  let bsgroup = BenchGroup "" bs
+  runMode wat bs
+
+-- | Run a set of 'Benchmark's with the given 'Mode'.
+--
+-- This can be useful if you have a 'Mode' from some other source (e.g. from a
+-- one in your benchmark driver's command-line parser).
+runMode :: Mode -> [Benchmark] -> IO ()
+runMode wat bs =
   case wat of
     List -> mapM_ putStrLn . sort . concatMap benchNames $ bs
     Version -> putStrLn versionInfo
@@ -145,6 +153,7 @@ defaultMainWith defCfg bs = do
                   "StddevUB")
         liftIO initializeTime
         runAndAnalyse shouldRun bsgroup
+  where bsgroup = BenchGroup "" bs
 
 -- | Display an error message from a command line parsing failure, and
 -- exit.
