@@ -95,7 +95,7 @@ parseWith cfg =
     matchNames wat = wat
       <*> option match
           (long "match" <> short 'm' <> metavar "MATCH" <> value Prefix <>
-           help "How to match benchmark names")
+           help "How to match benchmark names (\"prefix\" or \"glob\")")
       <*> many (argument str (metavar "NAME..."))
 
 config :: Config -> Parser Config
@@ -151,8 +151,9 @@ match = do
     mm | mm `isPrefixOf` "pfx"    -> return Prefix
        | mm `isPrefixOf` "prefix" -> return Prefix
        | mm `isPrefixOf` "glob"   -> return Glob
-       | otherwise                -> readerError $
-                                     show m ++ " is not a known match type"
+       | otherwise                ->
+         readerError $ show m ++ " is not a known match type. "
+                              ++ "Try \"prefix\" or \"glob\"."
 
 regressParams :: ReadM ([String], String)
 regressParams = do
