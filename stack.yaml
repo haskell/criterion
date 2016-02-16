@@ -3,10 +3,6 @@ resolver: ghc-8.1.20160206
 packages:
 - '.'
 - location:
-    git: git@github.com:iu-parfunc/vector-th-unbox
-    commit: 23c4254e234e6530efcbb42d9eec38fe9aab9aad
-  extra-dep: true
-- location:
     git: git@github.com:bos/aeson
     commit: fdb867286b6b4fd5afc703718b0a30dadc300db2
   extra-dep: true
@@ -44,6 +40,7 @@ extra-deps:
 - cassava-0.4.5.0
 - vector-algorithms-0.7.0.1
 - vector-binary-instances-0.2.1.1
+- vector-th-unbox-0.2.1.4
 - math-functions-0.1.5.2
 - statistics-0.13.2.3
 
