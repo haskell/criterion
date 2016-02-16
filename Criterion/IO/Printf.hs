@@ -34,7 +34,7 @@ import qualified Text.Printf (HPrintfType, hPrintf)
 -- First item is the action to print now, given all the arguments
 -- gathered together so far.  The second item is the function that
 -- will take a further argument and give back a new PrintfCont.
-data PrintfCont = PrintfCont (IO ()) (PrintfArg a => a -> PrintfCont)
+data PrintfCont = PrintfCont (IO ()) (forall a. PrintfArg a => a -> PrintfCont)
 
 -- | An internal class that acts like Printf/HPrintf.
 --
