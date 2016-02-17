@@ -2,13 +2,10 @@ resolver: ghc-8.1.20160206
 
 packages:
 - '.'
-- location:
-    git: git@github.com:bos/aeson
-    commit: fdb867286b6b4fd5afc703718b0a30dadc300db2
-  extra-dep: true
 
 extra-deps:
 - abstract-par-0.3.3
+- aeson-0.11.0.0
 - ansi-terminal-0.6.2.3
 - ansi-wl-pprint-0.6.7.3
 - cereal-0.5.1.0
