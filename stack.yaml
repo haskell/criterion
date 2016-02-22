@@ -1,4 +1,8 @@
-resolver: ghc-8.1.20160206
+# Built with unboxed sums tarball 1.3:
+# resolver: ghc-8.1.20160206
+
+# Now tarball 1.5:
+resolver: ghc-8.1.20160221
 
 packages:
 - '.'
