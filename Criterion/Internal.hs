@@ -171,7 +171,8 @@ for select bs0 handle = go (0::Int) ("", bs0) >> return ()
       foldM go idx [(addPrefix pfx desc, b) | b <- bs]
 
     shouldRun pfx mkbench =
-      any (select . addPrefix pfx) . benchNames . mkbench $ undefined
+      any (select . addPrefix pfx) . benchNames . mkbench $
+      error "Criterion.env could not determine the list of your benchmarks since they force the environment (see the documentation for details)"
 
 -- | Write summary JUnit file (if applicable)
 junit :: [Report] -> Criterion ()

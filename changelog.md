@@ -1,4 +1,18 @@
-* The "--only-run" option for benchmarks is renamed to "--iters".
+1.1.1.0
+
+*
+
+* We now flush stdout and stderr after printing messages, so that
+  output is printed promptly even when piped (e.g. into a pager).
+
+* A new function `runMode` allows custom benchmarking applications to
+  run benchmarks with control over the `Mode` used.
+
+* Added support for Linux on non-Intel CPUs.
+
+* This version supports GHC 8.
+
+* The `--only-run` option for benchmarks is renamed to `--iters`.
 
 1.1.0.0
 
