@@ -1,6 +1,8 @@
 1.1.1.0
 
-*
+* If a benchmark uses `Criterion.env` in a non-lazy way, and you try
+  to use `--list` to list benchmark names, you'll now get an
+  understandable error message instead of something cryptic.
 
 * We now flush stdout and stderr after printing messages, so that
   output is printed promptly even when piped (e.g. into a pager).
