@@ -25,7 +25,8 @@ import Control.Monad (foldM, forM_, void, when)
 import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Except
-import Data.Binary (encode)
+import qualified Data.Aeson as Aeson (encode)
+import qualified Data.Binary as Binary (encode)
 import Data.Int (Int64)
 import qualified Data.ByteString.Lazy as L
 import Criterion.Analysis (analyseSample, noteOutliers)
@@ -125,7 +126,7 @@ runAndAnalyse select bs = do
   for select bs $ \idx desc bm -> do
     _ <- note "benchmarking %s\n" desc
     rpt <- runAndAnalyseOne idx desc bm
-    liftIO $ L.hPut handle (encode rpt)
+    liftIO $ L.hPut handle (Binary.encode rpt)
 
   rpts <- (either fail return =<<) . liftIO $ do
     hSeek handle AbsoluteSeek 0
@@ -136,6 +137,7 @@ runAndAnalyse select bs = do
       _      -> removeFile rawFile >> return rs
 
   report rpts
+  json rpts
   junit rpts
 
 -- | Run a benchmark without analysing its performance.
@@ -173,6 +175,14 @@ for select bs0 handle = go (0::Int) ("", bs0) >> return ()
     shouldRun pfx mkbench =
       any (select . addPrefix pfx) . benchNames . mkbench $
       error "Criterion.env could not determine the list of your benchmarks since they force the environment (see the documentation for details)"
+
+-- | Write summary JSON file (if applicable)
+json :: [Report] -> Criterion ()
+json rs
+  = do jsonOpt <- asks jsonFile
+       case jsonOpt of
+         Just fn -> liftIO . L.writeFile fn $ Aeson.encode rs
+         Nothing -> return ()
 
 -- | Write summary JUnit file (if applicable)
 junit :: [Report] -> Criterion ()

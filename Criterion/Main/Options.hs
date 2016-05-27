@@ -72,6 +72,7 @@ defaultConfig = Config {
     , rawDataFile  = Nothing
     , reportFile   = Nothing
     , csvFile      = Nothing
+    , jsonFile     = Nothing
     , junitFile    = Nothing
     , verbosity    = Normal
     , template     = "default"
@@ -120,6 +121,8 @@ config Config{..} = Config
                                help "File to write report to")
   <*> outputOption csvFile (long "csv" <>
                             help "File to write CSV summary to")
+  <*> outputOption jsonFile (long "json" <>
+                             help "File to write JSON summary to")
   <*> outputOption junitFile (long "junit" <>
                               help "File to write JUnit summary to")
   <*> (toEnum <$> option (range 0 2)

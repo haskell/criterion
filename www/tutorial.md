@@ -492,9 +492,9 @@ only other template provided by default is `json`, so if you run with
 `--template json --output mydata.json`, you'll get a big JSON dump of
 your data.
 
-You can also write out a basic CSV file using `--csv`, and a
-JUnit-compatible XML file using `--junit`.  (The contents of these
-files are likely to change in the not-too-distant future.)
+You can also write out a basic CSV file using `--csv`, a JSON file using
+`--json`, and a JUnit-compatible XML file using `--junit`.  (The contents
+of these files are likely to change in the not-too-distant future.)
 
 
 # Linear regression
