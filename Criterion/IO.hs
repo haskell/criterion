@@ -13,6 +13,7 @@
 module Criterion.IO
     (
       header
+    , headerRoot
     , hGetRecords
     , hPutRecords
     , readRecords
@@ -26,7 +27,7 @@ import Data.Binary.Get (runGetOrFail)
 import Data.Binary.Get (runGetState)
 #endif
 import Data.Binary.Put (putByteString, putWord16be, runPut)
-import Data.ByteString.Char8 ()
+import qualified Data.ByteString.Char8 as B
 import Data.Version (Version(..))
 import Paths_criterion (version)
 import System.IO (Handle, IOMode(..), withFile)
@@ -37,8 +38,12 @@ import qualified Data.ByteString.Lazy as L
 -- compatibility.
 header :: L.ByteString
 header = runPut $ do
-  putByteString "criterio"
+  putByteString (B.pack headerRoot)
   mapM_ (putWord16be . fromIntegral) (versionBranch version)
+
+-- | The magic string we expect to start off the header.
+-- headerRoot :: String
+headerRoot = "criterio"
 
 -- | Read all records from the given 'Handle'.
 hGetRecords :: Binary a => Handle -> IO (Either String [a])
