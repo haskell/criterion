@@ -28,9 +28,10 @@ import Control.Monad.Trans.Except
 import qualified Data.Aeson as Aeson (encode)
 import qualified Data.Binary as Binary (encode)
 import Data.Int (Int64)
+import Data.List (intercalate)
 import qualified Data.ByteString.Lazy as L
 import Criterion.Analysis (analyseSample, noteOutliers)
-import Criterion.IO (header, hGetRecords)
+import Criterion.IO (header, headerRoot, hGetRecords)
 import Criterion.IO.Printf (note, printError, prolix, writeCsv)
 import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
@@ -38,6 +39,8 @@ import Criterion.Report (report)
 import Criterion.Types hiding (measure)
 import qualified Data.Map as Map
 import Data.Vector (Vector)
+import Data.Version (Version(..))
+import Paths_criterion (version)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
@@ -181,7 +184,9 @@ json :: [Report] -> Criterion ()
 json rs
   = do jsonOpt <- asks jsonFile
        case jsonOpt of
-         Just fn -> liftIO . L.writeFile fn $ Aeson.encode rs
+         Just fn -> liftIO . L.writeFile fn $ Aeson.encode
+                     (headerRoot,
+                      intercalate "." $ map show $ versionBranch version, rs)
          Nothing -> return ()
 
 -- | Write summary JUnit file (if applicable)
