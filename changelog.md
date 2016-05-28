@@ -1,4 +1,20 @@
-* The "--only-run" option for benchmarks is renamed to "--iters".
+1.1.1.0
+
+* If a benchmark uses `Criterion.env` in a non-lazy way, and you try
+  to use `--list` to list benchmark names, you'll now get an
+  understandable error message instead of something cryptic.
+
+* We now flush stdout and stderr after printing messages, so that
+  output is printed promptly even when piped (e.g. into a pager).
+
+* A new function `runMode` allows custom benchmarking applications to
+  run benchmarks with control over the `Mode` used.
+
+* Added support for Linux on non-Intel CPUs.
+
+* This version supports GHC 8.
+
+* The `--only-run` option for benchmarks is renamed to `--iters`.
 
 1.1.0.0
 

@@ -72,6 +72,7 @@ defaultConfig = Config {
     , rawDataFile  = Nothing
     , reportFile   = Nothing
     , csvFile      = Nothing
+    , jsonFile     = Nothing
     , junitFile    = Nothing
     , verbosity    = Normal
     , template     = "default"
@@ -95,7 +96,7 @@ parseWith cfg =
     matchNames wat = wat
       <*> option match
           (long "match" <> short 'm' <> metavar "MATCH" <> value Prefix <>
-           help "How to match benchmark names")
+           help "How to match benchmark names (\"prefix\" or \"glob\")")
       <*> many (argument str (metavar "NAME..."))
 
 config :: Config -> Parser Config
@@ -120,6 +121,8 @@ config Config{..} = Config
                                help "File to write report to")
   <*> outputOption csvFile (long "csv" <>
                             help "File to write CSV summary to")
+  <*> outputOption jsonFile (long "json" <>
+                             help "File to write JSON summary to")
   <*> outputOption junitFile (long "junit" <>
                               help "File to write JUnit summary to")
   <*> (toEnum <$> option (range 0 2)
@@ -151,8 +154,9 @@ match = do
     mm | mm `isPrefixOf` "pfx"    -> return Prefix
        | mm `isPrefixOf` "prefix" -> return Prefix
        | mm `isPrefixOf` "glob"   -> return Glob
-       | otherwise                -> readerError $
-                                     show m ++ " is not a known match type"
+       | otherwise                ->
+         readerError $ show m ++ " is not a known match type. "
+                              ++ "Try \"prefix\" or \"glob\"."
 
 regressParams :: ReadM ([String], String)
 regressParams = do

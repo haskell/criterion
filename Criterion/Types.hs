@@ -108,6 +108,8 @@ data Config = Config {
       -- ^ File to write report output to, with template expanded.
     , csvFile      :: Maybe FilePath
       -- ^ File to write CSV summary to.
+    , jsonFile     :: Maybe FilePath
+      -- ^ File to write JSON-formatted results to.
     , junitFile    :: Maybe FilePath
       -- ^ File to write JUnit-compatible XML results to.
     , verbosity    :: Verbosity
