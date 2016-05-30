@@ -55,7 +55,7 @@ hGetRecords handle = do
   bs <- L.hGet handle (fromIntegral (L.length header))
   if bs == header
     then Right `fmap` readAll handle
-    else return $ Left "unexpected header"
+    else return $ Left $ "unexpected header, expected criterion version: "++show (versionBranch version)
 
 -- | Write records to the given 'Handle'.
 hPutRecords :: Binary a => Handle -> [a] -> IO ()
