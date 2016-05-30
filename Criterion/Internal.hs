@@ -37,7 +37,7 @@ import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
 import qualified Data.Map as Map
-import Data.Vector (Vector, fromList)
+import qualified Data.Vector as V
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
@@ -54,7 +54,7 @@ runOne i desc bm = do
   return (Measurement i desc meas)
 
 -- | Analyse a single benchmark.
-analyseOne :: Int -> String -> Vector Measured -> Criterion DataRecord
+analyseOne :: Int -> String -> V.Vector Measured -> Criterion DataRecord
 analyseOne i desc meas = do
   Config{..} <- ask
   _ <- prolix "analysing with %d resamples\n" resamples
@@ -130,6 +130,11 @@ runAndAnalyse select bs = do
   for select bs $ \idx desc bm -> do
     _ <- note "benchmarking %s\n" desc
     Analysed rpt <- runAndAnalyseOne idx desc bm
+    liftIO $ putStrLn $ "First Measured in report: " ++ show (V.head (reportMeasured rpt))
+    liftIO $ putStrLn $ "Same thing JSON-encoded " ++ show (Aeson.encode $ V.head $ reportMeasured rpt)
+    liftIO $ putStrLn $ "Round tripped through JSON " ++ show
+              (Aeson.eitherDecode (Aeson.encode $ V.head $ reportMeasured rpt)
+               :: Either String Measured)
     liftIO $ L.hPut handle (Aeson.encode (rpt::Report))
     liftIO $ hPutStr handle ","
   liftIO $ hPutStr handle "]]\n"
