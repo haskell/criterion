@@ -18,6 +18,7 @@ module Criterion.Internal
     , runFixedIters
     ) where
 
+import qualified Data.Aeson as Aeson
 import Control.Applicative ((<$>))
 import Control.DeepSeq (rnf)
 import Control.Exception (evaluate)
@@ -25,22 +26,22 @@ import Control.Monad (foldM, forM_, void, when)
 import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Except
-import qualified Data.Binary as Binary (encode)
+-- import qualified Data.Binary as Binary (encode)
 import Data.Int (Int64)
-import qualified Data.ByteString.Lazy as L
+import qualified Data.ByteString.Lazy.Char8 as L
 import Criterion.Analysis (analyseSample, noteOutliers)
-import Criterion.IO (header, writeJSONReports, hGetRecords)
+import Criterion.IO (header, headerRoot, critVersion, readJSONReports, writeJSONReports, hGetRecords)
 import Criterion.IO.Printf (note, printError, prolix, writeCsv)
 import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
 import qualified Data.Map as Map
-import Data.Vector (Vector)
+import Data.Vector (Vector, fromList)
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
-                  openBinaryTempFile)
+                  openBinaryTempFile, openTempFile, openFile, hPutStr)
 import Text.Printf (printf)
 
 -- | Run a single benchmark.
@@ -111,33 +112,42 @@ runAndAnalyse :: (String -> Bool) -- ^ A predicate that chooses
               -> Benchmark
               -> Criterion ()
 runAndAnalyse select bs = do
-  mbRawFile <- asks rawDataFile
-  (rawFile, handle) <- liftIO $
-    case mbRawFile of
+  mbJsonFile <- asks jsonFile
+  (jsonFile, handle) <- liftIO $
+    case mbJsonFile of
       Nothing -> do
         tmpDir <- getTemporaryDirectory
-        openBinaryTempFile tmpDir "criterion.dat"
+        openTempFile tmpDir "criterion.json"
       Just file -> do
-        handle <- openBinaryFile file ReadWriteMode
+        handle <- openFile file ReadWriteMode
         return (file, handle)
-  liftIO $ L.hPut handle header
+  -- The type we write to the file is ReportFileContents, a triple.
+  -- But here we ASSUME that the tuple will become a JSON array.
+  -- This assumption lets us stream the reports to the file incrementally:
+  liftIO $ hPutStr handle $ "[\"" ++ headerRoot ++ "\"," ++ 
+                             "\"" ++ critVersion ++ "\", ["
 
   for select bs $ \idx desc bm -> do
     _ <- note "benchmarking %s\n" desc
-    rpt <- runAndAnalyseOne idx desc bm
-    liftIO $ L.hPut handle (Binary.encode rpt)
+    Analysed rpt <- runAndAnalyseOne idx desc bm
+    liftIO $ L.hPut handle (Aeson.encode (rpt::Report))
+    liftIO $ hPutStr handle ","
+  liftIO $ hPutStr handle "]]\n"
+  liftIO $ hClose handle
 
-  rpts <- (either fail return =<<) . liftIO $ do
-    hSeek handle AbsoluteSeek 0
-    rs <- fmap (map (\(Analysed r) -> r)) <$> hGetRecords handle
-    hClose handle
-    case mbRawFile of
-      Just _ -> return rs
-      _      -> removeFile rawFile >> return rs
+  rpts <- liftIO $ do
+    res <- readJSONReports jsonFile
+    case res of
+      Left err -> error $ "error reading file "++jsonFile++":\n  "++show err
+      Right (_,_,rs) -> 
+       case mbJsonFile of
+         Just _ -> return rs
+         _      -> removeFile jsonFile >> return rs
 
   report rpts
   json rpts
   junit rpts
+
 
 -- | Run a benchmark without analysing its performance.
 runFixedIters :: Int64            -- ^ Number of loop iterations to run.
@@ -206,3 +216,4 @@ junit rs
         esc '>'  = "&gt;"
         esc '&'  = "&amp;"
         esc c    = [c]
+
