@@ -173,8 +173,15 @@ data Measured = Measured {
 instance FromJSON Measured where
     parseJSON v = do
       (a,b,c,d,e,f,g,h,i,j,k) <- parseJSON v
-      return $ Measured a b c d e f g h i j k
+      -- The first four fields are not subject to the encoding policy:
+      return $ Measured a b c d
+                       (int e) (int f) (int g)
+                       (db h) (db i) (db j) (db k)
+      where int = toInt; db = toDouble
 
+-- Here we treat the numeric fields as `Maybe Int64` and `Maybe Double`
+-- and we use a specific policy for deciding when they should be Nothing,
+-- which becomes null in JSON.
 instance ToJSON Measured where
     toJSON Measured{..} = toJSON
       (measTime, measCpuTime, measCycles, measIters,
