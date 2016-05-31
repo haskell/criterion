@@ -1,3 +1,8 @@
+1.1.3.0
+
+* Add `--json` option for writing reports in JSON rather than binary
+  format.  Also: various bugfixes related to this.
+
 1.1.1.0
 
 * If a benchmark uses `Criterion.env` in a non-lazy way, and you try
