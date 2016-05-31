@@ -40,8 +40,7 @@ import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
-import System.IO (IOMode(..), SeekMode(..), hClose, hSeek, openBinaryFile,
-                  openBinaryTempFile, openTempFile, openFile, hPutStr)
+import System.IO (IOMode(..), hClose, openTempFile, openFile, hPutStr)
 import Text.Printf (printf)
 
 -- | Run a single benchmark.

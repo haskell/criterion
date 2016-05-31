@@ -61,14 +61,14 @@ install:
  - $STACK setup
  # This will fail with the ghc-7.X resolvers... We use the *main*
  # stack.yaml to make this step reliable:
- - stack --install-ghc install cabal-install 
+ - stack --no-terminal --install-ghc install cabal-install 
  # This should be deterministic for LTS releases, and others are
  # expected to be nondeterministic anyway:
  - if [ "$STACK_RESOLVER" != "" ];
    then $STACK solver --update-config ;
    fi
- - $STACK exec ghc --version                     || echo '?'
- - $STACK exec ghc --print-project-git-commit-id || echo '?'
+ - $STACK exec ghc -- --version                     || echo '?'
+ - $STACK exec ghc -- --print-project-git-commit-id || echo '?'
  - $STACK build
 
  
