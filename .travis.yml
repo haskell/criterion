@@ -12,28 +12,21 @@ matrix:
   include:
     # Default: Use LTS 6, as embedded in stack.yaml currently:
     - env: STACK_RESOLVER=
-      addons: {apt: {packages: [libgmp-dev]}}
 
     # Test with an older GHC, 7.8.4:
     - env: STACK_RESOLVER=lts-2.22
-      addons: {apt: {packages: [libgmp-dev]}}      
 
     # Test with GHC 8.0, not yet in LTS:
     - env: STACK_RESOLVER=nightly-2016-05-31
-      addons: {apt: {packages: [libgmp-dev]}}
 
     # This is nondeterministic; the latest nightly:
     - env: STACK_RESOLVER=nightly
-      addons: {apt: {packages: [libgmp-dev]}}
 
     # Try to use the very latest packages here, so that we catch
     # failures before they get to stackage:
     - env: STACK_RESOLVER=ghc-7.8
-      addons: {apt: {packages: [libgmp-dev]}}      
     - env: STACK_RESOLVER=ghc-7.10
-      addons: {apt: {packages: [libgmp-dev]}}
     - env: STACK_RESOLVER=ghc-8.0
-      addons: {apt: {packages: [libgmp-dev]}}
       
   allow_failures:
     # We should track these failures, but they don't represent a
@@ -43,6 +36,11 @@ matrix:
     - env: STACK_RESOLVER=ghc-8.0
     - env: STACK_RESOLVER=nightly
 
+addons:
+  apt:
+    packages:
+      - libgmp-dev
+      
 # Note: the distinction between `before_install` and `install` is not important.
 before_install:
  - mkdir -p ~/.local/bin
