@@ -75,7 +75,6 @@ install:
 # Here starts the actual work to be performed for the package under test;
 # any command which exits with a non-zero exit code causes the build to fail.
 script:
- - if [ -f configure.ac ]; then autoreconf -i; fi
  - $STACK test 
  - $STACK bench
  - cabal check || echo "cabal check failed"
