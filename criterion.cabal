@@ -149,10 +149,13 @@ test-suite tests
     base,
     criterion,
     statistics,
+    HUnit,
     test-framework >= 0.4,
+    test-framework-hunit,
     test-framework-quickcheck2 >= 0.2,
-    vector
-
+    vector,
+    aeson >= 0.8
+    
 source-repository head
   type:     git
   location: https://github.com/bos/criterion.git

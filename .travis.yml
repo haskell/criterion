@@ -80,7 +80,7 @@ script:
  - if [ -f configure.ac ]; then autoreconf -i; fi
  - $STACK test 
  - $STACK bench
- - cabal check || echo 'FYI: cabal check failed'
+ - cabal check || echo "cabal check failed"
  - cabal sdist   # tests that a source-distribution can be generated
 
  # Finally make sure that the sdist package works:
