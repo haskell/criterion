@@ -17,7 +17,9 @@ module Criterion.Monad.Internal
     , Crit(..)
     ) where
 
+-- Temporary: to support pre-AMP GHC 7.8.4:
 import Control.Applicative (Applicative)
+
 import Control.Monad.Reader (MonadReader(..), ReaderT)
 import Control.Monad.Trans (MonadIO)
 import Criterion.Types (Config)

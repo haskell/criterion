@@ -19,7 +19,6 @@ module Criterion.Internal
     ) where
 
 import qualified Data.Aeson as Aeson
-import Control.Applicative ((<$>))
 import Control.DeepSeq (rnf)
 import Control.Exception (evaluate)
 import Control.Monad (foldM, forM_, void, when, unless)

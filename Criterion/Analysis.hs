@@ -28,6 +28,9 @@ module Criterion.Analysis
     , regress
     ) where
 
+-- Temporary: to support pre-AMP GHC 7.8.4:
+import Data.Monoid (Monoid(..))
+
 import Control.Arrow (second)
 import Control.Monad (unless, when)
 import Control.Monad.Reader (ask)
@@ -39,7 +42,6 @@ import Criterion.Monad (Criterion, getGen, getOverhead)
 import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
-import Data.Monoid (Monoid(..))
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
 import Statistics.Regression (bootstrapRegress, olsRegress)

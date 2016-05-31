@@ -1,6 +1,6 @@
+{-# LANGUAGE NegativeLiterals #-}
+
 module Main (main) where
-
-
 
 import Criterion.Types
 import qualified Data.Aeson as Aeson

@@ -63,7 +63,10 @@ module Criterion.Types
     , DataRecord(..)
     ) where
 
+-- Temporary: to support pre-AMP GHC 7.8.4:
 import Control.Applicative ((<$>), (<*>))
+import Data.Monoid (Monoid(..))
+
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (evaluate)
 import Data.Aeson (FromJSON(..), ToJSON(..))
@@ -71,7 +74,6 @@ import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.Map (Map, fromList)
-import Data.Monoid (Monoid(..))
 import GHC.Generics (Generic)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
