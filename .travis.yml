@@ -86,6 +86,6 @@ script:
    cd criterion-*/; 
    cp ../../stack*.yaml . ;
    if [[ "$STACK_RESOLVER" == ghc* ]];
-   then echo "Skipping expensive reinstall."
-   else $STACK build
+   then echo "Skipping expensive reinstall.";
+   else $STACK build;
    fi
