@@ -89,3 +89,6 @@ script:
    then echo "Skipping expensive reinstall.";
    else $STACK build;
    fi
+
+notifications:
+  email: false
