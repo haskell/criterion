@@ -37,7 +37,7 @@ import Criterion.Types (Report(..))
 import Data.List (intercalate)
 import Data.Version (Version(..))
 import Paths_criterion (version)
-import System.IO (Handle, IOMode(..), withFile)
+import System.IO (Handle, IOMode(..), withFile, hPutStrLn, stderr)
 import qualified Data.ByteString.Lazy as L
 
 -- | The header identifies a criterion data file. This contains
@@ -110,7 +110,15 @@ type ReportFileContents = (String,String,[Report])
 readJSONReports :: FilePath -> IO (Either String ReportFileContents)
 readJSONReports path =
   do bstr <- L.readFile path
-     return $ Aeson.eitherDecode bstr
+     let res = Aeson.eitherDecode bstr
+     case res of
+       Left err -> return res
+       Right (tg,vers,ls)
+         | tg == headerRoot && vers == critVersion -> return res
+         | otherwise ->
+            do hPutStrLn stderr $ "Warning, readJSONReports: mismatched header, expected " 
+                                  ++ show (headerRoot,critVersion) ++ " received " ++ show (tg,vers)
+               return res         
 
 -- | Write a list of reports to a JSON file.  Includes a header, which
 -- includes the current Criterion version number.  This should be 
