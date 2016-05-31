@@ -22,7 +22,7 @@ import qualified Data.Aeson as Aeson
 import Control.Applicative ((<$>))
 import Control.DeepSeq (rnf)
 import Control.Exception (evaluate)
-import Control.Monad (foldM, forM_, void, when)
+import Control.Monad (foldM, forM_, void, when, unless)
 import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Except
@@ -30,7 +30,7 @@ import Control.Monad.Trans.Except
 import Data.Int (Int64)
 import qualified Data.ByteString.Lazy.Char8 as L
 import Criterion.Analysis (analyseSample, noteOutliers)
-import Criterion.IO (header, headerRoot, critVersion, readJSONReports, writeJSONReports, hGetRecords)
+import Criterion.IO (headerRoot, critVersion, readJSONReports, writeJSONReports)
 import Criterion.IO.Printf (note, printError, prolix, writeCsv)
 import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
@@ -124,20 +124,17 @@ runAndAnalyse select bs = do
   -- The type we write to the file is ReportFileContents, a triple.
   -- But here we ASSUME that the tuple will become a JSON array.
   -- This assumption lets us stream the reports to the file incrementally:
-  liftIO $ hPutStr handle $ "[\"" ++ headerRoot ++ "\"," ++ 
-                             "\"" ++ critVersion ++ "\", ["
+  liftIO $ hPutStr handle $ "[ \"" ++ headerRoot ++ "\", " ++ 
+                             "\"" ++ critVersion ++ "\", [ "
 
   for select bs $ \idx desc bm -> do
     _ <- note "benchmarking %s\n" desc
     Analysed rpt <- runAndAnalyseOne idx desc bm
-    liftIO $ putStrLn $ "First Measured in report: " ++ show (V.head (reportMeasured rpt))
-    liftIO $ putStrLn $ "Same thing JSON-encoded " ++ show (Aeson.encode $ V.head $ reportMeasured rpt)
-    liftIO $ putStrLn $ "Round tripped through JSON " ++ show
-              (Aeson.eitherDecode (Aeson.encode $ V.head $ reportMeasured rpt)
-               :: Either String Measured)
+    unless (idx == 0) $
+      liftIO $ hPutStr handle ", "
     liftIO $ L.hPut handle (Aeson.encode (rpt::Report))
-    liftIO $ hPutStr handle ","
-  liftIO $ hPutStr handle "]]\n"
+
+  liftIO $ hPutStr handle " ] ]\n"
   liftIO $ hClose handle
 
   rpts <- liftIO $ do
