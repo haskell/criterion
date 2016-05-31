@@ -112,8 +112,8 @@ readJSONReports path =
   do bstr <- L.readFile path
      let res = Aeson.eitherDecode bstr
      case res of
-       Left err -> return res
-       Right (tg,vers,ls)
+       Left _ -> return res
+       Right (tg,vers,_)
          | tg == headerRoot && vers == critVersion -> return res
          | otherwise ->
             do hPutStrLn stderr $ "Warning, readJSONReports: mismatched header, expected " 

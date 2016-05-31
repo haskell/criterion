@@ -64,8 +64,8 @@ module Criterion.Types
     ) where
 
 -- Temporary: to support pre-AMP GHC 7.8.4:
-import Control.Applicative ((<$>), (<*>))
-import Data.Monoid (Monoid(..))
+import Control.Applicative 
+import Data.Monoid 
 
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (evaluate)
@@ -78,6 +78,7 @@ import GHC.Generics (Generic)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Resampling.Bootstrap as B
+import Prelude
 
 -- | Control the amount of information displayed.
 data Verbosity = Quiet

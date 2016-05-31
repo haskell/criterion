@@ -29,7 +29,7 @@ module Criterion.Analysis
     ) where
 
 -- Temporary: to support pre-AMP GHC 7.8.4:
-import Data.Monoid (Monoid(..))
+import Data.Monoid 
 
 import Control.Arrow (second)
 import Control.Monad (unless, when)
@@ -56,6 +56,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Resampling.Bootstrap as B
+import Prelude
 
 -- | Classify outliers in a data set, using the boxplot technique.
 classifyOutliers :: Sample -> Outliers

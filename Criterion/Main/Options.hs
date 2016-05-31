@@ -21,6 +21,9 @@ module Criterion.Main.Options
     , versionInfo
     ) where
 
+-- Temporary: to support pre-AMP GHC 7.8.4:
+import Data.Monoid 
+
 import Control.Monad (when)
 import Criterion.Analysis (validateAccessors)
 import Criterion.Types (Config(..), Verbosity(..), measureAccessors,
@@ -29,7 +32,6 @@ import Data.Char (isSpace, toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.List (isPrefixOf)
-import Data.Monoid (mempty)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Options.Applicative
@@ -39,6 +41,7 @@ import Options.Applicative.Types
 import Paths_criterion (version)
 import Text.PrettyPrint.ANSI.Leijen (Doc, text)
 import qualified Data.Map as M
+import Prelude
 
 -- | How to match a benchmark name.
 data MatchType = Prefix
