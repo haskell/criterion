@@ -71,7 +71,7 @@ install:
    fi
  - $STACK exec ghc -- --version                     || echo '?'
  - $STACK exec ghc ----print-project-git-commit-id || echo '?'
- - $STACK build
+ - $STACK build --test --no-run-tests
 
  
 # Here starts the actual work to be performed for the package under test;
@@ -80,8 +80,8 @@ script:
  - if [ -f configure.ac ]; then autoreconf -i; fi
  - $STACK test 
  - $STACK bench
- - $STACK exec cabal -- check
- - $STACK exec cabal -- sdist   # tests that a source-distribution can be generated
+ - cabal check || echo 'FYI: cabal check failed'
+ - cabal sdist   # tests that a source-distribution can be generated
 
  # Finally make sure that the sdist package works:
  # This will, painfully, rebuild all the deps in ./.stack-work
