@@ -103,20 +103,24 @@ library
   if impl(ghc >= 6.8)
     ghc-options: -fwarn-tabs
 
-executable criterion
-  hs-source-dirs: app
-  main-is:        App.hs
-  other-modules:
-    Options
-    Paths_criterion
+-- [2016.05.30] RRN: I'm not sure where this was going.
+-- It looks like it was meant for post-facto analysis of
+-- reports?  Will have to ask BOS.
+--------------------------------------------------------
+-- executable criterion
+--   hs-source-dirs: app
+--   main-is:        App.hs
+--   other-modules:
+--     Options
+--     Paths_criterion
 
-  ghc-options:
-    -Wall -threaded -rtsopts
+--   ghc-options:
+--     -Wall -threaded -rtsopts
 
-  build-depends:
-    base,
-    criterion,
-    optparse-applicative
+--   build-depends:
+--     base,
+--     criterion,
+--     optparse-applicative
 
 test-suite sanity
   type:           exitcode-stdio-1.0
