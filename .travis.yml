@@ -1,0 +1,89 @@
+# NB: don't set `language: haskell` here
+
+sudo: false
+cache:
+  directories:
+  - $HOME/.stack/
+
+# Here we test both stackage builds, which offer a controlled package
+# set, and "bleeding edge" builds which use the GHC resolver to grab
+# the latest off hackage.
+matrix:
+  include:
+    # Default: Use LTS 6, as embedded in stack.yaml currently:
+    - env: STACK_RESOLVER=
+      addons: {apt: {packages: [libgmp-dev]}}
+
+    # Test with an older GHC, 7.8.4:
+    - env: STACK_RESOLVER=lts-2.22
+      addons: {apt: {packages: [libgmp-dev]}}      
+
+    # Test with GHC 8.0, not yet in LTS:
+    - env: STACK_RESOLVER=nightly-2016-05-31
+      addons: {apt: {packages: [libgmp-dev]}}
+
+    # This is nondeterministic; the latest nightly:
+    - env: STACK_RESOLVER=nightly
+      addons: {apt: {packages: [libgmp-dev]}}
+
+    # Try to use the very latest packages here, so that we catch
+    # failures before they get to stackage:
+    - env: STACK_RESOLVER=ghc-7.8
+      addons: {apt: {packages: [libgmp-dev]}}      
+    - env: STACK_RESOLVER=ghc-7.10
+      addons: {apt: {packages: [libgmp-dev]}}
+    - env: STACK_RESOLVER=ghc-8.0
+      addons: {apt: {packages: [libgmp-dev]}}
+      
+  allow_failures:
+    # We should track these failures, but they don't represent a
+    # change or regression in our code:
+    - env: STACK_RESOLVER=ghc-7.8
+    - env: STACK_RESOLVER=ghc-7.10
+    - env: STACK_RESOLVER=ghc-8.0
+    - env: STACK_RESOLVER=nightly
+
+# Note: the distinction between `before_install` and `install` is not important.
+before_install:
+ - mkdir -p ~/.local/bin
+ - export PATH=~/.local/bin:$PATH
+ - if [ "$STACK_RESOLVER" == "" ];
+   then STACK="stack --no-terminal";
+   else STACK="stack --no-terminal --resolver=$STACK_RESOLVER";
+   fi
+ - export STACKVER=1.1.2
+ - wget https://github.com/commercialhaskell/stack/releases/download/v${STACKVER}/stack-${STACKVER}-linux-x86_64.tar.gz
+ - tar xvf stack-${STACKVER}-linux-x86_64.tar.gz
+ - mv -f stack-${STACKVER}-linux-x86_64/stack ~/.local/bin/
+ - chmod a+x ~/.local/bin/stack
+
+install:
+ - $STACK setup
+ # This will fail with the ghc-7.X resolvers... We use the *main*
+ # stack.yaml to make this step reliable:
+ - stack --install-ghc install cabal-install 
+ # This should be deterministic for LTS releases, and others are
+ # expected to be nondeterministic anyway:
+ - if [ "$STACK_RESOLVER" != "" ];
+   then $STACK solver --update-config ;
+   fi
+ - $STACK exec ghc --version                     || echo '?'
+ - $STACK exec ghc --print-project-git-commit-id || echo '?'
+ - $STACK build
+
+ 
+# Here starts the actual work to be performed for the package under test;
+# any command which exits with a non-zero exit code causes the build to fail.
+script:
+ - if [ -f configure.ac ]; then autoreconf -i; fi
+ - $STACK test 
+ - $STACK bench
+ - $STACK exec cabal -- check
+ - $STACK exec cabal -- sdist   # tests that a source-distribution can be generated
+
+ # Finally make sure that the sdist package works:
+ # This will, painfully, rebuild all the deps in ./.stack-work
+ - cd dist;  tar xf *.gz;  rm -f *.gz; 
+   cd criterion-*/; 
+   cp ../../stack*.yaml . ;
+   $STACK build 
