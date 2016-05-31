@@ -108,6 +108,7 @@ executable criterion
   main-is:        App.hs
   other-modules:
     Options
+    Paths_criterion
 
   ghc-options:
     -Wall -threaded -rtsopts
