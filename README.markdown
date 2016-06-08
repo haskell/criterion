@@ -1,6 +1,6 @@
 # Criterion: robust, reliable performance measurement
 
-[![Build Status](https://travis-ci.org/iu-parfunc/criterion.svg?branch=master)](https://travis-ci.org/iu-parfunc/criterion)
+[![Build Status](https://travis-ci.org/bos/criterion.svg?branch=master)](https://travis-ci.org/bos/criterion)
 
 This package provides the Criterion module, a Haskell library for
 measuring and analysing software performance.
