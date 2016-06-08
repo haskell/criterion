@@ -16,10 +16,15 @@ fib = sum . go
         go 1 = [1]
         go n = go (n-1) ++ go (n-2)
 
+-- Additional arguments to include along with the ARGS environment variable.
+extraArgs :: [String]
+extraArgs = [ "--raw=sanity.dat", "--json=sanity.json", "--csv=sanity.csv"
+            , "--output=sanity.html", "--junit=sanity.junit" ]
+
 sanity :: Assertion
 sanity = do
   args <- getArgEnv
-  withArgs args $ do
+  withArgs (extraArgs ++ args) $ do
     let tooLong = 30
     wat <- timeout (tooLong * 1000000) $
            C.defaultMain [
@@ -42,6 +47,8 @@ sanity = do
 main :: IO ()
 main = defaultMain [testCase "sanity" sanity]
 
+-- This is a workaround to in pass arguments that sneak past
+-- test-framework to get to criterion.
 getArgEnv :: IO [String]
 getArgEnv =
   fmap words (getEnv "ARGS") `E.catch`

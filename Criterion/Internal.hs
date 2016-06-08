@@ -25,11 +25,11 @@ import Control.Monad (foldM, forM_, void, when, unless)
 import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Except
--- import qualified Data.Binary as Binary (encode)
+import qualified Data.Binary as Binary 
 import Data.Int (Int64)
 import qualified Data.ByteString.Lazy.Char8 as L
 import Criterion.Analysis (analyseSample, noteOutliers)
-import Criterion.IO (headerRoot, critVersion, readJSONReports, writeJSONReports)
+import Criterion.IO (header, headerRoot, critVersion, readJSONReports, writeJSONReports)
 import Criterion.IO.Printf (note, printError, prolix, writeCsv)
 import Criterion.Measurement (runBenchmark, secs)
 import Criterion.Monad (Criterion)
@@ -39,7 +39,7 @@ import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Statistics.Resampling.Bootstrap (Estimate(..))
 import System.Directory (getTemporaryDirectory, removeFile)
-import System.IO (IOMode(..), hClose, openTempFile, openFile, hPutStr)
+import System.IO (IOMode(..), hClose, openTempFile, openFile, hPutStr, openBinaryFile)
 import Text.Printf (printf)
 
 -- | Run a single benchmark.
@@ -144,9 +144,25 @@ runAndAnalyse select bs = do
          Just _ -> return rs
          _      -> removeFile jsonFile >> return rs
 
+  rawReport rpts
   report rpts
   json rpts
   junit rpts
+
+
+-- | Write out raw binary report files.  This has some bugs, including and not
+-- limited to #68, and may be slated for deprecation.
+rawReport :: [Report] -> Criterion ()
+rawReport reports = do
+  mbRawFile <- asks rawDataFile
+  case mbRawFile of
+    Nothing   -> return ()
+    Just file -> liftIO $ do
+      handle <- openBinaryFile file ReadWriteMode
+      L.hPut handle header
+      forM_ reports $ \rpt ->  
+        L.hPut handle (Binary.encode rpt)
+      hClose handle
 
 
 -- | Run a benchmark without analysing its performance.
