@@ -112,7 +112,6 @@ library
 --   main-is:        App.hs
 --   other-modules:
 --     Options
---     Paths_criterion
 
 --   ghc-options:
 --     -Wall -threaded -rtsopts
@@ -121,6 +120,10 @@ library
 --     base,
 --     criterion,
 --     optparse-applicative
+--   if impl(ghc < 7.6)
+--     build-depends:
+--       ghc-prim
+
 
 test-suite sanity
   type:           exitcode-stdio-1.0
