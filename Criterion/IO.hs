@@ -13,12 +13,18 @@
 module Criterion.IO
     (
       header
+    , headerRoot
+    , critVersion
     , hGetRecords
     , hPutRecords
     , readRecords
     , writeRecords
+    , ReportFileContents
+    , readJSONReports
+    , writeJSONReports
     ) where
 
+import qualified Data.Aeson as Aeson
 import Data.Binary (Binary(..), encode)
 #if MIN_VERSION_binary(0, 6, 3)
 import Data.Binary.Get (runGetOrFail)
@@ -26,7 +32,9 @@ import Data.Binary.Get (runGetOrFail)
 import Data.Binary.Get (runGetState)
 #endif
 import Data.Binary.Put (putByteString, putWord16be, runPut)
-import Data.ByteString.Char8 ()
+import qualified Data.ByteString.Char8 as B
+import Criterion.Types (Report(..))
+import Data.List (intercalate)
 import Data.Version (Version(..))
 import Paths_criterion (version)
 import System.IO (Handle, IOMode(..), withFile)
@@ -37,8 +45,17 @@ import qualified Data.ByteString.Lazy as L
 -- compatibility.
 header :: L.ByteString
 header = runPut $ do
-  putByteString "criterio"
+  putByteString (B.pack headerRoot)
   mapM_ (putWord16be . fromIntegral) (versionBranch version)
+
+-- | The magic string we expect to start off the header.
+headerRoot :: String
+headerRoot = "criterio"
+
+-- | The current version of criterion, encoded into a string that is
+-- used in files.
+critVersion :: String
+critVersion = intercalate "." $ map show $ versionBranch version
 
 -- | Read all records from the given 'Handle'.
 hGetRecords :: Binary a => Handle -> IO (Either String [a])
@@ -81,3 +98,27 @@ readAll handle = do
              in (a:) `fmap` go i' bs'
   go 0 =<< L.hGetContents handle
 #endif
+
+-- | On disk we store (name,version,reports), where
+--   'version' is the version of Criterion used to generate the file.
+type ReportFileContents = (String,String,[Report])
+
+-- | Alternative file IO with JSON instances.  Read a list of reports
+-- from a .json file produced by criterion.
+--
+-- If the version does not match exactly, this issues a warning.
+readJSONReports :: FilePath -> IO (Either String ReportFileContents)
+readJSONReports path =
+  do bstr <- L.readFile path
+     return $ Aeson.eitherDecode bstr
+
+-- | Write a list of reports to a JSON file.  Includes a header, which
+-- includes the current Criterion version number.  This should be 
+-- the inverse of `readJSONReports`.
+writeJSONReports :: FilePath -> [Report] -> IO ()
+writeJSONReports fn rs =
+  let payload :: ReportFileContents
+      payload = (headerRoot, critVersion, rs)
+  in L.writeFile fn $ Aeson.encode payload
+
+
