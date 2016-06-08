@@ -1,6 +1,6 @@
 #include "Rts.h"
 
-#if x86_64_HOST_ARCH
+#if x86_64_HOST_ARCH || i386_HOST_ARCH
 
 StgWord64 criterion_rdtsc(void)
 {
