@@ -17,15 +17,11 @@ extra-source-files:
   examples/*.cabal
   examples/*.hs
   examples/*.html
-  js-src/flot-0.8.3.zip
-  js-src/jquery-2.1.1.js
 
 data-files:
   templates/*.css
   templates/*.tpl
-  templates/js/jquery-2.1.1.min.js
   templates/js/jquery.criterion.js
-  templates/js/jquery.flot-0.8.3.min.js
 
 description:
   This library provides a powerful but simple way to measure software
@@ -84,6 +80,8 @@ library
     filepath,
     Glob >= 0.7.2,
     hastache >= 0.6.0,
+    js-flot,
+    js-jquery,
     mtl >= 2,
     mwc-random >= 0.8.0.3,
     optparse-applicative >= 0.11,

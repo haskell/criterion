@@ -51,6 +51,8 @@ import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
+import qualified Language.Javascript.Flot as Flot
+import qualified Language.Javascript.JQuery as JQuery
 import qualified Text.Hastache as H
 
 -- | Trim long flat tails from a KDE plot.
@@ -87,10 +89,12 @@ formatReport :: [Report]
              -> IO TL.Text
 formatReport reports template = do
   templates <- getTemplateDir
-  let context "report"  = return $ MuList $ map inner reports
-      context "json"    = return $ MuVariable (encode reports)
-      context "include" = return $ MuLambdaM $ includeFile [templates]
-      context _         = return $ MuNothing
+  let context "report"    = return $ MuList $ map inner reports
+      context "json"      = return $ MuVariable (encode reports)
+      context "include"   = return $ MuLambdaM $ includeFile [templates]
+      context "js-jquery" = fmap MuVariable $ TL.readFile =<< JQuery.file
+      context "js-flot"   = fmap MuVariable $ TL.readFile =<< Flot.file Flot.Flot
+      context _           = return $ MuNothing
       encode v = TL.toLazyText . encodeToTextBuilder . toJSON $ v
       inner r@Report{..} = mkStrContextM $ \nym ->
                          case nym of
