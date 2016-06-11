@@ -117,7 +117,7 @@ runAndAnalyse select bs = do
         tmpDir <- getTemporaryDirectory
         openTempFile tmpDir "criterion.json"
       Just file -> do
-        handle <- openFile file ReadWriteMode
+        handle <- openFile file WriteMode
         return (file, handle)
   -- The type we write to the file is ReportFileContents, a triple.
   -- But here we ASSUME that the tuple will become a JSON array.
