@@ -77,7 +77,8 @@ import Data.Map (Map, fromList)
 import GHC.Generics (Generic)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
-import qualified Statistics.Resampling.Bootstrap as B
+import qualified Statistics.Types as St
+import           Statistics.Resampling.Bootstrap ()
 import Prelude
 
 -- | Control the amount of information displayed.
@@ -89,7 +90,7 @@ data Verbosity = Quiet
 
 -- | Top-level benchmarking configuration.
 data Config = Config {
-      confInterval :: Double
+      confInterval :: St.CL Double
       -- ^ Confidence interval for bootstrap estimation (greater than
       -- 0, less than 1).
     , forceGC      :: Bool
@@ -550,9 +551,9 @@ instance NFData OutlierVariance where
 data Regression = Regression {
     regResponder  :: String
     -- ^ Name of the responding variable.
-  , regCoeffs     :: Map String B.Estimate
+  , regCoeffs     :: Map String (St.Estimate St.ConfInt Double)
     -- ^ Map from name to value of predictor coefficients.
-  , regRSquare    :: B.Estimate
+  , regRSquare    :: St.Estimate St.ConfInt Double
     -- ^ R&#0178; goodness-of-fit estimate.
   } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
@@ -574,9 +575,9 @@ data SampleAnalysis = SampleAnalysis {
     , anOverhead   :: Double
       -- ^ Estimated measurement overhead, in seconds.  Estimation is
       -- performed via linear regression.
-    , anMean       :: B.Estimate
+    , anMean       :: St.Estimate St.ConfInt Double
       -- ^ Estimated mean.
-    , anStdDev     :: B.Estimate
+    , anStdDev     :: St.Estimate St.ConfInt Double
       -- ^ Estimated standard deviation.
     , anOutlierVar :: OutlierVariance
       -- ^ Description of the effects of outliers on the estimated

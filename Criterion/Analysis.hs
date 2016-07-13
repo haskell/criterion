@@ -45,10 +45,10 @@ import Data.Maybe (fromJust)
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
 import Statistics.Regression (bootstrapRegress, olsRegress)
-import Statistics.Resampling (resample)
+import Statistics.Resampling (Estimator(..),resample)
 import Statistics.Sample (mean)
 import Statistics.Sample.KernelDensity (kde)
-import Statistics.Types (Estimator(..), Sample)
+import Statistics.Types (Sample)
 import System.Random.MWC (GenIO)
 import qualified Data.List as List
 import qualified Data.Map as Map
@@ -56,6 +56,7 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Resampling.Bootstrap as B
+import qualified Statistics.Types                as B
 import Prelude
 
 -- | Classify outliers in a data set, using the boxplot technique.
@@ -79,11 +80,12 @@ classifyOutliers sa = U.foldl' ((. outlier) . mappend) mempty ssa
 
 -- | Compute the extent to which outliers in the sample data affect
 -- the sample mean and standard deviation.
-outlierVariance :: B.Estimate  -- ^ Bootstrap estimate of sample mean.
-                -> B.Estimate  -- ^ Bootstrap estimate of sample
-                               --   standard deviation.
-                -> Double      -- ^ Number of original iterations.
-                -> OutlierVariance
+outlierVariance
+  :: B.Estimate B.ConfInt Double -- ^ Bootstrap estimate of sample mean.
+  -> B.Estimate B.ConfInt Double -- ^ Bootstrap estimate of sample
+                                 --   standard deviation.
+  -> Double                      -- ^ Number of original iterations.
+  -> OutlierVariance
 outlierVariance µ σ a = OutlierVariance effect desc varOutMin
   where
     ( effect, desc ) | varOutMin < 0.01 = (Unaffected, "no")
@@ -158,7 +160,7 @@ analyseSample i name meas = do
   rs <- mapM (\(ps,r) -> regress gen ps r meas) $
         ((["iters"],"time"):regressions)
   resamps <- liftIO $ resample gen ests resamples stime
-  let [estMean,estStdDev] = B.bootstrapBCA confInterval stime ests resamps
+  let [estMean,estStdDev] = B.bootstrapBCA confInterval stime resamps
       ov = outlierVariance estMean estStdDev (fromIntegral n)
       an = SampleAnalysis {
                anRegress    = rs
