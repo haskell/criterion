@@ -1,3 +1,8 @@
+
+1.1.3.1
+
+* Add Safe Haskell annotations.
+
 1.1.3.0
 
 * Add `--json` option for writing reports in JSON rather than binary
