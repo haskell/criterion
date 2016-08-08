@@ -1,3 +1,4 @@
+{-# LANGUAGE Trustworthy #-}
 -- |
 -- Module      : Criterion.Monad
 -- Copyright   : (c) 2009 Neil Brown

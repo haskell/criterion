@@ -1,3 +1,4 @@
+{-# LANGUAGE Trustworthy #-}
 -- |
 -- Module      : Criterion.IO.Printf
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan

@@ -1,3 +1,5 @@
+{-# LANGUAGE Trustworthy #-}
+
 -- |
 -- Module      : Criterion.Main
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan

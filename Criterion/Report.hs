@@ -1,3 +1,4 @@
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, OverloadedStrings,
     RecordWildCards, ScopedTypeVariables #-}
 

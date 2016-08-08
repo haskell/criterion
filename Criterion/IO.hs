@@ -1,4 +1,6 @@
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE CPP, OverloadedStrings #-}
+
 -- |
 -- Module      : Criterion.IO
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan

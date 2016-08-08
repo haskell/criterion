@@ -1,4 +1,6 @@
+{-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE BangPatterns, DeriveDataTypeable, RecordWildCards #-}
+
 -- |
 -- Module      : Criterion.Analysis
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan
