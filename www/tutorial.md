@@ -281,7 +281,7 @@ all of its internal constructors are fully evaluated, and it contains
 no thunks.
 
 ~~~~ {.haskell}
-nfIO :: NFData a => IO a -> IO ()
+nfIO :: NFData a => IO a -> Benchmarkable
 ~~~~
 
 Rules of thumb for when to use `nfIO`:
@@ -303,7 +303,7 @@ the outermost constructor to be known (using `seq`).  This is known as
 <span id="weak-head-normal-form">**weak head normal form** (WHNF)</span>.
 
 ~~~~ {.haskell}
-whnfIO :: IO a -> IO ()
+whnfIO :: IO a -> Benchmarkable
 ~~~~
 
 This function is useful if your `IO` action returns a simple value
