@@ -84,7 +84,7 @@ library
     js-jquery,
     mtl >= 2,
     mwc-random >= 0.8.0.3,
-    optparse-applicative >= 0.11,
+    optparse-applicative >= 0.11 && <0.13,
     parsec >= 3.1.0,
     statistics >= 0.13.2.1,
     text >= 0.11,
