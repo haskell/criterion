@@ -65,8 +65,8 @@ module Criterion.Types
     ) where
 
 -- Temporary: to support pre-AMP GHC 7.8.4:
-import Control.Applicative 
-import Data.Monoid 
+import Control.Applicative
+import Data.Monoid
 
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (evaluate)
@@ -563,6 +563,7 @@ instance ToJSON Regression
 instance Binary Regression where
     put Regression{..} =
       put regResponder >> put regCoeffs >> put regRSquare
+    get = Regression <$> get <*> get <*> get
 
 instance NFData Regression where
     rnf Regression{..} =
