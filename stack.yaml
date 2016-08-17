@@ -2,7 +2,11 @@ resolver: lts-6.1
 
 packages:
 - '.'
-- './statistics/'
+
+- location:
+    git: https://github.com/bos/statistics.git
+    commit: c6a4eeabd7d0707d98d6da4e6bf4d3b8cabf0e57
+  extra-dep: true
 
 extra-deps: []
 

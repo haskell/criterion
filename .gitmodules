@@ -1,4 +1,0 @@
-[submodule "statistics"]
-	path = statistics
-	url = https://github.com/bos/statistics.git
-#	url = git@github.com:bos/statistics.git

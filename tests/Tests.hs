@@ -6,7 +6,7 @@ import Criterion.Types
 import qualified Data.Aeson as Aeson
 import qualified Data.Vector as V
 import Properties
-import Statistics.Resampling.Bootstrap (Estimate(..))
+import Statistics.Types (estimateFromErr, mkConfLevel)
 import Test.Framework (defaultMain)
 import Test.Framework.Providers.HUnit
 import Test.HUnit
@@ -16,7 +16,7 @@ r1 = Report 0 "" [] v1 s1 (Outliers 0 0 0 0 0) []
  where 
   m1 = Measured 4.613000783137977e-05 3.500000000000378e-05 31432 1 0 0 0 0.0 0.0 0.0 0.0
   v1 = V.fromList [m1]
-  est1 = Estimate 0.0 0.0 0.0 0.0
+  est1 = estimateFromErr 0.0 (0.0, 0.0) (mkConfLevel 0.0)
   s1 = SampleAnalysis [] 0.0 est1 est1 (OutlierVariance Unaffected "" 0.0)
 
 m2 :: Measured
