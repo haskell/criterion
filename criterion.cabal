@@ -134,8 +134,8 @@ test-suite sanity
     base,
     bytestring,
     criterion,
-    test-framework,
-    test-framework-hunit
+    tasty,
+    tasty-hunit
 
 test-suite tests
   type:           exitcode-stdio-1.0
@@ -152,12 +152,12 @@ test-suite tests
     criterion,
     statistics,
     HUnit,
-    test-framework >= 0.4,
-    test-framework-hunit,
-    test-framework-quickcheck2 >= 0.2,
+    tasty,
+    tasty-hunit,
+    tasty-quickcheck,
     vector,
     aeson >= 0.8
-    
+
 source-repository head
   type:     git
   location: https://github.com/bos/criterion.git

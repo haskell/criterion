@@ -7,13 +7,13 @@ import qualified Data.Aeson as Aeson
 import qualified Data.Vector as V
 import Properties
 import Statistics.Resampling.Bootstrap (Estimate(..))
-import Test.Framework (defaultMain)
-import Test.Framework.Providers.HUnit
+import Test.Tasty (defaultMain, testGroup)
+import Test.Tasty.HUnit (testCase)
 import Test.HUnit
 
 r1 :: Report
 r1 = Report 0 "" [] v1 s1 (Outliers 0 0 0 0 0) []
- where 
+ where
   m1 = Measured 4.613000783137977e-05 3.500000000000378e-05 31432 1 0 0 0 0.0 0.0 0.0 0.0
   v1 = V.fromList [m1]
   est1 = Estimate 0.0 0.0 0.0 0.0
@@ -35,7 +35,7 @@ m2 = Measured {measTime = 1.1438998626545072e-5
               , measGcCpuSeconds = -1/0}
 
 main :: IO ()
-main = defaultMain
+main = defaultMain $ testGroup "Tests"
        [ Properties.tests
        , testCase "json-roundtrip1"
            (assertEqual "round trip simple Measured"
