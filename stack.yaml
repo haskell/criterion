@@ -2,6 +2,7 @@ resolver: lts-6.1
 
 packages:
 - '.'
+- './statistics/'
 
 extra-deps: []
 
