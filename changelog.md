@@ -1,4 +1,8 @@
 
+1.1.4.0
+
+* Add --pattern and --ipattern selectors.
+
 1.1.3.1
 
 * Add Safe Haskell annotations.
