@@ -157,7 +157,7 @@ information that looks like this.
   </tbody>
  </table>
 
-The first two rows are the results of a linear regression run on the measurements displayed in the right-hand chart.
+The second row is the result of a linear regression run on the measurements displayed in the right-hand chart.
 
 * "**OLS regression**" estimates the time needed for a single
   execution of the activity being benchmarked, using an
