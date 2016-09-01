@@ -3,8 +3,8 @@
 import Criterion.Main (bench, bgroup, env, whnf)
 import System.Environment (getEnv, withArgs)
 import System.Timeout (timeout)
-import Test.Framework (defaultMain)
-import Test.Framework.Providers.HUnit (testCase)
+import Test.Tasty (defaultMain)
+import Test.Tasty.HUnit (testCase)
 import Test.HUnit (Assertion, assertFailure)
 import qualified Criterion.Main as C
 import qualified Control.Exception as E
@@ -45,7 +45,7 @@ sanity = do
                                  show tooLong ++ " seconds!"
 
 main :: IO ()
-main = defaultMain [testCase "sanity" sanity]
+main = defaultMain $ testCase "sanity" sanity
 
 -- This is a workaround to in pass arguments that sneak past
 -- test-framework to get to criterion.
