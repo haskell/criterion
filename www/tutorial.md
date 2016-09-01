@@ -25,6 +25,7 @@ the ever-ridiculous `fib` function.
 import Criterion.Main
 
 -- The function we're benchmarking.
+fib :: Int -> Int
 fib m | m < 0     = error "negative!"
       | otherwise = go m
   where
@@ -157,7 +158,7 @@ information that looks like this.
   </tbody>
  </table>
 
-The first two rows are the results of a linear regression run on the measurements displayed in the right-hand chart.
+The second row is the result of a linear regression run on the measurements displayed in the right-hand chart.
 
 * "**OLS regression**" estimates the time needed for a single
   execution of the activity being benchmarked, using an
@@ -423,7 +424,7 @@ main = defaultMain [
 ([examples/Fibber.hs](https://github.com/bos/criterion/blob/master/examples/Fibber.hs))
 
 We can get away with using `whnf` here because we know that an
-`Integer` has only one constructor, so there's no deeper buried
+`Int` has only one constructor, so there's no deeper buried
 structure that we'd have to reach using `nf`.
 
 As with benchmarking `IO` actions, there's no clear-cut case for when
