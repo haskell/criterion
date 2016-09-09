@@ -134,6 +134,7 @@ test-suite sanity
     base,
     bytestring,
     criterion,
+    deepseq,
     tasty,
     tasty-hunit
 

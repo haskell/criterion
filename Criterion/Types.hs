@@ -44,6 +44,7 @@ module Criterion.Types
     , rescale
     -- * Benchmark construction
     , env
+    , envWithCleanup
     , bench
     , bgroup
     , addPrefix
@@ -342,7 +343,7 @@ impure strategy a = Benchmarkable go
 --
 -- * A (possibly nested) group of 'Benchmark's, created with 'bgroup'.
 data Benchmark where
-    Environment  :: NFData env => IO env -> (env -> Benchmark) -> Benchmark
+    Environment  :: NFData env => IO env -> (env -> IO ()) -> (env -> Benchmark) -> Benchmark
     Benchmark    :: String -> Benchmarkable -> Benchmark
     BenchGroup   :: String -> [Benchmark] -> Benchmark
 
@@ -429,7 +430,21 @@ env :: NFData env =>
     -- ^ Take the newly created environment and make it available to
     -- the given benchmarks.
     -> Benchmark
-env = Environment
+env mkenv mkbench = Environment mkenv (const (return ())) mkbench
+
+-- | Same as `env`, but but allows for an additional callback
+-- to clean up the environment.
+envWithCleanup :: NFData env =>
+       IO env
+    -- ^ Create the environment.  The environment will be evaluated to
+    -- normal form before being passed to the benchmark.
+    -> (env -> IO ())
+    -- ^ Clean up the created environment.
+    -> (env -> Benchmark)
+    -- ^ Take the newly created environment and make it available to
+    -- the given benchmarks.
+    -> Benchmark
+envWithCleanup = Environment
 
 -- | Create a single benchmark.
 bench :: String                 -- ^ A name to identify the benchmark.
@@ -455,12 +470,12 @@ addPrefix pfx desc = pfx ++ '/' : desc
 -- | Retrieve the names of all benchmarks.  Grouped benchmarks are
 -- prefixed with the name of the group they're in.
 benchNames :: Benchmark -> [String]
-benchNames (Environment _ b) = benchNames (b undefined)
+benchNames (Environment _ _ b) = benchNames (b undefined)
 benchNames (Benchmark d _)   = [d]
 benchNames (BenchGroup d bs) = map (addPrefix d) . concatMap benchNames $ bs
 
 instance Show Benchmark where
-    show (Environment _ b) = "Environment _ " ++ show (b undefined)
+    show (Environment _ _ b) = "Environment _ " ++ show (b undefined)
     show (Benchmark d _)   = "Benchmark " ++ show d
     show (BenchGroup d _)  = "BenchGroup " ++ show d
 

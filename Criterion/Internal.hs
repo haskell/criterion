@@ -182,13 +182,15 @@ for :: MonadIO m => (String -> Bool) -> Benchmark
     -> (Int -> String -> Benchmarkable -> m ()) -> m ()
 for select bs0 handle = go (0::Int) ("", bs0) >> return ()
   where
-    go !idx (pfx, Environment mkenv mkbench)
+    go !idx (pfx, Environment mkenv cleanupenv mkbench)
       | shouldRun pfx mkbench = do
         e <- liftIO $ do
           ee <- mkenv
           evaluate (rnf ee)
           return ee
-        go idx (pfx, mkbench e)
+        idx' <- go idx (pfx, mkbench e)
+        liftIO $ cleanupenv e
+        return idx'
       | otherwise = return idx
     go idx (pfx, Benchmark desc b)
       | select desc' = do handle idx desc' b; return $! idx + 1
