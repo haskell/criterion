@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE Trustworthy #-}
 
 -- |
@@ -62,6 +63,12 @@ import Options.Applicative (execParser)
 import System.Environment (getProgName)
 import System.Exit (ExitCode(..), exitWith)
 import System.FilePath.Glob
+
+#ifdef mingw32_HOST_OS
+import Control.Exception (bracket_)
+import System.Win32.Console (setConsoleCP, setConsoleOutputCP, getConsoleCP, getConsoleOutputCP)
+import System.IO (hPutStrLn, hSetEncoding, stderr, stdin, stdout, utf8)
+#endif
 
 -- | An entry point that can be used as a @main@ function.
 --
@@ -131,7 +138,7 @@ selectBenches matchType benches bsgroup = do
 defaultMainWith :: Config
                 -> [Benchmark]
                 -> IO ()
-defaultMainWith defCfg bs = do
+defaultMainWith defCfg bs = fixCodePage $ do
   wat <- execParser (describe defCfg)
   runMode wat bs
 
@@ -164,6 +171,54 @@ parseError msg = do
   _ <- printError "Error: %s\n" msg
   _ <- printError "Run \"%s --help\" for usage information\n" =<< getProgName
   exitWith (ExitFailure 64)
+
+-- | Set the code page for this process as necessary. Only applies to Windows.
+-- Taken from the stack codebase
+-- (https://github.com/commercialhaskell/stack/blob/21e517ba88b3c6bee475fb00ad95f280e7285a54/src/main/Main.hs#L82-L123)
+-- which is under a 3-clause BSD license
+fixCodePage :: IO a -> IO a
+#ifdef mingw32_HOST_OS
+fixCodePage inner = do
+    origCPI <- getConsoleCP
+    origCPO <- getConsoleOutputCP
+
+    let setInput = origCPI /= expected
+        setOutput = origCPO /= expected
+        fixInput
+            | setInput = bracket_
+                (do
+                    setConsoleCP expected
+                    hSetEncoding stdin utf8
+                    )
+                (setConsoleCP origCPI)
+            | otherwise = id
+        fixOutput
+            | setInput = bracket_
+                (do
+                    setConsoleOutputCP expected
+                    hSetEncoding stdout utf8
+                    hSetEncoding stderr utf8
+                    )
+                (setConsoleOutputCP origCPO)
+            | otherwise = id
+
+    case (setInput, setOutput) of
+        (False, False) -> return ()
+        (True, True) -> warn ""
+        (True, False) -> warn " input"
+        (False, True) -> warn " output"
+
+    fixInput $ fixOutput inner
+  where
+    expected = 65001 -- UTF-8
+    warn typ = hPutStrLn stderr $ concat
+        [ "Setting"
+        , typ
+        , " codepage to UTF-8 (65001) to ensure correct output from GHC"
+        ]
+#else
+fixCodePage = id
+#endif
 
 -- $bench
 --
