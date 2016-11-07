@@ -79,6 +79,7 @@ library
     binary >= 0.5.1.0,
     bytestring >= 0.9 && < 1.0,
     cassava >= 0.3.0.0,
+    code-page,
     containers,
     deepseq >= 1.1.0.0,
     directory,
