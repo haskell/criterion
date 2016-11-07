@@ -1,3 +1,6 @@
+1.1.4.0
+
+* Unicode output is now correctly printed on Windows.
 
 1.1.3.1
 
