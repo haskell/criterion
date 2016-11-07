@@ -37,6 +37,11 @@ description:
   For examples of the kinds of reports that criterion generates, see
   <http://www.serpentine.com/criterion the home page>.
 
+flag fast
+  description: compile without optimizations
+  default: False
+  manual: True
+
 library
   exposed-modules:
     Criterion
@@ -97,10 +102,13 @@ library
     build-depends:
       ghc-prim
 
-  ghc-options: -O2 -Wall -funbox-strict-fields
+  ghc-options: -Wall -funbox-strict-fields
   if impl(ghc >= 6.8)
     ghc-options: -fwarn-tabs
-
+  if flag(fast)
+    ghc-options: -O0
+  else
+    ghc-options: -O2
 
 -- [2016.05.30] RRN: I'm not sure where this was going.
 -- It looks like it was meant for post-facto analysis of
@@ -128,7 +136,12 @@ test-suite sanity
   type:           exitcode-stdio-1.0
   hs-source-dirs: tests
   main-is:        Sanity.hs
-  ghc-options:    -O2 -Wall -rtsopts
+  ghc-options:    -Wall -rtsopts
+  if flag(fast)
+    ghc-options: -O0
+  else
+    ghc-options: -O2
+
   build-depends:
     HUnit,
     base,
