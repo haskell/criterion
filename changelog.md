@@ -2,14 +2,29 @@
 
 * Unicode output is now correctly printed on Windows.
 
-1.1.3.1
+1.1.4.0
 
 * Add Safe Haskell annotations.
 
-1.1.3.0
-
 * Add `--json` option for writing reports in JSON rather than binary
   format.  Also: various bugfixes related to this.
+
+* Use the `js-jquery` and `js-flot` libraries to substitute in JavaScript code
+  into the default HTML report template.
+
+* Use the `code-page` library to ensure that `criterion` prints out Unicode
+  characters (like ², which `criterion` uses in reports) in a UTF-8-compatible
+  code page on Windows.
+
+* Give an explicit implementation for `get` in the `Binary Regression`
+  instance. This should fix sporadic `criterion` failures with older versions
+  of `binary`.
+
+* Use `tasty` instead of `test-framework` in the test suites.
+
+* Restore support for 32-bit Intel CPUs.
+
+* Restore build compatibilty with GHC 7.4.
 
 1.1.1.0
 
