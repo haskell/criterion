@@ -83,6 +83,7 @@ library
     containers,
     deepseq >= 1.1.0.0,
     directory,
+    exceptions >= 0.8.3 && < 0.9,
     filepath,
     Glob >= 0.7.2,
     hastache >= 0.6.0,

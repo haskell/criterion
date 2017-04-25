@@ -1,4 +1,5 @@
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GADTs, RecordWildCards #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
 
@@ -44,6 +45,11 @@ module Criterion.Types
     , rescale
     -- * Benchmark construction
     , env
+    , envWithCleanup
+    , perBatchEnv
+    , perBatchEnvWithCleanup
+    , perRunEnv
+    , perRunEnvWithCleanup
     , bench
     , bgroup
     , addPrefix
@@ -123,10 +129,25 @@ data Config = Config {
       -- ^ Template file to use if writing a report.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
+
 -- | A pure function or impure action that can be benchmarked. The
 -- 'Int64' parameter indicates the number of times to run the given
 -- function or action.
-newtype Benchmarkable = Benchmarkable { runRepeatedly :: Int64 -> IO () }
+data Benchmarkable = forall a . NFData a =>
+    Benchmarkable
+      { allocEnv :: Int64 -> IO a
+      , cleanEnv :: Int64 -> a -> IO ()
+      , runRepeatedly :: a -> Int64 -> IO ()
+      , perRun :: Bool
+      }
+
+noop :: Monad m => a -> m ()
+noop = const $ return ()
+{-# INLINE noop #-}
+
+toBenchmarkable :: (Int64 -> IO ()) -> Benchmarkable
+toBenchmarkable f = Benchmarkable noop (const noop) (const f) False
+{-# INLINE toBenchmarkable #-}
 
 -- | A collection of measurements made while benchmarking.
 --
@@ -305,7 +326,7 @@ nf = pureFunc rnf
 {-# INLINE nf #-}
 
 pureFunc :: (b -> c) -> (a -> b) -> a -> Benchmarkable
-pureFunc reduce f0 x0 = Benchmarkable $ go f0 x0
+pureFunc reduce f0 x0 = toBenchmarkable (go f0 x0)
   where go f x n
           | n <= 0    = return ()
           | otherwise = evaluate (reduce (f x)) >> go f x (n-1)
@@ -315,18 +336,18 @@ pureFunc reduce f0 x0 = Benchmarkable $ go f0 x0
 -- This is particularly useful for forcing a lazy 'IO' action to be
 -- completely performed.
 nfIO :: NFData a => IO a -> Benchmarkable
-nfIO = impure rnf
+nfIO = toBenchmarkable . impure rnf
 {-# INLINE nfIO #-}
 
 -- | Perform an action, then evaluate its result to weak head normal
 -- form (WHNF).  This is useful for forcing an 'IO' action whose result
 -- is an expression to be evaluated down to a more useful value.
 whnfIO :: IO a -> Benchmarkable
-whnfIO = impure id
+whnfIO = toBenchmarkable . impure id
 {-# INLINE whnfIO #-}
 
-impure :: (a -> b) -> IO a -> Benchmarkable
-impure strategy a = Benchmarkable go
+impure :: (a -> b) -> IO a -> Int64 -> IO ()
+impure strategy a = go
   where go n
           | n <= 0    = return ()
           | otherwise = a >>= (evaluate . strategy) >> go (n-1)
@@ -342,7 +363,8 @@ impure strategy a = Benchmarkable go
 --
 -- * A (possibly nested) group of 'Benchmark's, created with 'bgroup'.
 data Benchmark where
-    Environment  :: NFData env => IO env -> (env -> Benchmark) -> Benchmark
+    Environment  :: NFData env
+                 => IO env -> (env -> IO a) -> (env -> Benchmark) -> Benchmark
     Benchmark    :: String -> Benchmarkable -> Benchmark
     BenchGroup   :: String -> [Benchmark] -> Benchmark
 
@@ -429,7 +451,114 @@ env :: NFData env =>
     -- ^ Take the newly created environment and make it available to
     -- the given benchmarks.
     -> Benchmark
-env = Environment
+env alloc = Environment alloc noop
+
+-- | Same as `env`, but but allows for an additional callback
+-- to clean up the environment. Resource clean up is exception safe, that is,
+-- it runs even if the 'Benchmark' throws an exception.
+envWithCleanup
+    :: NFData env
+    => IO env
+    -- ^ Create the environment.  The environment will be evaluated to
+    -- normal form before being passed to the benchmark.
+    -> (env -> IO a)
+    -- ^ Clean up the created environment.
+    -> (env -> Benchmark)
+    -- ^ Take the newly created environment and make it available to
+    -- the given benchmarks.
+    -> Benchmark
+envWithCleanup = Environment
+
+-- | Create a Benchmarkable where a fresh environment is allocated for every
+-- batch of runs of the benchmarkable.
+--
+-- The environment is evaluated to normal form before the benchmark is run.
+--
+-- When using 'whnf', 'whnfIO', etc. Criterion creates a 'Benchmarkable'
+-- whichs runs a batch of @N@ repeat runs of that expressions. Criterion may
+-- run any number of these batches to get accurate measurements. Environments
+-- created by 'env' and 'envWithCleanup', are shared across all these batches
+-- of runs.
+--
+-- This is fine for simple benchmarks on static input, but when benchmarking
+-- IO operations where these operations can modify (and especially grow) the
+-- environment this means that later batches might have their accuracy effected
+-- due to longer, for example, longer garbage collection pauses.
+--
+-- An example: Suppose we want to benchmark writing to a Chan, if we allocate
+-- the Chan using environment and our benchmark consists of @writeChan env ()@,
+-- the contents and thus size of the Chan will grow with every repeat. If
+-- Criterion runs a 1,000 batches of 1,000 repeats, the result is that the
+-- channel will have 999,000 items in it by the time the last batch is run.
+-- Since GHC GC has to copy the live set for every major GC this means our last
+-- set of writes will suffer a lot of noise of the previous repeats.
+--
+-- By allocating a fresh environment for every batch of runs this function
+-- should eliminate this effect.
+perBatchEnv
+    :: (NFData env, NFData b)
+    => (Int64 -> IO env)
+    -- ^ Create an environment for a batch of N runs. The environment will be
+    -- evaluated to normal form before running.
+    -> (env -> IO b)
+    -- ^ Function returning the IO action that should be benchmarked with the
+    -- newly generated environment.
+    -> Benchmarkable
+perBatchEnv alloc = perBatchEnvWithCleanup alloc (const noop)
+
+-- | Same as `perBatchEnv`, but but allows for an additional callback
+-- to clean up the environment. Resource clean up is exception safe, that is,
+-- it runs even if the 'Benchmark' throws an exception.
+perBatchEnvWithCleanup
+    :: (NFData env, NFData b)
+    => (Int64 -> IO env)
+    -- ^ Create an environment for a batch of N runs. The environment will be
+    -- evaluated to normal form before running.
+    -> (Int64 -> env -> IO ())
+    -- ^ Clean up the created environment.
+    -> (env -> IO b)
+    -- ^ Function returning the IO action that should be benchmarked with the
+    -- newly generated environment.
+    -> Benchmarkable
+perBatchEnvWithCleanup alloc clean work
+    = Benchmarkable alloc clean (impure rnf . work) False
+
+-- | Create a Benchmarkable where a fresh environment is allocated for every
+-- run of the operation to benchmark. This is useful for benchmarking mutable
+-- operations that need a fresh environment, such as sorting a mutable Vector.
+--
+-- As with 'env' and 'perBatchEnv' the environment is evaluated to normal form
+-- before the benchmark is run.
+--
+-- This introduces extra noise and result in reduce accuracy compared to other
+-- Criterion benchmarks. But allows easier benchmarking for mutable operations
+-- than was previously possible.
+perRunEnv
+    :: (NFData env, NFData b)
+    => IO env
+    -- ^ Action that creates the environment for a single run.
+    -> (env -> IO b)
+    -- ^ Function returning the IO action that should be benchmarked with the
+    -- newly genereted environment.
+    -> Benchmarkable
+perRunEnv alloc = perRunEnvWithCleanup alloc noop
+
+-- | Same as `perRunEnv`, but but allows for an additional callback
+-- to clean up the environment. Resource clean up is exception safe, that is,
+-- it runs even if the 'Benchmark' throws an exception.
+perRunEnvWithCleanup
+    :: (NFData env, NFData b)
+    => IO env
+    -- ^ Action that creates the environment for a single run.
+    -> (env -> IO ())
+    -- ^ Clean up the created environment.
+    -> (env -> IO b)
+    -- ^ Function returning the IO action that should be benchmarked with the
+    -- newly genereted environment.
+    -> Benchmarkable
+perRunEnvWithCleanup alloc clean work = bm { perRun = True }
+  where
+    bm = perBatchEnvWithCleanup (const alloc) (const clean) work
 
 -- | Create a single benchmark.
 bench :: String                 -- ^ A name to identify the benchmark.
@@ -455,12 +584,12 @@ addPrefix pfx desc = pfx ++ '/' : desc
 -- | Retrieve the names of all benchmarks.  Grouped benchmarks are
 -- prefixed with the name of the group they're in.
 benchNames :: Benchmark -> [String]
-benchNames (Environment _ b) = benchNames (b undefined)
+benchNames (Environment _ _ b) = benchNames (b undefined)
 benchNames (Benchmark d _)   = [d]
 benchNames (BenchGroup d bs) = map (addPrefix d) . concatMap benchNames $ bs
 
 instance Show Benchmark where
-    show (Environment _ b) = "Environment _ " ++ show (b undefined)
+    show (Environment _ _ b) = "Environment _ _" ++ show (b undefined)
     show (Benchmark d _)   = "Benchmark " ++ show d
     show (BenchGroup d _)  = "BenchGroup " ++ show d
 
