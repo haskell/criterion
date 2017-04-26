@@ -173,6 +173,24 @@ test-suite tests
     vector,
     aeson >= 0.8
 
+test-suite cleanup
+  type:           exitcode-stdio-1.0
+  hs-source-dirs: tests
+  main-is:        Cleanup.hs
+
+  ghc-options:
+    -Wall -threaded -O0 -rtsopts -Wno-orphans
+
+  build-depends:
+    HUnit,
+    base,
+    bytestring,
+    criterion,
+    deepseq,
+    directory,
+    tasty,
+    tasty-hunit
+
 source-repository head
   type:     git
   location: https://github.com/bos/criterion.git
