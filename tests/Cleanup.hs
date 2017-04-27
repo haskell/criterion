@@ -74,7 +74,7 @@ testCleanup shouldFail name withEnvClean = testCase name $ do
       where
         config = C.defaultConfig { verbosity = Quiet , timeLimit = 1 }
 
-    failTest :: String -> IO a
+    failTest :: String -> IO ()
     failTest s = assertFailure $ s ++ " in test: " ++ name ++ "!"
 
     resetHandle :: Handle -> IO ()
