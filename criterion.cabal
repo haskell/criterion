@@ -83,7 +83,7 @@ library
     containers,
     deepseq >= 1.1.0.0,
     directory,
-    exceptions >= 0.8.3 && < 0.9,
+    exceptions >= 0.8.2 && < 0.9,
     filepath,
     Glob >= 0.7.2,
     hastache >= 0.6.0,
@@ -179,7 +179,7 @@ test-suite cleanup
   main-is:        Cleanup.hs
 
   ghc-options:
-    -Wall -threaded -O0 -rtsopts -Wno-orphans
+    -Wall -threaded -O0 -rtsopts
 
   build-depends:
     HUnit,
