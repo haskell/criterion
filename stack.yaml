@@ -4,6 +4,7 @@ packages:
 - '.'
 - './statistics/'
 
-extra-deps: []
+extra-deps:
+- optparse-applicative-0.13.2.0
 
 flags: {}
