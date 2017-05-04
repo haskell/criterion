@@ -4,6 +4,7 @@
 
 import Criterion.Main (Benchmark, bench, nfIO)
 import Criterion.Types (Config(..), Verbosity(Quiet))
+import Control.Applicative (pure)
 import Control.DeepSeq (NFData(..))
 import Control.Exception (Exception, try, throwIO)
 import Control.Monad (when)
