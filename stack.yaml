@@ -3,6 +3,7 @@ resolver: lts-6.31
 packages:
 - '.'
 
-extra-deps: []
+extra-deps:
+- optparse-applicative-0.13.2.0
 
 flags: {}
