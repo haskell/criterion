@@ -22,7 +22,7 @@ module Criterion.Main.Options
     ) where
 
 -- Temporary: to support pre-AMP GHC 7.8.4:
-import Data.Monoid 
+import Data.Monoid
 
 import Control.Monad (when)
 import Criterion.Analysis (validateAccessors)
@@ -39,7 +39,7 @@ import Options.Applicative.Help (Chunk(..), tabulate)
 import Options.Applicative.Help.Pretty ((.$.))
 import Options.Applicative.Types
 import Paths_criterion (version)
-import Statistics.Types (mkConfLevel,cl95)
+import Statistics.Types (mkCL,cl95)
 import Text.PrettyPrint.ANSI.Leijen (Doc, text)
 import qualified Data.Map as M
 import Prelude
@@ -105,7 +105,7 @@ parseWith cfg =
 
 config :: Config -> Parser Config
 config Config{..} = Config
-  <$> option (mkConfLevel <$> range 0.001 0.999)
+  <$> option (mkCL <$> range 0.001 0.999)
       (long "ci" <> short 'I' <> metavar "CI" <> value confInterval <>
        help "Confidence interval")
   <*> (not <$> switch (long "no-gc" <> short 'G' <>

@@ -25,7 +25,7 @@ import Control.Monad (foldM, forM_, void, when, unless)
 import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Except
-import qualified Data.Binary as Binary 
+import qualified Data.Binary as Binary
 import Data.Int (Int64)
 import qualified Data.ByteString.Lazy.Char8 as L
 import Criterion.Analysis (analyseSample, noteOutliers)
@@ -37,7 +37,7 @@ import Criterion.Report (report)
 import Criterion.Types hiding (measure)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
-import Statistics.Types (Estimate(..),ConfInt(..),confidenceInterval,cl95,confLevel)
+import Statistics.Types (Estimate(..),ConfInt(..),confidenceInterval,cl95,confidenceLevel)
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), hClose, openTempFile, openFile, hPutStr, openBinaryFile)
 import Text.Printf (printf)
@@ -97,7 +97,7 @@ analyseOne i desc meas = do
                    (f estPoint) (f $ fst $ confidenceInterval e) (f $ snd $ confidenceInterval e)
                    (let cl = confIntCL estError
                         str | cl == cl95 = ""
-                            | otherwise  = printf ", ci %.3f" (confLevel cl)
+                            | otherwise  = printf ", ci %.3f" (confidenceLevel cl)
                     in str
                    )
 
@@ -127,7 +127,7 @@ runAndAnalyse select bs = do
   -- The type we write to the file is ReportFileContents, a triple.
   -- But here we ASSUME that the tuple will become a JSON array.
   -- This assumption lets us stream the reports to the file incrementally:
-  liftIO $ hPutStr handle $ "[ \"" ++ headerRoot ++ "\", " ++ 
+  liftIO $ hPutStr handle $ "[ \"" ++ headerRoot ++ "\", " ++
                              "\"" ++ critVersion ++ "\", [ "
 
   for select bs $ \idx desc bm -> do
@@ -144,7 +144,7 @@ runAndAnalyse select bs = do
     res <- readJSONReports jsonFile
     case res of
       Left err -> error $ "error reading file "++jsonFile++":\n  "++show err
-      Right (_,_,rs) -> 
+      Right (_,_,rs) ->
        case mbJsonFile of
          Just _ -> return rs
          _      -> removeFile jsonFile >> return rs
@@ -165,7 +165,7 @@ rawReport reports = do
     Just file -> liftIO $ do
       handle <- openBinaryFile file ReadWriteMode
       L.hPut handle header
-      forM_ reports $ \rpt ->  
+      forM_ reports $ \rpt ->
         L.hPut handle (Binary.encode rpt)
       hClose handle
 
