@@ -2,9 +2,9 @@ resolver: lts-6.31
 
 packages:
 - '.'
-- './statistics/'
 
 extra-deps:
 - optparse-applicative-0.13.2.0
+- statistics-0.14.0.0
 
 flags: {}
