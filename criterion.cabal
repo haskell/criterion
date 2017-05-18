@@ -85,7 +85,7 @@ library
     directory,
     filepath,
     Glob >= 0.7.2,
-    hastache >= 0.6.0,
+    microstache >= 1 && < 1.1,
     js-flot,
     js-jquery,
     mtl >= 2,

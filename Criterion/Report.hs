@@ -33,28 +33,26 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Reader (ask)
 import Criterion.Monad (Criterion)
 import Criterion.Types
-import Data.Aeson.Encode (encodeToTextBuilder)
-import Data.Aeson.Types (toJSON)
+import Data.Aeson (ToJSON (..), Value(..), object, (.=), Value, encode)
 import Data.Data (Data, Typeable)
 import Data.Foldable (forM_)
+import Data.Monoid ((<>))
 import GHC.Generics (Generic)
 import Paths_criterion (getDataFileName)
 import Statistics.Function (minMax)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>), (<.>), isPathSeparator)
-import Text.Hastache (MuType(..))
-import Text.Hastache.Context (mkGenericContext, mkStrContext, mkStrContextM)
+import Text.Microstache (Key (..), Template (..), Node (..), compileMustacheText, renderMustache)
 import qualified Control.Exception as E
 import qualified Data.Text as T
+import qualified Data.Text.Lazy.Encoding as TLE
 import qualified Data.Text.IO as T
 import qualified Data.Text.Lazy as TL
-import qualified Data.Text.Lazy.Builder as TL
 import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Language.Javascript.Flot as Flot
 import qualified Language.Javascript.JQuery as JQuery
-import qualified Text.Hastache as H
 
 -- | Trim long flat tails from a KDE plot.
 tidyTails :: KDE -> KDE
@@ -83,107 +81,121 @@ report reports = do
     tpl <- loadTemplate [td,"."] template
     TL.writeFile name =<< formatReport reports tpl
 
--- | Format a series of 'Report' values using the given Hastache
--- template.
+-- | Format a series of 'Report' values using the given Mustache template.
 formatReport :: [Report]
-             -> T.Text    -- ^ Hastache template.
+             -> TL.Text    -- ^ Mustache template.
              -> IO TL.Text
-formatReport reports template = do
-  templates <- getTemplateDir
-  let context "report"    = return $ MuList $ map inner reports
-      context "json"      = return $ MuVariable (encode reports)
-      context "include"   = return $ MuLambdaM $ includeFile [templates]
-      context "js-jquery" = fmap MuVariable $ TL.readFile =<< JQuery.file
-      context "js-flot"   = fmap MuVariable $ TL.readFile =<< Flot.file Flot.Flot
-      context _           = return $ MuNothing
-      encode v = TL.toLazyText . encodeToTextBuilder . toJSON $ v
-      inner r@Report{..} = mkStrContextM $ \nym ->
-                         case nym of
-                           "name"     -> return . MuVariable . H.htmlEscape .
-                                         TL.pack $ reportName
-                           "json"     -> return $ MuVariable (encode r)
-                           "number"   -> return $ MuVariable reportNumber
-                           "iters"    -> return $ vector "x" iters
-                           "times"    -> return $ vector "x" times
-                           "cycles"   -> return $ vector "x" cycles
-                           "kdetimes" -> return $ vector "x" kdeValues
-                           "kdepdf"   -> return $ vector "x" kdePDF
-                           "kde"      -> return $ vector2 "time" "pdf" kdeValues kdePDF
+formatReport reports templateName = do
+    template0 <- case compileMustacheText "tpl" templateName of
+        Left err -> fail (show err) -- TODO: throw a template exception?
+        Right x -> return x
+
+    jQuery <- T.readFile =<< JQuery.file
+    flot <- T.readFile =<< Flot.file Flot.Flot
+
+    -- includes, only top level
+    templates <- getTemplateDir
+    template <- includeTemplate (includeFile [templates]) template0
+
+    let context = object
+            [ "json"      .= reports
+            , "report"    .= map inner reports
+            , "js-jquery" .= jQuery
+            , "js-flot"   .= flot
+            ]
+
+    return (renderMustache template context)
+  where
+    includeTemplate :: (FilePath -> IO T.Text) -> Template -> IO Template
+    includeTemplate f Template {..} = fmap
+        (Template templateActual)
+        (mapM (mapM (includeNode f)) templateCache)
+
+    includeNode :: (FilePath -> IO T.Text) -> Node -> IO Node
+    includeNode f (Section (Key ["include"]) [TextBlock fp]) =
+        fmap TextBlock (f (T.unpack fp))
+    includeNode _ n = return n
+
+    -- Merge Report with it's analysis and outliers
+    merge :: ToJSON a => a -> Value -> Value
+    merge x y = case toJSON x of
+        Object x' -> case y of
+            Object y' -> Object (x' <> y')
+            _         -> y
+        _         -> y
+
+    inner r@Report {..} = merge reportAnalysis $ merge reportOutliers $ object
+        [ "name"     .= reportName
+        , "json"     .= TLE.decodeUtf8 (encode r)
+        , "number"   .= reportNumber
+        , "iters"    .= vector "x" iters
+        , "times"    .= vector "x" times
+        , "cycles"   .= vector "x" cycles
+        , "kdetimes" .= vector "x" kdeValues
+        , "kdepdf"   .= vector "x" kdePDF
+        , "kde"      .= vector2 "time" "pdf" kdeValues kdePDF
+        ]
+      where
+        [KDE{..}]   = reportKDEs
+        iters       = measure measIters reportMeasured
+        times       = measure measTime reportMeasured
+        cycles      = measure measCycles reportMeasured
+{-
                            ('a':'n':_)-> mkGenericContext reportAnalysis $
                                          H.encodeStr nym
                            _          -> mkGenericContext reportOutliers $
                                          H.encodeStr nym
-          where [KDE{..}]   = reportKDEs
-                iters       = measure measIters reportMeasured
-                times       = measure measTime reportMeasured
-                cycles      = measure measCycles reportMeasured
-      config = H.defaultConfig {
-                 H.muEscapeFunc = H.emptyEscape
-               , H.muTemplateFileDir = Just templates
-               , H.muTemplateFileExt = Just ".tpl"
-               }
-  H.hastacheStr config template context
+-}
 
 -- | Render the elements of a vector.
 --
--- For example, given this piece of Haskell:
---
--- @'mkStrContext' $ \\name ->
--- case name of
---   \"foo\" -> 'vector' \"x\" foo@
---
 -- It will substitute each value in the vector for @x@ in the
--- following Hastache template:
+-- following Mustache template:
 --
 -- > {{#foo}}
 -- >  {{x}}
 -- > {{/foo}}
-vector :: (Monad m, G.Vector v a, H.MuVar a) =>
-          String                -- ^ Name to use when substituting.
+vector :: (G.Vector v a, ToJSON a) =>
+          T.Text                -- ^ Name to use when substituting.
        -> v a
-       -> MuType m
-{-# SPECIALIZE vector :: String -> U.Vector Double -> MuType IO #-}
-vector name v = MuList . map val . G.toList $ v
-    where val i = mkStrContext $ \nym ->
-                  if nym == name
-                  then MuVariable i
-                  else MuNothing
+       -> Value
+{-# SPECIALIZE vector :: T.Text -> U.Vector Double -> Value #-}
+vector name v = toJSON . map val . G.toList $ v where
+    val i = object [ name .= i ]
 
 -- | Render the elements of two vectors.
-vector2 :: (Monad m, G.Vector v a, G.Vector v b, H.MuVar a, H.MuVar b) =>
-           String               -- ^ Name for elements from the first vector.
-        -> String               -- ^ Name for elements from the second vector.
+vector2 :: (G.Vector v a, G.Vector v b, ToJSON a, ToJSON b) =>
+           T.Text               -- ^ Name for elements from the first vector.
+        -> T.Text               -- ^ Name for elements from the second vector.
         -> v a                  -- ^ First vector.
         -> v b                  -- ^ Second vector.
-        -> MuType m
-{-# SPECIALIZE vector2 :: String -> String -> U.Vector Double -> U.Vector Double
-                       -> MuType IO #-}
-vector2 name1 name2 v1 v2 = MuList $ zipWith val (G.toList v1) (G.toList v2)
-    where val i j = mkStrContext $ \nym ->
-                    case undefined of
-                      _| nym == name1 -> MuVariable i
-                       | nym == name2 -> MuVariable j
-                       | otherwise    -> MuNothing
+        -> Value
+{-# SPECIALIZE vector2 :: T.Text -> T.Text -> U.Vector Double -> U.Vector Double
+                       -> Value #-}
+vector2 name1 name2 v1 v2 = toJSON $ zipWith val (G.toList v1) (G.toList v2) where
+    val i j = object
+        [ name1 .= i
+        , name2 .= j
+        ]
 
 -- | Attempt to include the contents of a file based on a search path.
 -- Returns 'B.empty' if the search fails or the file could not be read.
 --
--- Intended for use with Hastache's 'MuLambdaM', for example:
+-- Intended for preprocessing Mustache files, e.g. replacing sections
 --
--- @context \"include\" = 'MuLambdaM' $ 'includeFile' ['templateDir']@
+-- @
+-- {{#include}}file.txt{{/include}
+-- @
 --
--- Hastache template expansion is /not/ performed within the included
--- file.  No attempt is made to ensure that the included file path is
--- safe, i.e. that it does not refer to an unexpected file such as
--- \"@/etc/passwd@\".
+-- with file contents.
 includeFile :: (MonadIO m) =>
                [FilePath]       -- ^ Directories to search.
-            -> T.Text          -- ^ Name of the file to search for.
+            -> FilePath         -- ^ Name of the file to search for.
             -> m T.Text
-{-# SPECIALIZE includeFile :: [FilePath] -> T.Text -> IO T.Text #-}
+{-# SPECIALIZE includeFile :: [FilePath] -> FilePath -> IO T.Text #-}
 includeFile searchPath name = liftIO $ foldr go (return T.empty) searchPath
     where go dir next = do
-            let path = dir </> H.decodeStr name
+            let path = dir </> name
             T.readFile path `E.catch` \(_::IOException) -> next
 
 -- | A problem arose with a template.
@@ -193,7 +205,7 @@ data TemplateException =
 
 instance Exception TemplateException
 
--- | Load a Hastache template file.
+-- | Load a Mustache template file.
 --
 -- If the name is an absolute or relative path, the search path is
 -- /not/ used, and the name is treated as a literal path.
@@ -202,15 +214,15 @@ instance Exception TemplateException
 -- not be found, or an 'IOException' if no template could be loaded.
 loadTemplate :: [FilePath]      -- ^ Search path.
              -> FilePath        -- ^ Name of template file.
-             -> IO T.Text
+             -> IO TL.Text
 loadTemplate paths name
-    | any isPathSeparator name = T.readFile name
+    | any isPathSeparator name = TL.readFile name
     | otherwise                = go Nothing paths
   where go me (p:ps) = do
           let cur = p </> name <.> "tpl"
           x <- doesFileExist cur
           if x
-            then T.readFile cur `E.catch` \e -> go (me `mplus` Just e) ps
+            then TL.readFile cur `E.catch` \e -> go (me `mplus` Just e) ps
             else go me ps
         go (Just e) _ = throwIO (e::IOException)
         go _        _ = throwIO . TemplateNotFound $ name

@@ -1,6 +1,9 @@
 dist
+dist-newstyle
+.stack-work/
 cabal.sandbox.config
 .cabal-sandbox
 *~
 .\#*
 *.swp
+sanity.*

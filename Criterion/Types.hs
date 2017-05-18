@@ -556,7 +556,7 @@ data Regression = Regression {
     -- ^ Map from name to value of predictor coefficients.
   , regRSquare    :: St.Estimate St.ConfInt Double
     -- ^ R&#0178; goodness-of-fit estimate.
-  } deriving (Eq, Read, Show, Typeable, Data, Generic)
+  } deriving (Eq, Read, Show, Typeable, Generic)
 
 instance FromJSON Regression
 instance ToJSON Regression
@@ -584,7 +584,7 @@ data SampleAnalysis = SampleAnalysis {
     , anOutlierVar :: OutlierVariance
       -- ^ Description of the effects of outliers on the estimated
       -- variance.
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+    } deriving (Eq, Read, Show, Typeable, Generic)
 
 instance FromJSON SampleAnalysis
 instance ToJSON SampleAnalysis
@@ -634,7 +634,7 @@ data Report = Report {
       -- ^ Analysis of outliers.
     , reportKDEs     :: [KDE]
       -- ^ Data for a KDE of times.
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+    } deriving (Eq, Read, Show, Typeable, Generic)
 
 instance FromJSON Report
 instance ToJSON Report
@@ -655,7 +655,7 @@ instance NFData Report where
 
 data DataRecord = Measurement Int String (V.Vector Measured)
                 | Analysed Report
-                deriving (Eq, Read, Show, Typeable, Data, Generic)
+                deriving (Eq, Read, Show, Typeable, Generic)
 
 instance Binary DataRecord where
   put (Measurement i n v) = putWord8 0 >> put i >> put n >> put v
