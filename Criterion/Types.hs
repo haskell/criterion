@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GADTs, RecordWildCards #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
@@ -78,8 +79,13 @@ import Data.Map (Map, fromList)
 import GHC.Generics (Generic)
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
-import qualified Statistics.Resampling.Bootstrap as B
+import qualified Statistics.Types as B
 import Prelude
+
+import Data.Vector.Binary ()
+
+type Estimate = B.Estimate B.ConfInt Double
+
 
 -- | Control the amount of information displayed.
 data Verbosity = Quiet
@@ -90,7 +96,7 @@ data Verbosity = Quiet
 
 -- | Top-level benchmarking configuration.
 data Config = Config {
-      confInterval :: Double
+      confInterval :: B.CL Double
       -- ^ Confidence interval for bootstrap estimation (greater than
       -- 0, less than 1).
     , forceGC      :: Bool
@@ -551,9 +557,9 @@ instance NFData OutlierVariance where
 data Regression = Regression {
     regResponder  :: String
     -- ^ Name of the responding variable.
-  , regCoeffs     :: Map String B.Estimate
+  , regCoeffs     :: Map String Estimate
     -- ^ Map from name to value of predictor coefficients.
-  , regRSquare    :: B.Estimate
+  , regRSquare    :: Estimate
     -- ^ R&#0178; goodness-of-fit estimate.
   } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
@@ -576,9 +582,9 @@ data SampleAnalysis = SampleAnalysis {
     , anOverhead   :: Double
       -- ^ Estimated measurement overhead, in seconds.  Estimation is
       -- performed via linear regression.
-    , anMean       :: B.Estimate
+    , anMean       :: Estimate
       -- ^ Estimated mean.
-    , anStdDev     :: B.Estimate
+    , anStdDev     :: Estimate
       -- ^ Estimated standard deviation.
     , anOutlierVar :: OutlierVariance
       -- ^ Description of the effects of outliers on the estimated

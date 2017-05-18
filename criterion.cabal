@@ -92,13 +92,14 @@ library
     mwc-random >= 0.8.0.3,
     optparse-applicative >= 0.13,
     parsec >= 3.1.0,
-    statistics >= 0.13.2.1,
+    statistics >= 0.14.0.1,
     text >= 0.11,
     time,
     transformers,
     transformers-compat >= 0.4,
     vector >= 0.7.1,
-    vector-algorithms >= 0.4
+    vector-algorithms >= 0.4,
+    vector-binary-instances >= 0.2.3.5
   if impl(ghc < 7.6)
     build-depends:
       ghc-prim

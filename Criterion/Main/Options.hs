@@ -39,6 +39,7 @@ import Options.Applicative.Help (Chunk(..), tabulate)
 import Options.Applicative.Help.Pretty ((.$.))
 import Options.Applicative.Types
 import Paths_criterion (version)
+import Statistics.Types (mkCL, cl95)
 import Text.PrettyPrint.ANSI.Leijen (Doc, text)
 import qualified Data.Map as M
 import Prelude
@@ -67,7 +68,7 @@ data Mode = List
 -- | Default benchmarking configuration.
 defaultConfig :: Config
 defaultConfig = Config {
-      confInterval = 0.95
+      confInterval = cl95
     , forceGC      = True
     , timeLimit    = 5
     , resamples    = 1000
@@ -104,7 +105,7 @@ parseWith cfg =
 
 config :: Config -> Parser Config
 config Config{..} = Config
-  <$> option (range 0.001 0.999)
+  <$> option (range (mkCL 0.001) (mkCL 0.999))
       (long "ci" <> short 'I' <> metavar "CI" <> value confInterval <>
        help "Confidence interval")
   <*> (not <$> switch (long "no-gc" <> short 'G' <>
