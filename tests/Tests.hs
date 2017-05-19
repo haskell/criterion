@@ -1,5 +1,3 @@
-{-# LANGUAGE NegativeLiterals #-}
-
 module Main (main) where
 
 import Criterion.Types
@@ -25,9 +23,9 @@ m2 = Measured {measTime = 1.1438998626545072e-5
               , measCycles = 6208
               , measIters = 1
 
-              , measAllocated = -9223372036854775808
-              , measNumGcs = -9223372036854775808
-              , measBytesCopied = -9223372036854775808
+              , measAllocated = minBound
+              , measNumGcs = minBound
+              , measBytesCopied = minBound
 
               , measMutatorWallSeconds = -1/0
               , measMutatorCpuSeconds = -1/0
