@@ -43,6 +43,8 @@ import Statistics.Function (minMax)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>), (<.>), isPathSeparator)
 import Text.Microstache (Key (..), Template (..), Node (..), compileMustacheText, renderMustache)
+import Prelude ()
+import Prelude.Compat
 import qualified Control.Exception as E
 import qualified Data.Text as T
 import qualified Data.Text.Lazy.Encoding as TLE
@@ -109,7 +111,7 @@ formatReport reports templateName = do
     includeTemplate :: (FilePath -> IO T.Text) -> Template -> IO Template
     includeTemplate f Template {..} = fmap
         (Template templateActual)
-        (mapM (mapM (includeNode f)) templateCache)
+        (traverse (traverse (includeNode f)) templateCache)
 
     includeNode :: (FilePath -> IO T.Text) -> Node -> IO Node
     includeNode f (Section (Key ["include"]) [TextBlock fp]) =
