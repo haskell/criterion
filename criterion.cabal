@@ -17,6 +17,13 @@ extra-source-files:
   examples/*.cabal
   examples/*.hs
   examples/*.html
+tested-with:
+  GHC==7.4.2,
+  GHC==7.6.3,
+  GHC==7.8.4,
+  GHC==7.10.3,
+  GHC==8.0.2,
+  GHC==8.2.1
 
 data-files:
   templates/*.css
