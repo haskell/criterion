@@ -19,8 +19,8 @@ data CommandLine
     | Version
     deriving (Eq, Read, Show, Typeable, Data, Generic)
 
-analyseOptions :: Parser CommandLine
-analyseOptions = Report <$> measurements <*> outputFile <*> templateFile
+reportOptions :: Parser CommandLine
+reportOptions = Report <$> measurements <*> outputFile <*> templateFile
   where
     measurements = strArgument $ mconcat
         [metavar "INPUT-JSON", help "Json file to read Criterion output from."]
@@ -36,7 +36,7 @@ parseCommand :: Parser CommandLine
 parseCommand =
   (Version <$ switch (long "version" <> help "Show version info")) <|>
   (subparser $
-    command "analyse" (info analyseOptions (progDesc "Analyse measurements")))
+    command "report" (info analyseOptions (progDesc "Generate report.")))
 
 commandLine :: ParserInfo CommandLine
 commandLine = info (helper <*> parseCommand) $
