@@ -4,10 +4,10 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
     <title>criterion report</title>
     <script language="javascript" type="text/javascript">
-      {{js-jquery}}
+      {{{js-jquery}}}
     </script>
     <script language="javascript" type="text/javascript">
-      {{js-flot}}
+      {{{js-flot}}}
     </script>
     <script language="javascript" type="text/javascript">
       {{#include}}js/jquery.criterion.js{{/include}}
@@ -73,15 +73,15 @@
    </tr>
    <tr>
     <td>Mean execution time</td>
-    <td><span class="confinterval citime">{{anMean.estLowerBound}}</span></td>
+    <td><span class="confinterval citime">{{anMean.estError.confIntLDX}}</span></td>
     <td><span class="time">{{anMean.estPoint}}</span></td>
-    <td><span class="confinterval citime">{{anMean.estUpperBound}}</span></td>
+    <td><span class="confinterval citime">{{anMean.estError.confIntUDX}}</span></td>
    </tr>
    <tr>
     <td>Standard deviation</td>
-    <td><span class="confinterval citime">{{anStdDev.estLowerBound}}</span></td>
+    <td><span class="confinterval citime">{{anStdDev.estError.confIntLDX}}</span></td>
     <td><span class="time">{{anStdDev.estPoint}}</span></td>
-    <td><span class="confinterval citime">{{anStdDev.estUpperBound}}</span></td>
+    <td><span class="confinterval citime">{{anStdDev.estError.confIntUDX}}</span></td>
    </tr>
   </tbody>
  </table>
@@ -177,19 +177,19 @@ $(function () {
         return $.renderTime(olsTime.estPoint);
       });
     $(".olstimelb" + number).text(function() {
-        return $.renderTime(olsTime.estLowerBound);
+        return $.renderTime(olsTime.estError.confIntLDX);
       });
     $(".olstimeub" + number).text(function() {
-        return $.renderTime(olsTime.estUpperBound);
+        return $.renderTime(olsTime.estError.confIntUDX);
       });
     $(".olsr2pt" + number).text(function() {
         return rgrs.regRSquare.estPoint.toFixed(3);
       });
     $(".olsr2lb" + number).text(function() {
-        return rgrs.regRSquare.estLowerBound.toFixed(3);
+        return rgrs.regRSquare.estError.confIntLDX.toFixed(3);
       });
     $(".olsr2ub" + number).text(function() {
-        return rgrs.regRSquare.estUpperBound.toFixed(3);
+        return rgrs.regRSquare.estError.confIntUDX.toFixed(3);
       });
     mean *= scale;
     kdetimes = $.scaleBy(scale, kdetimes);
@@ -271,7 +271,7 @@ $(function () {
       $.addTooltip("#cycles" + number, function(x,y) { return x + ' cycles'; });
     }
   };
-  var reports = {{json}};
+  var reports = {{{json}}};
   reports.map(mangulate);
 
   var benches = [{{#report}}"{{name}}",{{/report}}];

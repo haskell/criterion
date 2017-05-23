@@ -1,12 +1,10 @@
-{-# LANGUAGE NegativeLiterals #-}
-
 module Main (main) where
 
 import Criterion.Types
 import qualified Data.Aeson as Aeson
 import qualified Data.Vector as V
 import Properties
-import Statistics.Resampling.Bootstrap (Estimate(..))
+import Statistics.Types (estimateFromErr, mkCL)
 import Test.Tasty (defaultMain, testGroup)
 import Test.Tasty.HUnit (testCase)
 import Test.HUnit
@@ -16,7 +14,7 @@ r1 = Report 0 "" [] v1 s1 (Outliers 0 0 0 0 0) []
  where
   m1 = Measured 4.613000783137977e-05 3.500000000000378e-05 31432 1 0 0 0 0.0 0.0 0.0 0.0
   v1 = V.fromList [m1]
-  est1 = Estimate 0.0 0.0 0.0 0.0
+  est1 = estimateFromErr 0.0 (0.0, 0.0) (mkCL 0.0)
   s1 = SampleAnalysis [] 0.0 est1 est1 (OutlierVariance Unaffected "" 0.0)
 
 m2 :: Measured
@@ -25,9 +23,9 @@ m2 = Measured {measTime = 1.1438998626545072e-5
               , measCycles = 6208
               , measIters = 1
 
-              , measAllocated = -9223372036854775808
-              , measNumGcs = -9223372036854775808
-              , measBytesCopied = -9223372036854775808
+              , measAllocated = minBound
+              , measNumGcs = minBound
+              , measBytesCopied = minBound
 
               , measMutatorWallSeconds = -1/0
               , measMutatorCpuSeconds = -1/0

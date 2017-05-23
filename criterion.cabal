@@ -1,5 +1,5 @@
 name:           criterion
-version:        1.1.4.0
+version:        1.2.0.0
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
@@ -17,6 +17,13 @@ extra-source-files:
   examples/*.cabal
   examples/*.hs
   examples/*.html
+tested-with:
+  GHC==7.4.2,
+  GHC==7.6.3,
+  GHC==7.8.4,
+  GHC==7.10.3,
+  GHC==8.0.2,
+  GHC==8.2.1
 
 data-files:
   templates/*.css
@@ -76,6 +83,7 @@ library
     aeson >= 0.8,
     ansi-wl-pprint >= 0.6.7.2,
     base >= 4.5 && < 5,
+    base-compat >= 0.9,
     binary >= 0.5.1.0,
     bytestring >= 0.9 && < 1.0,
     cassava >= 0.3.0.0,
@@ -85,14 +93,14 @@ library
     directory,
     filepath,
     Glob >= 0.7.2,
-    hastache >= 0.6.0,
+    microstache >= 1 && < 1.1,
     js-flot,
     js-jquery,
     mtl >= 2,
     mwc-random >= 0.8.0.3,
     optparse-applicative >= 0.13,
     parsec >= 3.1.0,
-    statistics >= 0.13.2.1,
+    statistics >= 0.14 && < 0.15,
     text >= 0.11,
     time,
     transformers,
@@ -148,6 +156,7 @@ test-suite sanity
     base,
     bytestring,
     criterion,
+    deepseq,
     tasty,
     tasty-hunit
 

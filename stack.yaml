@@ -1,8 +1,15 @@
-resolver: lts-6.1
+resolver: lts-6.31
 
 packages:
 - '.'
+- location:
+    git: https://github.com/phadej/microstache.git
+    commit: 837f8d57451aadb249397383d32ab94d31ee5d32
+  extra-dep: true
 
-extra-deps: []
+
+extra-deps:
+- optparse-applicative-0.13.2.0
+- statistics-0.14.0.0
 
 flags: {}

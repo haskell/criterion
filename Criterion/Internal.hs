@@ -25,7 +25,7 @@ import Control.Monad (foldM, forM_, void, when, unless)
 import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Except
-import qualified Data.Binary as Binary 
+import qualified Data.Binary as Binary
 import Data.Int (Int64)
 import qualified Data.ByteString.Lazy.Char8 as L
 import Criterion.Analysis (analyseSample, noteOutliers)
@@ -37,7 +37,7 @@ import Criterion.Report (report)
 import Criterion.Types hiding (measure)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
-import Statistics.Resampling.Bootstrap (Estimate(..))
+import Statistics.Types (Estimate(..),ConfInt(..),confidenceInterval,cl95,confidenceLevel)
 import System.Directory (getTemporaryDirectory, removeFile)
 import System.IO (IOMode(..), hClose, openTempFile, openFile, hPutStr, openBinaryFile)
 import Text.Printf (printf)
@@ -79,10 +79,11 @@ analyseOne i desc meas = do
         _ <- bs r2 (regResponder ++ ":") regRSquare
         forM_ (Map.toList regCoeffs) $ \(prd,val) ->
           bs (printf "%.3g") ("  " ++ prd) val
-      writeCsv (desc,
-                estPoint anMean, estLowerBound anMean, estUpperBound anMean,
-                estPoint anStdDev, estLowerBound anStdDev,
-                estUpperBound anStdDev)
+      writeCsv
+        (desc,
+         estPoint anMean,   fst $ confidenceInterval anMean,   snd $ confidenceInterval anMean,
+         estPoint anStdDev, fst $ confidenceInterval anStdDev, snd $ confidenceInterval anStdDev
+        )
       when (verbosity == Verbose || (ovEffect > Slight && verbosity > Quiet)) $ do
         when (verbosity == Verbose) $ noteOutliers reportOutliers
         _ <- note "variance introduced by outliers: %d%% (%s)\n"
@@ -90,12 +91,16 @@ analyseOne i desc meas = do
         return ()
       _ <- note "\n"
       return (Analysed rpt)
-      where bs :: (Double -> String) -> String -> Estimate -> Criterion ()
-            bs f metric Estimate{..} =
+      where bs :: (Double -> String) -> String -> Estimate ConfInt Double -> Criterion ()
+            bs f metric e@Estimate{..} =
               note "%-20s %-10s (%s .. %s%s)\n" metric
-                   (f estPoint) (f estLowerBound) (f estUpperBound)
-                   (if estConfidenceLevel == 0.95 then ""
-                    else printf ", ci %.3f" estConfidenceLevel)
+                   (f estPoint) (f $ fst $ confidenceInterval e) (f $ snd $ confidenceInterval e)
+                   (let cl = confIntCL estError
+                        str | cl == cl95 = ""
+                            | otherwise  = printf ", ci %.3f" (confidenceLevel cl)
+                    in str
+                   )
+
 
 -- | Run a single benchmark and analyse its performance.
 runAndAnalyseOne :: Int -> String -> Benchmarkable -> Criterion DataRecord
@@ -122,7 +127,7 @@ runAndAnalyse select bs = do
   -- The type we write to the file is ReportFileContents, a triple.
   -- But here we ASSUME that the tuple will become a JSON array.
   -- This assumption lets us stream the reports to the file incrementally:
-  liftIO $ hPutStr handle $ "[ \"" ++ headerRoot ++ "\", " ++ 
+  liftIO $ hPutStr handle $ "[ \"" ++ headerRoot ++ "\", " ++
                              "\"" ++ critVersion ++ "\", [ "
 
   for select bs $ \idx desc bm -> do
@@ -139,7 +144,7 @@ runAndAnalyse select bs = do
     res <- readJSONReports jsonFile
     case res of
       Left err -> error $ "error reading file "++jsonFile++":\n  "++show err
-      Right (_,_,rs) -> 
+      Right (_,_,rs) ->
        case mbJsonFile of
          Just _ -> return rs
          _      -> removeFile jsonFile >> return rs
@@ -160,7 +165,7 @@ rawReport reports = do
     Just file -> liftIO $ do
       handle <- openBinaryFile file ReadWriteMode
       L.hPut handle header
-      forM_ reports $ \rpt ->  
+      forM_ reports $ \rpt ->
         L.hPut handle (Binary.encode rpt)
       hClose handle
 
