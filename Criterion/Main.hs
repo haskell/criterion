@@ -31,6 +31,7 @@ module Criterion.Main
     , Benchmark
     -- * Creating a benchmark suite
     , env
+    , envWithCleanup
     , bench
     , bgroup
     -- ** Running a benchmark

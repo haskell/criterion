@@ -17,6 +17,7 @@ module Criterion
     -- * Creating a benchmark suite
     , Benchmark
     , env
+    , envWithCleanup
     , bench
     , bgroup
     -- ** Running a benchmark
