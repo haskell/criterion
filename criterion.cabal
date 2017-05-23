@@ -91,7 +91,7 @@ library
     containers,
     deepseq >= 1.1.0.0,
     directory,
-    exceptions >= 0.8.3 && < 0.9,
+    exceptions >= 0.8.2 && < 0.9,
     filepath,
     Glob >= 0.7.2,
     microstache >= 1 && < 1.1,
@@ -171,6 +171,24 @@ test-suite tests
     tasty-quickcheck,
     vector,
     aeson >= 0.8
+
+test-suite cleanup
+  type:           exitcode-stdio-1.0
+  hs-source-dirs: tests
+  main-is:        Cleanup.hs
+
+  ghc-options:
+    -Wall -threaded -O0 -rtsopts
+
+  build-depends:
+    HUnit,
+    base,
+    bytestring,
+    criterion,
+    deepseq,
+    directory,
+    tasty,
+    tasty-hunit
 
 source-repository head
   type:     git

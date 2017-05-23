@@ -32,6 +32,7 @@ module Criterion.Measurement
     ) where
 
 import Criterion.Types (Benchmarkable(..), Measured(..))
+import Control.Applicative ((<*))
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (finally,evaluate)
 import Data.Int (Int64)

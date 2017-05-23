@@ -150,9 +150,9 @@ runMode wat bs =
   case wat of
     List -> mapM_ putStrLn . sort . concatMap benchNames $ bs
     Version -> putStrLn versionInfo
-    RunIters iters matchType benches -> do
+    RunIters cfg iters matchType benches -> do
       shouldRun <- selectBenches matchType benches bsgroup
-      withConfig defaultConfig $
+      withConfig cfg $
         runFixedIters iters shouldRun bsgroup
     Run cfg matchType benches -> do
       shouldRun <- selectBenches matchType benches bsgroup
