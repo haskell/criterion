@@ -1,3 +1,20 @@
+1.2.0.0
+
+* Use `statistics-0.14`.
+
+* Replace the `hastache` dependency with `microstache`.
+
+* Add support for per-run allocation/cleanup of the environment with
+  `perRunEnv` and `perRunEnvWithCleanup`,
+
+* Add support for per-batch allocation/cleanup with
+  `perBatchEnv` and `perBatchEnvWithCleanup`.
+
+* Add `envWithCleanup`, a variant of `env` with cleanup support.
+
+* Add the `criterion-report` executable, which creates reports from previously
+  created JSON files.
+
 1.1.4.0
 
 * Unicode output is now correctly printed on Windows.
