@@ -119,27 +119,17 @@ library
   else
     ghc-options: -O2
 
--- [2016.05.30] RRN: I'm not sure where this was going.
--- It looks like it was meant for post-facto analysis of
--- reports?  Will have to ask BOS.
---------------------------------------------------------
--- executable criterion
---   hs-source-dirs: app
---   main-is:        App.hs
---   other-modules:
---     Options
+Executable criterion-report
+  Default-Language:     Haskell2010
+  GHC-Options:          -Wall -rtsopts
+  Main-Is:              Report.hs
+  Other-Modules:        Options
+  Hs-Source-Dirs:       app
 
---   ghc-options:
---     -Wall -threaded -rtsopts
-
---   build-depends:
---     base,
---     criterion,
---     optparse-applicative
---   if impl(ghc < 7.6)
---     build-depends:
---       ghc-prim
-
+  Build-Depends:
+    base,
+    criterion,
+    optparse-applicative >= 0.13
 
 test-suite sanity
   type:           exitcode-stdio-1.0

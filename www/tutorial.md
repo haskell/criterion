@@ -635,3 +635,12 @@ lower and upper bounds aren't all that tight, too).
 std dev              652.0 ps   (507.7 ps .. 942.1 ps)
 variance introduced by outliers: 91% (severely inflated)
 ~~~~
+
+## Generating (HTML) reports from previous benchmarks with criterion-report
+
+If you want to post-process benchmark data before generating a HTML report you
+can use the `criterion-report` executable to generate HTML reports from
+criterion generated JSON. To store the benchmark results run criterion with the
+`--json` flag to specify where to store the results. You can then use:
+`criterion-report data.json report.html` to generate a HTML report of the data.
+`criterion-report` also accepts the `--template` flag accepted by criterion.
