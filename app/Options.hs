@@ -7,7 +7,7 @@ module Options
     , versionInfo
     ) where
 
-import Data.Monoid ((<>))
+import Data.Monoid ((<>), mconcat)
 import Data.Version (showVersion)
 import Data.Data (Data, Typeable)
 import GHC.Generics (Generic)
@@ -36,7 +36,7 @@ parseCommand :: Parser CommandLine
 parseCommand =
   (Version <$ switch (long "version" <> help "Show version info")) <|>
   (subparser $
-    command "report" (info analyseOptions (progDesc "Generate report.")))
+    command "report" (info reportOptions (progDesc "Generate report.")))
 
 commandLine :: ParserInfo CommandLine
 commandLine = info (helper <*> parseCommand) $

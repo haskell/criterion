@@ -123,6 +123,10 @@ Executable criterion-report
     criterion,
     optparse-applicative >= 0.13
 
+  if impl(ghc < 7.6)
+    build-depends:
+      ghc-prim
+
 test-suite sanity
   type:           exitcode-stdio-1.0
   hs-source-dirs: tests
