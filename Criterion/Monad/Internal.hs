@@ -18,8 +18,9 @@ module Criterion.Monad.Internal
     ) where
 
 -- Temporary: to support pre-AMP GHC 7.8.4:
-import Control.Applicative 
+import Control.Applicative
 
+import Control.Monad.Catch (MonadThrow, MonadCatch, MonadMask)
 import Control.Monad.Reader (MonadReader(..), ReaderT)
 import Control.Monad.Trans (MonadIO)
 import Criterion.Types (Config)
@@ -36,7 +37,7 @@ data Crit = Crit {
 -- | The monad in which most criterion code executes.
 newtype Criterion a = Criterion {
       runCriterion :: ReaderT Crit IO a
-    } deriving (Functor, Applicative, Monad, MonadIO)
+    } deriving (Functor, Applicative, Monad, MonadIO, MonadThrow, MonadCatch, MonadMask)
 
 instance MonadReader Config Criterion where
     ask     = config `fmap` Criterion ask

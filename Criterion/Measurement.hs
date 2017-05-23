@@ -1,4 +1,5 @@
 {-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface,
     ScopedTypeVariables #-}
 
@@ -23,12 +24,16 @@ module Criterion.Measurement
     , secs
     , measure
     , runBenchmark
+    , runBenchmarkable
+    , runBenchmarkable_
     , measured
     , applyGCStats
     , threshold
     ) where
 
 import Criterion.Types (Benchmarkable(..), Measured(..))
+import Control.DeepSeq (NFData(rnf))
+import Control.Exception (finally,evaluate)
 import Data.Int (Int64)
 import Data.List (unfoldr)
 import Data.Word (Word64)
@@ -51,12 +56,12 @@ getGCStats =
 measure :: Benchmarkable        -- ^ Operation to benchmark.
         -> Int64                -- ^ Number of iterations.
         -> IO (Measured, Double)
-measure (Benchmarkable run) iters = do
+measure bm iters = runBenchmarkable bm iters addResults $ \act -> do
   startStats <- getGCStats
   startTime <- getTime
   startCpuTime <- getCPUTime
   startCycles <- getCycles
-  run iters
+  act
   endTime <- getTime
   endCpuTime <- getCPUTime
   endCycles <- getCycles
@@ -68,6 +73,26 @@ measure (Benchmarkable run) iters = do
            , measIters   = iters
            }
   return (m, endTime)
+  where
+    addResults :: (Measured, Double) -> (Measured, Double) -> (Measured, Double)
+    addResults (!m1, !d1) (!m2, !d2) = (m3, d1 + d2)
+      where
+        add f = f m1 + f m2
+
+        m3 = Measured
+            { measTime               = add measTime
+            , measCpuTime            = add measCpuTime
+            , measCycles             = add measCycles
+            , measIters              = add measIters
+
+            , measAllocated          = add measAllocated
+            , measNumGcs             = add measNumGcs
+            , measBytesCopied        = add measBytesCopied
+            , measMutatorWallSeconds = add measMutatorWallSeconds
+            , measMutatorCpuSeconds  = add measMutatorCpuSeconds
+            , measGcWallSeconds      = add measGcWallSeconds
+            , measGcCpuSeconds       = add measGcCpuSeconds
+            }
 {-# INLINE measure #-}
 
 -- | The amount of time a benchmark must run for in order for us to
@@ -83,6 +108,33 @@ threshold :: Double
 threshold = 0.03
 {-# INLINE threshold #-}
 
+runBenchmarkable :: Benchmarkable -> Int64 -> (a -> a -> a) -> (IO () -> IO a) -> IO a
+runBenchmarkable Benchmarkable{..} i comb f
+    | perRun = work >>= go (i - 1)
+    | otherwise = work
+  where
+    go 0 result = return result
+    go !n !result = work >>= go (n - 1) . comb result
+
+    count | perRun = 1
+          | otherwise = i
+
+    work = do
+        env <- allocEnv count
+        let clean = cleanEnv count env
+            run = runRepeatedly env count
+
+        clean `seq` run `seq` evaluate $ rnf env
+
+        performGC
+        f run `finally` clean <* performGC
+    {-# INLINE work #-}
+{-# INLINE runBenchmarkable #-}
+
+runBenchmarkable_ :: Benchmarkable -> Int64 -> IO ()
+runBenchmarkable_ bm i = runBenchmarkable bm i (\() () -> ()) id
+{-# INLINE runBenchmarkable_ #-}
+
 -- | Run a single benchmark, and return measurements collected while
 -- executing it, along with the amount of time the measurement process
 -- took.
@@ -93,8 +145,8 @@ runBenchmark :: Benchmarkable
              -- exceeded in order to generate enough data to perform
              -- meaningful statistical analyses.
              -> IO (V.Vector Measured, Double)
-runBenchmark bm@(Benchmarkable run) timeLimit = do
-  run 1
+runBenchmark bm timeLimit = do
+  runBenchmarkable_ bm 1
   start <- performGC >> getTime
   let loop [] !_ !_ _ = error "unpossible!"
       loop (iters:niters) prev count acc = do

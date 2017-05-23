@@ -22,6 +22,7 @@ import qualified Data.Aeson as Aeson
 import Control.DeepSeq (rnf)
 import Control.Exception (evaluate)
 import Control.Monad (foldM, forM_, void, when, unless)
+import Control.Monad.Catch (MonadMask, finally)
 import Control.Monad.Reader (ask, asks)
 import Control.Monad.Trans (MonadIO, liftIO)
 import Control.Monad.Trans.Except
@@ -31,7 +32,7 @@ import qualified Data.ByteString.Lazy.Char8 as L
 import Criterion.Analysis (analyseSample, noteOutliers)
 import Criterion.IO (header, headerRoot, critVersion, readJSONReports, writeJSONReports)
 import Criterion.IO.Printf (note, printError, prolix, writeCsv)
-import Criterion.Measurement (runBenchmark, secs)
+import Criterion.Measurement (runBenchmark, runBenchmarkable_, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
@@ -180,20 +181,20 @@ runFixedIters :: Int64            -- ^ Number of loop iterations to run.
 runFixedIters iters select bs =
   for select bs $ \_idx desc bm -> do
     _ <- note "benchmarking %s\n" desc
-    liftIO $ runRepeatedly bm iters
+    liftIO $ runBenchmarkable_ bm iters
 
 -- | Iterate over benchmarks.
-for :: MonadIO m => (String -> Bool) -> Benchmark
+for :: (MonadMask m, MonadIO m) => (String -> Bool) -> Benchmark
     -> (Int -> String -> Benchmarkable -> m ()) -> m ()
 for select bs0 handle = go (0::Int) ("", bs0) >> return ()
   where
-    go !idx (pfx, Environment mkenv mkbench)
+    go !idx (pfx, Environment mkenv cleanenv mkbench)
       | shouldRun pfx mkbench = do
         e <- liftIO $ do
           ee <- mkenv
           evaluate (rnf ee)
           return ee
-        go idx (pfx, mkbench e)
+        go idx (pfx, mkbench e) `finally` liftIO (cleanenv e)
       | otherwise = return idx
     go idx (pfx, Benchmark desc b)
       | select desc' = do handle idx desc' b; return $! idx + 1

@@ -31,6 +31,11 @@ module Criterion.Main
     , Benchmark
     -- * Creating a benchmark suite
     , env
+    , envWithCleanup
+    , perBatchEnv
+    , perBatchEnvWithCleanup
+    , perRunEnv
+    , perRunEnvWithCleanup
     , bench
     , bgroup
     -- ** Running a benchmark
