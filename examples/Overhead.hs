@@ -11,18 +11,27 @@ import GHC.Stats as GHC
 
 main :: IO ()
 main = do
-  statsEnabled <- getGCStatsEnabled
+  statsEnabled <- getRTSStatsEnabled
   defaultMain $ [
-      bench "measure" $      whnfIO (M.measure (whnfIO $ return ()) 1)
-    , bench "getTime" $      whnfIO M.getTime
-    , bench "getCPUTime" $   whnfIO M.getCPUTime
-    , bench "getCycles" $    whnfIO M.getCycles
-    , bench "M.getGCStats" $ whnfIO M.getGCStats
+      bench "measure" $            whnfIO (M.measure (whnfIO $ return ()) 1)
+    , bench "getTime" $            whnfIO M.getTime
+    , bench "getCPUTime" $         whnfIO M.getCPUTime
+    , bench "getCycles" $          whnfIO M.getCycles
+    , bench "M.getGCStatisticss" $ whnfIO M.getGCStatistics
     ] ++ if statsEnabled
-         then [bench "GHC.getGCStats" $ whnfIO GHC.getGCStats]
+         then [bench
+#if MIN_VERSION_base(4,10,0)
+                     "GHC.getRTSStats" $ whnfIO GHC.getRTSStats
+#else
+                     "GHC.getGCStats" $  whnfIO GHC.getGCStats
+#endif
+              ]
          else []
 
 #if !MIN_VERSION_base(4,6,0)
-getGCStatsEnabled :: IO Bool
-getGCStatsEnabled = return False
+getRTSStatsEnabled :: IO Bool
+getRTSStatsEnabled = return False
+#elif !MIN_VERSION_base(4,10,0)
+getRTSStatsEnabled :: IO Bool
+getRTSStatsEnabled = getGCStatsEnabled
 #endif

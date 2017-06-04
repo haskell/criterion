@@ -1,7 +1,15 @@
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface,
     ScopedTypeVariables #-}
+
+#if MIN_VERSION_base(4,10,0)
+-- Disable deprecation warnings for now until we remove the use of getGCStats
+-- and applyGCStats for good
+{-# OPTIONS_GHC -Wno-deprecations #-}
+#endif
 
 -- |
 -- Module      : Criterion.Measurement
@@ -20,45 +28,184 @@ module Criterion.Measurement
     , getTime
     , getCPUTime
     , getCycles
-    , getGCStats
+    , getGCStatistics
+    , GCStatistics(..)
     , secs
     , measure
     , runBenchmark
     , runBenchmarkable
     , runBenchmarkable_
     , measured
-    , applyGCStats
+    , applyGCStatistics
     , threshold
+      -- * Deprecated
+    , getGCStats
+    , applyGCStats
     ) where
 
 import Criterion.Types (Benchmarkable(..), Measured(..))
 import Control.Applicative ((<*))
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (finally,evaluate)
+import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.List (unfoldr)
 import Data.Word (Word64)
+import GHC.Generics (Generic)
 import GHC.Stats (GCStats(..))
+#if MIN_VERSION_base(4,10,0)
+import GHC.Stats (RTSStats(..), GCDetails(..))
+#endif
 import System.Mem (performGC)
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
 import qualified Data.Vector as V
 import qualified GHC.Stats as Stats
 
+-- | Statistics about memory usage and the garbage collector. Apart from
+-- 'gcStatsCurrentBytesUsed' and 'gcStatsCurrentBytesSlop' all are cumulative values since
+-- the program started.
+--
+-- 'GCStatistics' is cargo-culted from the 'GCStats' data type that "GHC.Stats"
+-- has. Since 'GCStats' was marked as deprecated and will be removed in GHC 8.4,
+-- we use 'GCStatistics' to provide a backwards-compatible view of GC statistics.
+data GCStatistics = GCStatistics
+    { -- | Total number of bytes allocated
+    gcStatsBytesAllocated :: !Int64
+    -- | Number of garbage collections performed (any generation, major and
+    -- minor)
+    , gcStatsNumGcs :: !Int64
+    -- | Maximum number of live bytes seen so far
+    , gcStatsMaxBytesUsed :: !Int64
+    -- | Number of byte usage samples taken, or equivalently
+    -- the number of major GCs performed.
+    , gcStatsNumByteUsageSamples :: !Int64
+    -- | Sum of all byte usage samples, can be used with
+    -- 'gcStatsNumByteUsageSamples' to calculate averages with
+    -- arbitrary weighting (if you are sampling this record multiple
+    -- times).
+    , gcStatsCumulativeBytesUsed :: !Int64
+    -- | Number of bytes copied during GC
+    , gcStatsBytesCopied :: !Int64
+    -- | Number of live bytes at the end of the last major GC
+    , gcStatsCurrentBytesUsed :: !Int64
+    -- | Current number of bytes lost to slop
+    , gcStatsCurrentBytesSlop :: !Int64
+    -- | Maximum number of bytes lost to slop at any one time so far
+    , gcStatsMaxBytesSlop :: !Int64
+    -- | Maximum number of megabytes allocated
+    , gcStatsPeakMegabytesAllocated :: !Int64
+    -- | CPU time spent running mutator threads.  This does not include
+    -- any profiling overhead or initialization.
+    , gcStatsMutatorCpuSeconds :: !Double
+
+    -- | Wall clock time spent running mutator threads.  This does not
+    -- include initialization.
+    , gcStatsMutatorWallSeconds :: !Double
+    -- | CPU time spent running GC
+    , gcStatsGcCpuSeconds :: !Double
+    -- | Wall clock time spent running GC
+    , gcStatsGcWallSeconds :: !Double
+    -- | Total CPU time elapsed since program start
+    , gcStatsCpuSeconds :: !Double
+    -- | Total wall clock time elapsed since start
+    , gcStatsWallSeconds :: !Double
+    -- | Number of bytes copied during GC, minus space held by mutable
+    -- lists held by the capabilities.  Can be used with
+    -- 'gcStatsParMaxBytesCopied' to determine how well parallel GC utilized
+    -- all cores.
+    , gcStatsParTotBytesCopied :: !Int64
+
+    -- | Sum of number of bytes copied each GC by the most active GC
+    -- thread each GC.  The ratio of 'gcStatsParTotBytesCopied' divided by
+    -- 'gcStatsParMaxBytesCopied' approaches 1 for a maximally sequential
+    -- run and approaches the number of threads (set by the RTS flag
+    -- @-N@) for a maximally parallel run.
+    , gcStatsParMaxBytesCopied :: !Int64
+    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+
 -- | Try to get GC statistics, bearing in mind that the GHC runtime
 -- will throw an exception if statistics collection was not enabled
 -- using \"@+RTS -T@\".
+{-# DEPRECATED getGCStats
+      ["GCStats has been deprecated in GHC 8.2. As a consequence,",
+       "getGCStats has also been deprecated in favor of getGCStatistics.",
+       "getGCStats will be removed in the next major criterion release."] #-}
 getGCStats :: IO (Maybe GCStats)
 getGCStats =
   (Just `fmap` Stats.getGCStats) `Exc.catch` \(_::Exc.SomeException) ->
   return Nothing
+
+-- | Try to get GC statistics, bearing in mind that the GHC runtime
+-- will throw an exception if statistics collection was not enabled
+-- using \"@+RTS -T@\".
+getGCStatistics :: IO (Maybe GCStatistics)
+#if MIN_VERSION_base(4,10,0)
+-- Use RTSStats/GCDetails to gather GC stats
+getGCStatistics = do
+  stats <- Stats.getRTSStats
+  let gcdetails :: Stats.GCDetails
+      gcdetails = gc stats
+
+      nsToSecs :: Int64 -> Double
+      nsToSecs ns = fromIntegral ns * 1.0E-9
+
+  return $ Just GCStatistics {
+      gcStatsBytesAllocated         = fromIntegral $ gcdetails_allocated_bytes gcdetails
+    , gcStatsNumGcs                 = fromIntegral $ gcs stats
+    , gcStatsMaxBytesUsed           = fromIntegral $ max_live_bytes stats
+    , gcStatsNumByteUsageSamples    = fromIntegral $ major_gcs stats
+    , gcStatsCumulativeBytesUsed    = fromIntegral $ cumulative_live_bytes stats
+    , gcStatsBytesCopied            = fromIntegral $ gcdetails_copied_bytes gcdetails
+    , gcStatsCurrentBytesUsed       = fromIntegral $ gcdetails_live_bytes gcdetails
+    , gcStatsCurrentBytesSlop       = fromIntegral $ gcdetails_slop_bytes gcdetails
+    , gcStatsMaxBytesSlop           = fromIntegral $ max_slop_bytes stats
+    , gcStatsPeakMegabytesAllocated = fromIntegral (max_mem_in_use_bytes stats) `quot` (1024*1024)
+    , gcStatsMutatorCpuSeconds      = nsToSecs $ mutator_cpu_ns stats
+    , gcStatsMutatorWallSeconds     = nsToSecs $ mutator_elapsed_ns stats
+    , gcStatsGcCpuSeconds           = nsToSecs $ gcdetails_cpu_ns gcdetails
+    , gcStatsGcWallSeconds          = nsToSecs $ gcdetails_elapsed_ns gcdetails
+    , gcStatsCpuSeconds             = nsToSecs $ cpu_ns stats
+    , gcStatsWallSeconds            = nsToSecs $ elapsed_ns stats
+    , gcStatsParTotBytesCopied      = fromIntegral $ par_copied_bytes stats
+    , gcStatsParMaxBytesCopied      = fromIntegral $ cumulative_par_max_copied_bytes stats
+    }
+ `Exc.catch`
+  \(_::Exc.SomeException) -> return Nothing
+#else
+-- Use the old GCStats type to gather GC stats
+getGCStatistics = do
+  stats <- Stats.getGCStats
+  return $ Just GCStatistics {
+      gcStatsBytesAllocated         = bytesAllocated stats
+    , gcStatsNumGcs                 = numGcs stats
+    , gcStatsMaxBytesUsed           = maxBytesUsed stats
+    , gcStatsNumByteUsageSamples    = numByteUsageSamples stats
+    , gcStatsCumulativeBytesUsed    = cumulativeBytesUsed stats
+    , gcStatsBytesCopied            = bytesCopied stats
+    , gcStatsCurrentBytesUsed       = currentBytesUsed stats
+    , gcStatsCurrentBytesSlop       = currentBytesSlop stats
+    , gcStatsMaxBytesSlop           = maxBytesSlop stats
+    , gcStatsPeakMegabytesAllocated = peakMegabytesAllocated stats
+    , gcStatsMutatorCpuSeconds      = mutatorCpuSeconds stats
+    , gcStatsMutatorWallSeconds     = mutatorWallSeconds stats
+    , gcStatsGcCpuSeconds           = gcCpuSeconds stats
+    , gcStatsGcWallSeconds          = gcWallSeconds stats
+    , gcStatsCpuSeconds             = cpuSeconds stats
+    , gcStatsWallSeconds            = wallSeconds stats
+    , gcStatsParTotBytesCopied      = parTotBytesCopied stats
+    , gcStatsParMaxBytesCopied      = parMaxBytesCopied stats
+    }
+ `Exc.catch`
+  \(_::Exc.SomeException) -> return Nothing
+#endif
 
 -- | Measure the execution of a benchmark a given number of times.
 measure :: Benchmarkable        -- ^ Operation to benchmark.
         -> Int64                -- ^ Number of iterations.
         -> IO (Measured, Double)
 measure bm iters = runBenchmarkable bm iters addResults $ \act -> do
-  startStats <- getGCStats
+  startStats <- getGCStatistics
   startTime <- getTime
   startCpuTime <- getCPUTime
   startCycles <- getCycles
@@ -66,8 +213,8 @@ measure bm iters = runBenchmarkable bm iters addResults $ \act -> do
   endTime <- getTime
   endCpuTime <- getCPUTime
   endCycles <- getCycles
-  endStats <- getGCStats
-  let !m = applyGCStats endStats startStats $ measured {
+  endStats <- getGCStatistics
+  let !m = applyGCStatistics endStats startStats $ measured {
              measTime    = max 0 (endTime - startTime)
            , measCpuTime = max 0 (endCpuTime - startCpuTime)
            , measCycles  = max 0 (fromIntegral (endCycles - startCycles))
@@ -200,6 +347,10 @@ measured = Measured {
 
 -- | Apply the difference between two sets of GC statistics to a
 -- measurement.
+{-# DEPRECATED applyGCStats
+      ["GCStats has been deprecated in GHC 8.2. As a consequence,",
+       "applyGCStats has also been deprecated in favor of applyGCStatistics.",
+       "applyGCStats will be removed in the next major criterion release."] #-}
 applyGCStats :: Maybe GCStats
              -- ^ Statistics gathered at the __end__ of a run.
              -> Maybe GCStats
@@ -217,6 +368,26 @@ applyGCStats (Just end) (Just start) m = m {
   , measGcCpuSeconds       = diff gcCpuSeconds
   } where diff f = f end - f start
 applyGCStats _ _ m = m
+
+-- | Apply the difference between two sets of GC statistics to a
+-- measurement.
+applyGCStatistics :: Maybe GCStatistics
+                  -- ^ Statistics gathered at the __end__ of a run.
+                  -> Maybe GCStatistics
+                  -- ^ Statistics gathered at the __beginning__ of a run.
+                  -> Measured
+                  -- ^ Value to \"modify\".
+                  -> Measured
+applyGCStatistics (Just end) (Just start) m = m {
+    measAllocated          = diff gcStatsBytesAllocated
+  , measNumGcs             = diff gcStatsNumGcs
+  , measBytesCopied        = diff gcStatsBytesCopied
+  , measMutatorWallSeconds = diff gcStatsMutatorWallSeconds
+  , measMutatorCpuSeconds  = diff gcStatsMutatorCpuSeconds
+  , measGcWallSeconds      = diff gcStatsGcWallSeconds
+  , measGcCpuSeconds       = diff gcStatsGcCpuSeconds
+  } where diff f = f end - f start
+applyGCStatistics _ _ m = m
 
 -- | Convert a number of seconds to a string.  The string will consist
 -- of four decimal places, followed by a short description of the time
