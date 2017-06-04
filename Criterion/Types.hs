@@ -50,6 +50,7 @@ module Criterion.Types
     , perBatchEnvWithCleanup
     , perRunEnv
     , perRunEnvWithCleanup
+    , toBenchmarkable
     , bench
     , bgroup
     , addPrefix
@@ -146,6 +147,8 @@ noop :: Monad m => a -> m ()
 noop = const $ return ()
 {-# INLINE noop #-}
 
+-- | Construct a 'Benchmarkable' value from an impure action, where the 'Int64'
+-- parameter indicates the number of times to run the action.
 toBenchmarkable :: (Int64 -> IO ()) -> Benchmarkable
 toBenchmarkable f = Benchmarkable noop (const noop) (const f) False
 {-# INLINE toBenchmarkable #-}
