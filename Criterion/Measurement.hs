@@ -110,18 +110,6 @@ data GCStatistics = GCStatistics
     , gcStatsCpuSeconds :: !Double
     -- | Total wall clock time elapsed since start
     , gcStatsWallSeconds :: !Double
-    -- | Number of bytes copied during GC, minus space held by mutable
-    -- lists held by the capabilities.  Can be used with
-    -- 'gcStatsParMaxBytesCopied' to determine how well parallel GC utilized
-    -- all cores.
-    , gcStatsParTotBytesCopied :: !Int64
-
-    -- | Sum of number of bytes copied each GC by the most active GC
-    -- thread each GC.  The ratio of 'gcStatsParTotBytesCopied' divided by
-    -- 'gcStatsParMaxBytesCopied' approaches 1 for a maximally sequential
-    -- run and approaches the number of threads (set by the RTS flag
-    -- @-N@) for a maximally parallel run.
-    , gcStatsParMaxBytesCopied :: !Int64
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
 
 -- | Try to get GC statistics, bearing in mind that the GHC runtime
@@ -167,8 +155,6 @@ getGCStatistics = do
     , gcStatsGcWallSeconds          = nsToSecs $ gcdetails_elapsed_ns gcdetails
     , gcStatsCpuSeconds             = nsToSecs $ cpu_ns stats
     , gcStatsWallSeconds            = nsToSecs $ elapsed_ns stats
-    , gcStatsParTotBytesCopied      = fromIntegral $ par_copied_bytes stats
-    , gcStatsParMaxBytesCopied      = fromIntegral $ cumulative_par_max_copied_bytes stats
     }
  `Exc.catch`
   \(_::Exc.SomeException) -> return Nothing
@@ -193,8 +179,6 @@ getGCStatistics = do
     , gcStatsGcWallSeconds          = gcWallSeconds stats
     , gcStatsCpuSeconds             = cpuSeconds stats
     , gcStatsWallSeconds            = wallSeconds stats
-    , gcStatsParTotBytesCopied      = parTotBytesCopied stats
-    , gcStatsParMaxBytesCopied      = parMaxBytesCopied stats
     }
  `Exc.catch`
   \(_::Exc.SomeException) -> return Nothing
