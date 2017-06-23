@@ -51,6 +51,11 @@ data MatchType = Prefix
                  -- @\"foo\"@ will match @\"foobar\"@.
                | Glob
                  -- ^ Match by Unix-style glob pattern.
+               | Pattern
+                 -- ^ Match by searching given substring in benchmark
+                 -- paths.
+               | IPattern
+                 -- ^ Same as 'Pattern', but case insensitive.
                deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data,
                          Generic)
 
@@ -157,12 +162,14 @@ match :: ReadM MatchType
 match = do
   m <- readerAsk
   case map toLower m of
-    mm | mm `isPrefixOf` "pfx"    -> return Prefix
-       | mm `isPrefixOf` "prefix" -> return Prefix
-       | mm `isPrefixOf` "glob"   -> return Glob
-       | otherwise                ->
-         readerError $ show m ++ " is not a known match type. "
-                              ++ "Try \"prefix\" or \"glob\"."
+    mm | mm `isPrefixOf` "pfx"      -> return Prefix
+       | mm `isPrefixOf` "prefix"   -> return Prefix
+       | mm `isPrefixOf` "glob"     -> return Glob
+       | mm `isPrefixOf` "pattern"  -> return Pattern
+       | mm `isPrefixOf` "ipattern" -> return IPattern
+       | otherwise                  -> readerError $
+                                       show m ++ " is not a known match type"
+                                              ++ "Try \"prefix\", \"pattern\", \"ipattern\" or \"glob\"."
 
 regressParams :: ReadM ([String], String)
 regressParams = do

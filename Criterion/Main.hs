@@ -62,7 +62,8 @@ import Criterion.Main.Options (MatchType(..), Mode(..), defaultConfig, describe,
 import Criterion.Measurement (initializeTime)
 import Criterion.Monad (withConfig)
 import Criterion.Types
-import Data.List (isPrefixOf, sort, stripPrefix)
+import Data.Char (toLower)
+import Data.List (isInfixOf, isPrefixOf, sort, stripPrefix)
 import Data.Maybe (fromMaybe)
 import Options.Applicative (execParser)
 import System.Environment (getProgName)
@@ -103,6 +104,8 @@ makeMatcher matchKind args =
            Left errMsg -> Left . fromMaybe errMsg . stripPrefix "compile :: " $
                           errMsg
            Right ps -> Right $ \b -> null ps || any (`match` b) ps
+    Pattern -> Right $ \b -> null args || any (`isInfixOf` b) args
+    IPattern -> Right $ \b -> null args || any (`isInfixOf` map toLower b) (map (map toLower) args)
 
 selectBenches :: MatchType -> [String] -> Benchmark -> IO (String -> Bool)
 selectBenches matchType benches bsgroup = do

@@ -6,6 +6,11 @@ next
   `getGCStats` and `applyGCStats`, which have also been deprecated and will be
   removed in the next major `criterion` release.
 
+* Add new matchers for the `--match` flag:
+  * `--match pattern`, which matches by searching for a given substring in
+    benchmark paths.
+  * `--match ipattern`, which is like `--match pattern` but case-insensitive.
+
 * Export `Criterion.Main.Options.config`.
 
 * Export `toBenchmarkable`, which behaves like the `Benchmarkable` constructor
