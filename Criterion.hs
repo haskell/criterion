@@ -22,6 +22,7 @@ module Criterion
     , perBatchEnvWithCleanup
     , perRunEnv
     , perRunEnvWithCleanup
+    , toBenchmarkable
     , bench
     , bgroup
     -- ** Running a benchmark
