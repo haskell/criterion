@@ -182,6 +182,7 @@ test-suite tests
 test-suite cleanup
   type:                 exitcode-stdio-1.0
   hs-source-dirs:       tests
+  default-language:     Haskell2010
   main-is:              Cleanup.hs
 
   ghc-options:
