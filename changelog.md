@@ -1,3 +1,10 @@
+next
+
+* Export `Criterion.Main.Options.config`.
+
+* Export `toBenchmarkable`, which behaves like the `Benchmarkable` constructor
+  did prior to `criterion-1.2.0.0`.
+
 1.2.0.0
 
 * Use `statistics-0.14`.

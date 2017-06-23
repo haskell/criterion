@@ -17,6 +17,7 @@ module Criterion.Main.Options
     , MatchType(..)
     , defaultConfig
     , parseWith
+    , config
     , describe
     , versionInfo
     ) where
@@ -103,6 +104,7 @@ parseWith cfg =
            help "How to match benchmark names (\"prefix\" or \"glob\")")
       <*> many (argument str (metavar "NAME..."))
 
+-- | Parse a configuration.
 config :: Config -> Parser Config
 config Config{..} = Config
   <$> option (mkCL <$> range 0.001 0.999)
