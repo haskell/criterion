@@ -464,8 +464,21 @@ benchmark.
 
 By default, any names you specify are treated as prefixes to match, so
 you can specify an entire group of benchmarks via a name like
-`"fib/"`.  Use the `--match` option to control this behaviour.
+`"fib/"`.  Use the `--match` option to control this behaviour. There are
+currently four ways to configure `--match`:
 
+* `--match prefix`: Check if the given string is a prefix of a benchmark
+  path. For instance, `"foo"` will match `"foobar"`.
+
+* `--match glob`: Use the given string as a Unix-style glob pattern.
+
+* `--match pattern`: Check if the given string is a substring (not necessarily
+  just a prefix) of a benchmark path. For instance `"ooba"` will match
+  `"foobar"`.
+
+* `--match ipattern`: Check if the given string is a substring (not necessarily
+  just a prefix) of a benchmark path, but in a case-insensitive fashion. For
+  instance, `"oObA"` will match `"foobar"`.
 
 ## Listing benchmarks
 
