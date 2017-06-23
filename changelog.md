@@ -1,4 +1,4 @@
-next
+1.2.1.0
 
 * Add `GCStatistics`, `getGCStatistics`, and `applyGCStatistics` to
   `Criterion.Measurement`. These are inteded to replace `GCStats` (which has
@@ -13,8 +13,8 @@ next
 
 * Export `Criterion.Main.Options.config`.
 
-* Export `toBenchmarkable`, which behaves like the `Benchmarkable` constructor
-  did prior to `criterion-1.2.0.0`.
+* Export `Criterion.toBenchmarkable`, which behaves like the `Benchmarkable`
+  constructor did prior to `criterion-1.2.0.0`.
 
 1.2.0.0
 
