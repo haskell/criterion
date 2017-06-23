@@ -1,5 +1,11 @@
 next
 
+* Add `GCStatistics`, `getGCStatistics`, and `applyGCStatistics` to
+  `Criterion.Measurement`. These are inteded to replace `GCStats` (which has
+  been deprecated in `base` and will be removed in GHC 8.4), as well as
+  `getGCStats` and `applyGCStats`, which have also been deprecated and will be
+  removed in the next major `criterion` release.
+
 * Export `Criterion.Main.Options.config`.
 
 * Export `toBenchmarkable`, which behaves like the `Benchmarkable` constructor
