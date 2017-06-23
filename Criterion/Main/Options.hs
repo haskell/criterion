@@ -106,7 +106,7 @@ parseWith cfg =
     matchNames wat = wat
       <*> option match
           (long "match" <> short 'm' <> metavar "MATCH" <> value Prefix <>
-           help "How to match benchmark names (\"prefix\" or \"glob\")")
+           help "How to match benchmark names (\"prefix\", \"glob\", \"pattern\", or \"ipattern\")")
       <*> many (argument str (metavar "NAME..."))
 
 -- | Parse a configuration.
