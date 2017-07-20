@@ -28,7 +28,7 @@ module Criterion.Report
     ) where
 
 import Control.Exception (Exception, IOException, throwIO)
-import Control.Monad (mplus)
+import Control.Monad (mplus, unless)
 import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Reader (ask)
 import Criterion.Monad (Criterion)
@@ -42,7 +42,9 @@ import Paths_criterion (getDataFileName)
 import Statistics.Function (minMax)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>), (<.>), isPathSeparator)
-import Text.Microstache (Key (..), Template (..), Node (..), compileMustacheText, renderMustache)
+import System.IO (hPutStrLn, stderr)
+import Text.Microstache (Key (..), MustacheWarning (..), Node (..), Template (..),
+                         compileMustacheText, displayMustacheWarning, renderMustacheW)
 import Prelude ()
 import Prelude.Compat
 import qualified Control.Exception as E
@@ -106,7 +108,25 @@ formatReport reports templateName = do
             , "js-flot"   .= flot
             ]
 
-    return (renderMustache template context)
+    let (warnings, formatted) = renderMustacheW template context
+    -- If there were any issues during mustache template rendering, make sure
+    -- to inform the user. See #127.
+    forM_ warnings $ \warning -> do
+      -- The one thing we choose not to warn about is substituting in the `json`
+      -- key. The reason is that `json` is used in:
+      --
+      --   var reports = {{{json}}};
+      --
+      -- So `json` represents a raw JavaScript array. This is a bit skeevy by
+      -- mustache conventions, but redesigning the template to avoid this
+      -- warning would be more work than just substituting the array directly.
+      unless (warning == MustacheDirectlyRenderedValue (Key ["json"])) $
+        mapM_ (hPutStrLn stderr)
+         [ "criterion: warning:"
+         , "  " ++ displayMustacheWarning warning
+         , ""
+         ]
+    return formatted
   where
     includeTemplate :: (FilePath -> IO T.Text) -> Template -> IO Template
     includeTemplate f Template {..} = fmap

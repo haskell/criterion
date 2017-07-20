@@ -1,3 +1,9 @@
+next
+
+* Have `criterion` emit warnings if suspicious things happen during mustache
+  template substitution when creating HTML reports. This can be useful when
+  using custom templates with the `--template` flag.
+
 1.2.1.0
 
 * Add `GCStatistics`, `getGCStatistics`, and `applyGCStatistics` to
