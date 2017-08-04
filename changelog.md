@@ -43,8 +43,6 @@ next
 
 * Unicode output is now correctly printed on Windows.
 
-1.1.4.0
-
 * Add Safe Haskell annotations.
 
 * Add `--json` option for writing reports in JSON rather than binary
