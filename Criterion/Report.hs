@@ -40,6 +40,7 @@ import Data.Monoid ((<>))
 import GHC.Generics (Generic)
 import Paths_criterion (getDataFileName)
 import Statistics.Function (minMax)
+import Statistics.Types (confidenceInterval, confidenceLevel, confIntCL, estError)
 import System.Directory (doesFileExist)
 import System.FilePath ((</>), (<.>), isPathSeparator)
 import System.IO (hPutStrLn, stderr)
@@ -147,27 +148,34 @@ formatReport reports templateName = do
         _         -> y
 
     inner r@Report {..} = merge reportAnalysis $ merge reportOutliers $ object
-        [ "name"     .= reportName
-        , "json"     .= TLE.decodeUtf8 (encode r)
-        , "number"   .= reportNumber
-        , "iters"    .= vector "x" iters
-        , "times"    .= vector "x" times
-        , "cycles"   .= vector "x" cycles
-        , "kdetimes" .= vector "x" kdeValues
-        , "kdepdf"   .= vector "x" kdePDF
-        , "kde"      .= vector2 "time" "pdf" kdeValues kdePDF
+        [ "name"                  .= reportName
+        , "json"                  .= TLE.decodeUtf8 (encode r)
+        , "number"                .= reportNumber
+        , "iters"                 .= vector "x" iters
+        , "times"                 .= vector "x" times
+        , "cycles"                .= vector "x" cycles
+        , "kdetimes"              .= vector "x" kdeValues
+        , "kdepdf"                .= vector "x" kdePDF
+        , "kde"                   .= vector2 "time" "pdf" kdeValues kdePDF
+        , "anMeanConfidenceLevel" .= anMeanConfidenceLevel
+        , "anMeanLowerBound"      .= anMeanLowerBound
+        , "anMeanUpperBound"      .= anMeanUpperBound
+        , "anStdDevLowerBound"    .= anStdDevLowerBound
+        , "anStdDevUpperBound"    .= anStdDevUpperBound
         ]
       where
-        [KDE{..}]   = reportKDEs
-        iters       = measure measIters reportMeasured
-        times       = measure measTime reportMeasured
-        cycles      = measure measCycles reportMeasured
-{-
-                           ('a':'n':_)-> mkGenericContext reportAnalysis $
-                                         H.encodeStr nym
-                           _          -> mkGenericContext reportOutliers $
-                                         H.encodeStr nym
--}
+        [KDE{..}]          = reportKDEs
+        SampleAnalysis{..} = reportAnalysis
+
+        iters  = measure measIters reportMeasured
+        times  = measure measTime reportMeasured
+        cycles = measure measCycles reportMeasured
+        anMeanConfidenceLevel
+               = confidenceLevel $ confIntCL $ estError anMean
+        (anMeanLowerBound, anMeanUpperBound)
+               = confidenceInterval anMean
+        (anStdDevLowerBound, anStdDevUpperBound)
+               = confidenceInterval anStdDev
 
 -- | Render the elements of a vector.
 --

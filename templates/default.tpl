@@ -53,10 +53,10 @@
   <thead class="analysis">
    <th></th>
    <th class="cibound"
-       title="{{anMean.estConfidenceLevel}} confidence level">lower bound</th>
+       title="{{anMeanConfidenceLevel}} confidence level">lower bound</th>
    <th>estimate</th>
    <th class="cibound"
-       title="{{anMean.estConfidenceLevel}} confidence level">upper bound</th>
+       title="{{anMeanConfidenceLevel}} confidence level">upper bound</th>
   </thead>
   <tbody>
    <tr>
@@ -73,15 +73,15 @@
    </tr>
    <tr>
     <td>Mean execution time</td>
-    <td><span class="confinterval citime">{{anMean.estError.confIntLDX}}</span></td>
+    <td><span class="confinterval citime">{{anMeanLowerBound}}</span></td>
     <td><span class="time">{{anMean.estPoint}}</span></td>
-    <td><span class="confinterval citime">{{anMean.estError.confIntUDX}}</span></td>
+    <td><span class="confinterval citime">{{anMeanUpperBound}}</span></td>
    </tr>
    <tr>
     <td>Standard deviation</td>
-    <td><span class="confinterval citime">{{anStdDev.estError.confIntLDX}}</span></td>
+    <td><span class="confinterval citime">{{anStdDevLowerBound}}</span></td>
     <td><span class="time">{{anStdDev.estPoint}}</span></td>
-    <td><span class="confinterval citime">{{anStdDev.estError.confIntUDX}}</span></td>
+    <td><span class="confinterval citime">{{anStdDevUpperBound}}</span></td>
    </tr>
   </tbody>
  </table>
@@ -160,6 +160,12 @@ $(function () {
       var idx = rpt.reportKeys.indexOf(key);
       return rpt.reportMeasured.map(function(r) { return r[idx]; });
     };
+    var lowerBound = function(est) {
+      return est.estPoint - est.estError.confIntLDX;
+    };
+    var upperBound = function(est) {
+      return est.estPoint + est.estError.confIntUDX;
+    };
     var number = rpt.reportNumber;
     var name = rpt.reportName;
     var mean = rpt.reportAnalysis.anMean.estPoint;
@@ -177,19 +183,19 @@ $(function () {
         return $.renderTime(olsTime.estPoint);
       });
     $(".olstimelb" + number).text(function() {
-        return $.renderTime(olsTime.estError.confIntLDX);
+        return $.renderTime(lowerBound(olsTime));
       });
     $(".olstimeub" + number).text(function() {
-        return $.renderTime(olsTime.estError.confIntUDX);
+        return $.renderTime(upperBound(olsTime));
       });
     $(".olsr2pt" + number).text(function() {
         return rgrs.regRSquare.estPoint.toFixed(3);
       });
     $(".olsr2lb" + number).text(function() {
-        return rgrs.regRSquare.estError.confIntLDX.toFixed(3);
+        return lowerBound(rgrs.regRSquare).toFixed(3);
       });
     $(".olsr2ub" + number).text(function() {
-        return rgrs.regRSquare.estError.confIntUDX.toFixed(3);
+        return upperBound(rgrs.regRSquare).toFixed(3);
       });
     mean *= scale;
     kdetimes = $.scaleBy(scale, kdetimes);

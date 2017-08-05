@@ -1,5 +1,8 @@
 next
 
+* Important bugfix: versions 1.2.0.0 and 1.2.1.0 were incorrectly displaying
+  the lower and upper bounds for measured values on HTML reports.
+
 * Have `criterion` emit warnings if suspicious things happen during mustache
   template substitution when creating HTML reports. This can be useful when
   using custom templates with the `--template` flag.
