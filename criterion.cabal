@@ -126,6 +126,7 @@ Executable criterion-report
   GHC-Options:          -Wall -rtsopts
   Main-Is:              Report.hs
   Other-Modules:        Options
+                        Paths_criterion
   Hs-Source-Dirs:       app
 
   Build-Depends:
