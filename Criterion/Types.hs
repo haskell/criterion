@@ -409,13 +409,15 @@ data Benchmark where
 --
 -- __Lazy pattern matching.__ In situations where a \"real\"
 -- environment is not needed, e.g. if a list of benchmark names is
--- being generated, @undefined@ will be passed to the function that
--- receives the environment.  This avoids the overhead of generating
--- an environment that will not actually be used.
+-- being generated, a value which throws an exception will be passed
+-- to the function that receives the environment.  This avoids the
+-- overhead of generating an environment that will not actually be
+-- used.
 --
 -- The function that receives the environment must use lazy pattern
 -- matching to deconstruct the tuple, as use of strict pattern
--- matching will cause a crash if @undefined@ is passed in.
+-- matching will cause a crash if an exception-throwing value is
+-- passed in.
 --
 -- __Example.__ This program runs benchmarks in an environment that
 -- contains two values.  The first value is the contents of a text
@@ -588,14 +590,22 @@ addPrefix pfx desc = pfx ++ '/' : desc
 -- | Retrieve the names of all benchmarks.  Grouped benchmarks are
 -- prefixed with the name of the group they're in.
 benchNames :: Benchmark -> [String]
-benchNames (Environment _ _ b) = benchNames (b undefined)
+benchNames (Environment _ _ b) = benchNames (b fakeEnvironment)
 benchNames (Benchmark d _)   = [d]
 benchNames (BenchGroup d bs) = map (addPrefix d) . concatMap benchNames $ bs
 
 instance Show Benchmark where
-    show (Environment _ _ b) = "Environment _ _" ++ show (b undefined)
+    show (Environment _ _ b) = "Environment _ _" ++ show (b fakeEnvironment)
     show (Benchmark d _)   = "Benchmark " ++ show d
     show (BenchGroup d _)  = "BenchGroup " ++ show d
+
+fakeEnvironment :: env
+fakeEnvironment = error $ unlines
+  [ "Criterion atttempted to retrieve a non-existent environment!"
+  , "\tPerhaps you forgot to use lazy pattern matching in a function which"
+  , "\tconstructs benchmarks from an environment?"
+  , "\t(see the documentation for `env` for details)"
+  ]
 
 measure :: (U.Unbox a) => (Measured -> a) -> V.Vector Measured -> U.Vector a
 measure f v = U.convert . V.map f $ v
