@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GADTs, RecordWildCards #-}
@@ -74,6 +75,7 @@ module Criterion.Types
 -- Temporary: to support pre-AMP GHC 7.8.4:
 import Control.Applicative
 import Data.Monoid
+import Data.Semigroup
 
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (evaluate)
@@ -660,9 +662,14 @@ instance Binary OutlierEffect where
             _ -> fail $ "get for OutlierEffect: unexpected " ++ show i
 instance NFData OutlierEffect
 
+instance Semigroup Outliers where
+    (<>) = addOutliers
+
 instance Monoid Outliers where
     mempty  = Outliers 0 0 0 0 0
+#if !(MIN_VERSION_base(4,11,0))
     mappend = addOutliers
+#endif
 
 addOutliers :: Outliers -> Outliers -> Outliers
 addOutliers (Outliers s a b c d) (Outliers t w x y z) =
