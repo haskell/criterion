@@ -4,7 +4,7 @@ packages:
 - '.'
 
 extra-deps:
-- microstache-1
+- microstache-1.0.1.1
 - optparse-applicative-0.13.2.0
 - statistics-0.14.0.0
 

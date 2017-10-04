@@ -54,7 +54,7 @@ data MatchType = Prefix
                  -- type benchmark names are treated as if they were
                  -- file-paths. For example, the glob patterns @"*/ba*"@ and
                  -- @"*/*"@ will match @"foo/bar"@, but @"*"@ or @"*bar"@
-                 -- __wil not__.
+                 -- __will not__.
                | Pattern
                  -- ^ Match by searching given substring in benchmark
                  -- paths.
