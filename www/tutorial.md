@@ -470,7 +470,10 @@ currently four ways to configure `--match`:
 * `--match prefix`: Check if the given string is a prefix of a benchmark
   path. For instance, `"foo"` will match `"foobar"`.
 
-* `--match glob`: Use the given string as a Unix-style glob pattern.
+* `--match glob`: Use the given string as a Unix-style glob pattern. Bear in
+  mind that performing a glob match on benchmarks names is done as if they were
+  file paths, so for instance both `"*/ba*"` and "*/*" will match "foo/bar",
+  but neither `"*"` nor "*bar" will match "foo/bar".
 
 * `--match pattern`: Check if the given string is a substring (not necessarily
   just a prefix) of a benchmark path. For instance `"ooba"` will match

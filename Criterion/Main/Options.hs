@@ -50,7 +50,11 @@ data MatchType = Prefix
                  -- ^ Match by prefix. For example, a prefix of
                  -- @\"foo\"@ will match @\"foobar\"@.
                | Glob
-                 -- ^ Match by Unix-style glob pattern.
+                 -- ^ Match by Unix-style glob pattern. When using this match
+                 -- type benchmark names are treated as if they were
+                 -- file-paths. For example, the glob patterns @"*/ba*"@ and
+                 -- @"*/*"@ will match @"foo/bar"@, but @"*"@ or @"*bar"@
+                 -- __wil not__.
                | Pattern
                  -- ^ Match by searching given substring in benchmark
                  -- paths.
