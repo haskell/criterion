@@ -417,9 +417,9 @@ data Benchmark where
 -- used.
 --
 -- The function that receives the environment must use lazy pattern
--- matching to deconstruct the tuple, as use of strict pattern
--- matching will cause a crash if an exception-throwing value is
--- passed in.
+-- matching to deconstruct the tuple (e.g., @~(x, y)@, not @(x, y)@),
+-- as use of strict pattern matching will cause a crash if an
+-- exception-throwing value is passed in.
 --
 -- __Example.__ This program runs benchmarks in an environment that
 -- contains two values.  The first value is the contents of a text
