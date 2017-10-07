@@ -133,7 +133,8 @@ data Config = Config {
     , template     :: FilePath
       -- ^ Template file to use if writing a report.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
-
+{-# DEPRECATED forceGC
+      ["forceGC will be removed in the next major criterion release."] #-}
 
 -- | A pure function or impure action that can be benchmarked. The
 -- 'Int64' parameter indicates the number of times to run the given

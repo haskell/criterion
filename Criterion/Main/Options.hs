@@ -1,5 +1,8 @@
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, RecordWildCards #-}
 
+-- Disable deprecation warnings for now until we remove forceGC for good
+{-# OPTIONS_GHC -fno-warn-deprecations #-}
+
 -- |
 -- Module      : Criterion.Main.Options
 -- Copyright   : (c) 2014 Bryan O'Sullivan
