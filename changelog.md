@@ -1,4 +1,4 @@
-next
+1.2.3.0
 
 * Add a `Semigroup` instance for `Outliers`
 
