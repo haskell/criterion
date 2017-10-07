@@ -79,6 +79,7 @@ import Data.Semigroup
 
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (evaluate)
+import Criterion.Types.Internal (fakeEnvironment)
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
@@ -600,14 +601,6 @@ instance Show Benchmark where
     show (Environment _ _ b) = "Environment _ _" ++ show (b fakeEnvironment)
     show (Benchmark d _)   = "Benchmark " ++ show d
     show (BenchGroup d _)  = "BenchGroup " ++ show d
-
-fakeEnvironment :: env
-fakeEnvironment = error $ unlines
-  [ "Criterion atttempted to retrieve a non-existent environment!"
-  , "\tPerhaps you forgot to use lazy pattern matching in a function which"
-  , "\tconstructs benchmarks from an environment?"
-  , "\t(see the documentation for `env` for details)"
-  ]
 
 measure :: (U.Unbox a) => (Measured -> a) -> V.Vector Measured -> U.Vector a
 measure f v = U.convert . V.map f $ v

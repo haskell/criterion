@@ -65,6 +65,7 @@ library
 
   other-modules:
     Criterion.Monad.Internal
+    Criterion.Types.Internal
 
   c-sources: cbits/cycles.c
   if os(darwin)

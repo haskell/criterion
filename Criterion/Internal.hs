@@ -36,6 +36,7 @@ import Criterion.Measurement (runBenchmark, runBenchmarkable_, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
+import Criterion.Types.Internal (fakeEnvironment)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Statistics.Types (Estimate(..),ConfInt(..),confidenceInterval,cl95,confidenceLevel)
@@ -204,8 +205,7 @@ for select bs0 handle = go (0::Int) ("", bs0) >> return ()
       foldM go idx [(addPrefix pfx desc, b) | b <- bs]
 
     shouldRun pfx mkbench =
-      any (select . addPrefix pfx) . benchNames . mkbench $
-      error "Criterion.env could not determine the list of your benchmarks since they force the environment (see the documentation for details)"
+      any (select . addPrefix pfx) . benchNames . mkbench $ fakeEnvironment
 
 -- | Write summary JSON file (if applicable)
 json :: [Report] -> Criterion ()
