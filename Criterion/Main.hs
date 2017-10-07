@@ -123,8 +123,8 @@ selectBenches matchType benches bsgroup = do
 -- > import Criterion.Main
 -- >
 -- > myConfig = defaultConfig {
--- >              -- Do not GC between runs.
--- >              forceGC = False
+-- >               -- Resample 10 times for bootstrapping
+-- >               resamples = 10
 -- >            }
 -- >
 -- > main = defaultMainWith myConfig [
