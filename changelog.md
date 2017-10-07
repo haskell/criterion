@@ -1,3 +1,10 @@
+next
+
+* Add a `Semigroup` instance for `Outliers`
+
+* Improve the error messages that are thrown when forcing nonexistent
+  benchmark environments.
+
 1.2.2.0
 
 * Important bugfix: versions 1.2.0.0 and 1.2.1.0 were incorrectly displaying
