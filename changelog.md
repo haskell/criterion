@@ -1,3 +1,7 @@
+next
+
+* Fix issue where `--help` would display duplicate options
+
 1.2.3.0
 
 * Add a `Semigroup` instance for `Outliers`

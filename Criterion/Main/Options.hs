@@ -100,16 +100,26 @@ parseWith :: Config
              -- ^ Default configuration to use if options are not
              -- explicitly specified.
           -> Parser Mode
-parseWith cfg =
-    (matchNames (Run <$> config cfg)) <|>
-    runIters <|>
-    (List <$ switch (long "list" <> short 'l' <> help "List benchmarks")) <|>
-    (Version <$ switch (long "version" <> help "Show version info"))
+parseWith cfg = config cfg <**> runMode
+                -- Important: only run `config` once here, as we only want the
+                -- command-line options resulting from `config` to appear once
+                -- in the `--help` output. See #168.
   where
-    runIters = matchNames $
-      RunIters <$> config cfg <*> option auto
-                  (long "iters" <> short 'n' <> metavar "ITERS" <>
-                   help "Run benchmarks, don't analyse")
+    runMode :: Parser (Config -> Mode)
+    runMode =
+      matchNames (pure $ \mt bs cfg' -> Run cfg' mt bs) <|>
+      runIters <|>
+      (const List <$ switch (long "list" <> short 'l' <> help "List benchmarks")) <|>
+      (const Version <$ switch (long "version" <> help "Show version info"))
+
+    runIters :: Parser (Config -> Mode)
+    runIters = matchNames $ (\iters mt bs cfg' -> RunIters cfg' iters mt bs)
+      <$> option auto
+          (long "iters" <> short 'n' <> metavar "ITERS" <>
+           help "Run benchmarks, don't analyse")
+
+    matchNames :: Parser (MatchType -> [String] -> Config -> Mode)
+               -> Parser (Config -> Mode)
     matchNames wat = wat
       <*> option match
           (long "match" <> short 'm' <> metavar "MATCH" <> value Prefix <>
