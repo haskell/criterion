@@ -1,4 +1,4 @@
-next
+1.2.4.0
 
 * Fix issue where `--help` would display duplicate options
 
