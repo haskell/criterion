@@ -1,6 +1,10 @@
+{-# LANGUAGE CPP #-}
+{-# LANGUAGE DeriveDataTypeable #-}
+{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-}
-{-# LANGUAGE DeriveDataTypeable, DeriveGeneric, OverloadedStrings,
-    RecordWildCards, ScopedTypeVariables #-}
 
 -- |
 -- Module      : Criterion.Report
@@ -56,8 +60,15 @@ import qualified Data.Text.Lazy as TL
 import qualified Data.Text.Lazy.IO as TL
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
+
+#if defined(EMBED)
+import Criterion.EmbeddedData (dataFiles, flotContents, jQueryContents)
+import qualified Data.ByteString.Lazy as BL
+import qualified Data.Text.Encoding as TE
+#else
 import qualified Language.Javascript.Flot as Flot
 import qualified Language.Javascript.JQuery as JQuery
+#endif
 
 -- | Trim long flat tails from a KDE plot.
 tidyTails :: KDE -> KDE
@@ -73,8 +84,15 @@ tidyTails KDE{..} = KDE { kdeType   = kdeType
 
 -- | Return the path to the template and other files used for
 -- generating reports.
+--
+-- When the @-fembed-data-files@ @Cabal@ flag is enabled, this simply
+-- returns the empty path.
 getTemplateDir :: IO FilePath
+#if defined(EMBED)
+getTemplateDir = pure ""
+#else
 getTemplateDir = getDataFileName "templates"
+#endif
 
 -- | Write out a series of 'Report' values to a single file, if
 -- configured to do so.
@@ -95,10 +113,10 @@ formatReport reports templateName = do
         Left err -> fail (show err) -- TODO: throw a template exception?
         Right x -> return x
 
-    jQuery <- T.readFile =<< JQuery.file
-    flot <- T.readFile =<< Flot.file Flot.Flot
-    jQueryCriterionJS <- T.readFile =<< getDataFileName "templates/js/jquery.criterion.js"
-    criterionCSS <- T.readFile =<< getDataFileName "templates/criterion.css"
+    jQuery <- jQueryFileContents
+    flot <- flotFileContents
+    jQueryCriterionJS <- readDataFile ("js" </> "jquery.criterion.js")
+    criterionCSS <- readDataFile "criterion.css"
 
     -- includes, only top level
     templates <- getTemplateDir
@@ -133,6 +151,25 @@ formatReport reports templateName = do
          ]
     return formatted
   where
+    jQueryFileContents, flotFileContents :: IO T.Text
+#if defined(EMBED)
+    jQueryFileContents = pure $ TE.decodeUtf8 jQueryContents
+    flotFileContents   = pure $ TE.decodeUtf8 flotContents
+#else
+    jQueryFileContents = T.readFile =<< JQuery.file
+    flotFileContents   = T.readFile =<< Flot.file Flot.Flot
+#endif
+
+    readDataFile :: FilePath -> IO T.Text
+    readDataFile fp =
+      (T.readFile =<< getDataFileName ("templates" </> fp))
+#if defined(EMBED)
+      `E.catch` \(e :: IOException) ->
+        maybe (throwIO e)
+              (pure . TE.decodeUtf8)
+              (lookup fp dataFiles)
+#endif
+
     includeTemplate :: (FilePath -> IO T.Text) -> Template -> IO Template
     includeTemplate f Template {..} = fmap
         (Template templateActual)
@@ -244,19 +281,42 @@ instance Exception TemplateException
 -- If the name is an absolute or relative path, the search path is
 -- /not/ used, and the name is treated as a literal path.
 --
+-- If the @-fembed-data-files@ @Cabal@ flag is enabled, this also checks
+-- the embedded @data-files@ from @criterion.cabal@.
+--
 -- This function throws a 'TemplateException' if the template could
 -- not be found, or an 'IOException' if no template could be loaded.
 loadTemplate :: [FilePath]      -- ^ Search path.
              -> FilePath        -- ^ Name of template file.
              -> IO TL.Text
 loadTemplate paths name
-    | any isPathSeparator name = TL.readFile name
+    | any isPathSeparator name = readFileCheckEmbedded name
     | otherwise                = go Nothing paths
   where go me (p:ps) = do
           let cur = p </> name <.> "tpl"
-          x <- doesFileExist cur
+          x <- doesFileExist' cur
           if x
-            then TL.readFile cur `E.catch` \e -> go (me `mplus` Just e) ps
+            then readFileCheckEmbedded cur `E.catch` \e -> go (me `mplus` Just e) ps
             else go me ps
         go (Just e) _ = throwIO (e::IOException)
         go _        _ = throwIO . TemplateNotFound $ name
+
+        doesFileExist' :: FilePath -> IO Bool
+        doesFileExist' fp = do
+          e <- doesFileExist fp
+          pure $ e
+#if defined(EMBED)
+                 || (fp `elem` map fst dataFiles)
+#endif
+
+-- A version of 'readFile' that falls back on the embedded 'dataFiles'
+-- from @criterion.cabal@.
+readFileCheckEmbedded :: FilePath -> IO TL.Text
+readFileCheckEmbedded fp =
+  TL.readFile fp
+#if defined(EMBED)
+  `E.catch` \(e :: IOException) ->
+    maybe (throwIO e)
+          (pure . TLE.decodeUtf8 . BL.fromStrict)
+          (lookup fp dataFiles)
+#endif
