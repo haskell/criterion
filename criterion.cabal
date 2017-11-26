@@ -49,6 +49,12 @@ flag fast
   default: False
   manual: True
 
+flag embed-data-files
+  description: Embed the data files in the binary for a relocatable executable.
+               (Warning: This will increase the executable size significantly.)
+  default: False
+  manual: True
+
 library
   exposed-modules:
     Criterion
@@ -122,6 +128,12 @@ library
     ghc-options: -O0
   else
     ghc-options: -O2
+
+  if flag(embed-data-files)
+    other-modules: Criterion.EmbeddedData
+    build-depends: file-embed < 0.1,
+                   template-haskell
+    cpp-options: "-DEMBED"
 
 Executable criterion-report
   Default-Language:     Haskell2010

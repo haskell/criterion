@@ -10,10 +10,10 @@
       {{{js-flot}}}
     </script>
     <script language="javascript" type="text/javascript">
-      {{#include}}js/jquery.criterion.js{{/include}}
+      {{{jquery-criterion-js}}}
     </script>
     <style type="text/css">
-{{#include}}criterion.css{{/include}}
+      {{{criterion-css}}}
     </style>
     <!--[if !IE 7]>
 	    <style type="text/css">
