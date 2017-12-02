@@ -1,10 +1,17 @@
+1.2.5.0
+
+* Add an `-fembed-data-files` flag. Enabling this option will embed the
+  `data-files` from `criterion.cabal` directly into the binary, producing
+  a relocatable executable. (This has the downside of increasing the binary
+  size significantly, so be warned.)
+
 1.2.4.0
 
-* Fix issue where `--help` would display duplicate options
+* Fix issue where `--help` would display duplicate options.
 
 1.2.3.0
 
-* Add a `Semigroup` instance for `Outliers`
+* Add a `Semigroup` instance for `Outliers`.
 
 * Improve the error messages that are thrown when forcing nonexistent
   benchmark environments.
