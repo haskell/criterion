@@ -62,7 +62,8 @@ import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 
 #if defined(EMBED)
-import Criterion.EmbeddedData (dataFiles, flotContents, jQueryContents)
+import Criterion.EmbeddedData (dataFiles, jQueryContents, flotContents,
+                               flotErrorbarsContents, flotNavigateContents)
 import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text.Encoding as TE
 #else
@@ -113,10 +114,12 @@ formatReport reports templateName = do
         Left err -> fail (show err) -- TODO: throw a template exception?
         Right x -> return x
 
-    jQuery <- jQueryFileContents
-    flot <- flotFileContents
+    jQuery            <- jQueryFileContents
+    flot              <- flotFileContents
+    flotErrorbars     <- flotErrorbarsFileContents
+    flotNavigate      <- flotNavigateFileContents
     jQueryCriterionJS <- readDataFile ("js" </> "jquery.criterion.js")
-    criterionCSS <- readDataFile "criterion.css"
+    criterionCSS      <- readDataFile "criterion.css"
 
     -- includes, only top level
     templates <- getTemplateDir
@@ -127,6 +130,8 @@ formatReport reports templateName = do
             , "report"              .= map inner reports
             , "js-jquery"           .= jQuery
             , "js-flot"             .= flot
+            , "js-flot-errorbars"   .= flotErrorbars
+            , "js-flot-navigate"    .= flotNavigate
             , "jquery-criterion-js" .= jQueryCriterionJS
             , "criterion-css"       .= criterionCSS
             ]
@@ -153,11 +158,15 @@ formatReport reports templateName = do
   where
     jQueryFileContents, flotFileContents :: IO T.Text
 #if defined(EMBED)
-    jQueryFileContents = pure $ TE.decodeUtf8 jQueryContents
-    flotFileContents   = pure $ TE.decodeUtf8 flotContents
+    jQueryFileContents        = pure $ TE.decodeUtf8 jQueryContents
+    flotFileContents          = pure $ TE.decodeUtf8 flotContents
+    flotErrorbarsFileContents = pure $ TE.decodeUtf8 flotErrorbarsContents
+    flotNavigateFileContents  = pure $ TE.decodeUtf8 flotNavigateContents
 #else
-    jQueryFileContents = T.readFile =<< JQuery.file
-    flotFileContents   = T.readFile =<< Flot.file Flot.Flot
+    jQueryFileContents        = T.readFile =<< JQuery.file
+    flotFileContents          = T.readFile =<< Flot.file Flot.Flot
+    flotErrorbarsFileContents = T.readFile =<< Flot.file Flot.FlotErrorbars
+    flotNavigateFileContents  = T.readFile =<< Flot.file Flot.FlotNavigate
 #endif
 
     readDataFile :: FilePath -> IO T.Text
