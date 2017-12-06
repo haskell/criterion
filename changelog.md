@@ -1,3 +1,7 @@
+next
+
+* Add error bars and zoomable navigation to generated HTML report graphs.
+
 1.2.5.0
 
 * Add an `-fembed-data-files` flag. Enabling this option will embed the
