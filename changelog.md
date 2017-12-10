@@ -1,6 +1,15 @@
-next
+1.2.6.0
 
 * Add error bars and zoomable navigation to generated HTML report graphs.
+
+  (Note that there have been reports that this feature can be somewhat unruly
+  when using macOS and Firefox simultaneously. See
+  https://github.com/flot/flot/issues/1554 for more details.)
+
+* Use a predetermined set of cycling colors for benchmark groups in HTML
+  reports. This avoids a bug in earlier versions of `criterion` where benchmark
+  group colors could be chosen that were almost completely white, which made
+  them impossible to distinguish from the background.
 
 1.2.5.0
 
