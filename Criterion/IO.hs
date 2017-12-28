@@ -52,7 +52,7 @@ header = runPut $ do
 
 -- | The magic string we expect to start off the header.
 headerRoot :: String
-headerRoot = "criterio"
+headerRoot = "criterion"
 
 -- | The current version of criterion, encoded into a string that is
 -- used in files.
@@ -118,12 +118,12 @@ readJSONReports path =
        Right (tg,vers,_)
          | tg == headerRoot && vers == critVersion -> return res
          | otherwise ->
-            do hPutStrLn stderr $ "Warning, readJSONReports: mismatched header, expected " 
+            do hPutStrLn stderr $ "Warning, readJSONReports: mismatched header, expected "
                                   ++ show (headerRoot,critVersion) ++ " received " ++ show (tg,vers)
-               return res         
+               return res
 
 -- | Write a list of reports to a JSON file.  Includes a header, which
--- includes the current Criterion version number.  This should be 
+-- includes the current Criterion version number.  This should be
 -- the inverse of `readJSONReports`.
 writeJSONReports :: FilePath -> [Report] -> IO ()
 writeJSONReports fn rs =
