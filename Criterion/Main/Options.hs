@@ -1,8 +1,5 @@
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, RecordWildCards #-}
 
--- Disable deprecation warnings for now until we remove forceGC for good
-{-# OPTIONS_GHC -fno-warn-deprecations #-}
-
 -- |
 -- Module      : Criterion.Main.Options
 -- Copyright   : (c) 2014 Bryan O'Sullivan
@@ -82,7 +79,6 @@ data Mode = List
 defaultConfig :: Config
 defaultConfig = Config {
       confInterval = cl95
-    , forceGC      = True
     , timeLimit    = 5
     , resamples    = 1000
     , regressions  = []
@@ -132,8 +128,6 @@ config Config{..} = Config
   <$> option (mkCL <$> range 0.001 0.999)
       (long "ci" <> short 'I' <> metavar "CI" <> value confInterval <>
        help "Confidence interval")
-  <*> (not <$> switch (long "no-gc" <> short 'G' <>
-                       help "Do not collect garbage between iterations"))
   <*> option (range 0.1 86400)
       (long "time-limit" <> short 'L' <> metavar "SECS" <> value timeLimit <>
        help "Time limit to run a benchmark")
