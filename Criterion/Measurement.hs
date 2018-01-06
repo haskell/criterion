@@ -188,7 +188,7 @@ getGCStatistics = do
 measure :: Benchmarkable        -- ^ Operation to benchmark.
         -> Int64                -- ^ Number of iterations.
         -> IO (Measured, Double)
-measure bm iters = runBenchmarkable bm iters addResults $ \act -> do
+measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   startStats <- getGCStatistics
   startTime <- getTime
   startCpuTime <- getCPUTime
@@ -202,7 +202,7 @@ measure bm iters = runBenchmarkable bm iters addResults $ \act -> do
              measTime    = max 0 (endTime - startTime)
            , measCpuTime = max 0 (endCpuTime - startCpuTime)
            , measCycles  = max 0 (fromIntegral (endCycles - startCycles))
-           , measIters   = iters
+           , measIters   = n
            }
   return (m, endTime)
   where
@@ -240,7 +240,7 @@ threshold :: Double
 threshold = 0.03
 {-# INLINE threshold #-}
 
-runBenchmarkable :: Benchmarkable -> Int64 -> (a -> a -> a) -> (IO () -> IO a) -> IO a
+runBenchmarkable :: Benchmarkable -> Int64 -> (a -> a -> a) -> (Int64 -> IO () -> IO a) -> IO a
 runBenchmarkable Benchmarkable{..} i comb f
     | perRun = work >>= go (i - 1)
     | otherwise = work
@@ -259,12 +259,12 @@ runBenchmarkable Benchmarkable{..} i comb f
         clean `seq` run `seq` evaluate $ rnf env
 
         performGC
-        f run `finally` clean <* performGC
+        f count run `finally` clean <* performGC
     {-# INLINE work #-}
 {-# INLINE runBenchmarkable #-}
 
 runBenchmarkable_ :: Benchmarkable -> Int64 -> IO ()
-runBenchmarkable_ bm i = runBenchmarkable bm i (\() () -> ()) id
+runBenchmarkable_ bm i = runBenchmarkable bm i (\() () -> ()) (const id)
 {-# INLINE runBenchmarkable_ #-}
 
 -- | Run a single benchmark, and return measurements collected while
