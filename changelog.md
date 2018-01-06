@@ -1,5 +1,19 @@
 1.3.0.0
 
+* The type signature of `runBenchmarkable` has changed from:
+
+  ```haskell
+  Benchmarkable -> Int64 -> (a -> a -> a) -> (IO () -> IO a) -> IO a
+  ```
+  
+  to:
+  
+  ```haskell
+  Benchmarkable -> Int64 -> (a -> a -> a) -> (Int64 -> IO () -> IO a) -> IO a
+  ```
+  
+  The extra `Int64` argument represents how many iterations are being timed.
+  
 * Remove the deprecated `getGCStats` and `applyGCStats` functions (which have
   been replaced by `getGCStatistics` and `applyGCStatistics`).
 * Remove the deprecated `forceGC` field of `Config`, as well as the
