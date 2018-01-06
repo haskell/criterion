@@ -1,3 +1,12 @@
+1.3.0.0
+
+* Remove the deprecated `getGCStats` and `applyGCStats` functions (which have
+  been replaced by `getGCStatistics` and `applyGCStatistics`).
+* Remove the deprecated `forceGC` field of `Config`, as well as the
+  corresponding `--no-gc` command-line option.
+* The header in generated JSON output mistakenly used the string `"criterio"`.
+  This has been corrected to `"criterion"`.
+
 1.2.6.0
 
 * Add error bars and zoomable navigation to generated HTML report graphs.

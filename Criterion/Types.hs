@@ -104,11 +104,6 @@ data Config = Config {
       confInterval :: St.CL Double
       -- ^ Confidence interval for bootstrap estimation (greater than
       -- 0, less than 1).
-    , forceGC      :: Bool
-      -- ^ /Obsolete, unused/.  This option used to force garbage
-      -- collection between every benchmark run, but it no longer has
-      -- an effect (we now unconditionally force garbage collection).
-      -- This option remains solely for backwards API compatibility.
     , timeLimit    :: Double
       -- ^ Number of seconds to run a single benchmark.  (In practice,
       -- execution time will very slightly exceed this limit.)
@@ -133,8 +128,6 @@ data Config = Config {
     , template     :: FilePath
       -- ^ Template file to use if writing a report.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
-{-# DEPRECATED forceGC
-      ["forceGC will be removed in the next major criterion release."] #-}
 
 -- | A pure function or impure action that can be benchmarked. The
 -- 'Int64' parameter indicates the number of times to run the given
