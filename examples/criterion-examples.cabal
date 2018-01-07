@@ -1,10 +1,10 @@
 name:          criterion-examples
 version:       0
 synopsis:      Examples for the criterion benchmarking system
-description:   Examples for the criterion benchmarking system
+description:   Examples for the criterion benchmarking system.
 homepage:      https://github.com/bos/criterion
 license:       BSD3
-license-file:  ../LICENSE
+license-file:  LICENSE
 author:        Bryan O'Sullivan <bos@serpentine.com>
 maintainer:    Bryan O'Sullivan <bos@serpentine.com>
 category:      Benchmarks
@@ -48,6 +48,7 @@ executable maps
     containers,
     critbit,
     criterion,
+    deepseq,
     hashable,
     mwc-random,
     unordered-containers,
