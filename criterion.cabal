@@ -148,7 +148,8 @@ Executable criterion-report
     base,
     base-compat,
     criterion,
-    optparse-applicative >= 0.13
+    optparse-applicative >= 0.13,
+    semigroups
 
   if impl(ghc < 7.6)
     build-depends:
