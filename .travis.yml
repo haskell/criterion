@@ -137,7 +137,8 @@ script:
   - if [ "x$TEST" = "x--enable-tests" ]; then cabal new-test -w ${HC} ${CABALFLAGS} ${TEST} ${BENCH} all; fi
 
   # cabal check
-  - (cd criterion-* && cabal check)
+  #   Commented out due to https://github.com/haskell/cabal/issues/4551
+  # - (cd criterion-* && cabal check)
   - (cd criterion-examples-* && cabal check)
 
   # haddock

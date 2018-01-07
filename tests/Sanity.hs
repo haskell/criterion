@@ -1,5 +1,6 @@
 {-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 import Criterion.Main (bench, bgroup, env, whnf)
 import System.Environment (getEnv, withArgs)
