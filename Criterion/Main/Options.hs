@@ -22,8 +22,8 @@ module Criterion.Main.Options
     , versionInfo
     ) where
 
--- Temporary: to support pre-AMP GHC 7.8.4:
-import Data.Monoid
+-- Temporary: to support pre-SMP
+import Data.Semigroup ((<>))
 
 import Control.Monad (when)
 import Criterion.Analysis (validateAccessors)
@@ -40,10 +40,11 @@ import Options.Applicative.Help (Chunk(..), tabulate)
 import Options.Applicative.Help.Pretty ((.$.))
 import Options.Applicative.Types
 import Paths_criterion (version)
+import Prelude ()
+import Prelude.Compat
 import Statistics.Types (mkCL,cl95)
 import Text.PrettyPrint.ANSI.Leijen (Doc, text)
 import qualified Data.Map as M
-import Prelude
 
 -- | How to match a benchmark name.
 data MatchType = Prefix

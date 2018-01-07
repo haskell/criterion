@@ -72,9 +72,7 @@ module Criterion.Types
     , DataRecord(..)
     ) where
 
--- Temporary: to support pre-AMP GHC 7.8.4:
-import Control.Applicative
-import Data.Monoid
+-- Temporary: to support pre-SMP
 import Data.Semigroup
 
 import Control.DeepSeq (NFData(rnf))
@@ -86,11 +84,12 @@ import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.Map (Map, fromList)
 import GHC.Generics (Generic)
+import Prelude ()
+import Prelude.Compat
 import qualified Data.Vector as V
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Types as St
 import           Statistics.Resampling.Bootstrap ()
-import Prelude
 
 -- | Control the amount of information displayed.
 data Verbosity = Quiet

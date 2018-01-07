@@ -30,9 +30,6 @@ module Criterion.Analysis
     , regress
     ) where
 
--- Temporary: to support pre-AMP GHC 7.8.4:
-import Data.Monoid 
-
 import Control.Arrow (second)
 import Control.Monad (unless, when)
 import Control.Monad.Reader (ask)
@@ -44,6 +41,8 @@ import Criterion.Monad (Criterion, getGen, getOverhead)
 import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
+import Prelude ()
+import Prelude.Compat
 import Statistics.Function (sort)
 import Statistics.Quantile (weightedAvg)
 import Statistics.Regression (bootstrapRegress, olsRegress)
@@ -59,7 +58,6 @@ import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
 import qualified Statistics.Resampling.Bootstrap as B
 import qualified Statistics.Types                as B
-import Prelude
 
 -- | Classify outliers in a data set, using the boxplot technique.
 classifyOutliers :: Sample -> Outliers

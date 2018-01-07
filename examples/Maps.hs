@@ -94,6 +94,6 @@ value :: Int
 value = 31337
 
 #if !MIN_VERSION_bytestring(0,10,0)
-instance NFData B.ByteString where
+instance NFData ByteString where
     rnf bs = bs `seq` ()
 #endif

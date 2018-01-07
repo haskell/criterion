@@ -35,7 +35,6 @@ module Criterion.Measurement
     ) where
 
 import Criterion.Types (Benchmarkable(..), Measured(..))
-import Control.Applicative ((<*))
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (finally,evaluate)
 import Data.Data (Data, Typeable)
@@ -48,6 +47,8 @@ import GHC.Stats (RTSStats(..), GCDetails(..))
 #else
 import GHC.Stats (GCStats(..))
 #endif
+import Prelude ()
+import Prelude.Compat
 import System.Mem (performGC)
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
