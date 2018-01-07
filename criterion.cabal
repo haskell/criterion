@@ -146,6 +146,7 @@ Executable criterion-report
 
   Build-Depends:
     base,
+    base-compat,
     criterion,
     optparse-applicative >= 0.13
 

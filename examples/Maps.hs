@@ -1,6 +1,7 @@
 -- Benchmark the cost of creating various types of map.
 
 {-# LANGUAGE CPP, FlexibleContexts, ScopedTypeVariables #-}
+{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 import Criterion.Main
 import Data.ByteString (ByteString, pack)

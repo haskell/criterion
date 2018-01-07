@@ -7,11 +7,13 @@ module Options
     , versionInfo
     ) where
 
-import Data.Monoid ((<>), mconcat)
-import Data.Version (showVersion)
 import Data.Data (Data, Typeable)
+import Data.Semigroup ((<>))
+import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Paths_criterion (version)
+import Prelude ()
+import Prelude.Compat
 import Options.Applicative
 
 data CommandLine
