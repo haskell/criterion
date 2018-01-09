@@ -120,20 +120,20 @@ getGCStatistics = do
       nsToSecs ns = fromIntegral ns * 1.0E-9
 
   return $ Just GCStatistics {
-      gcStatsBytesAllocated         = fromIntegral $ gcdetails_allocated_bytes gcdetails
+      gcStatsBytesAllocated         = fromIntegral $ allocated_bytes stats
     , gcStatsNumGcs                 = fromIntegral $ gcs stats
     , gcStatsMaxBytesUsed           = fromIntegral $ max_live_bytes stats
     , gcStatsNumByteUsageSamples    = fromIntegral $ major_gcs stats
     , gcStatsCumulativeBytesUsed    = fromIntegral $ cumulative_live_bytes stats
-    , gcStatsBytesCopied            = fromIntegral $ gcdetails_copied_bytes gcdetails
+    , gcStatsBytesCopied            = fromIntegral $ copied_bytes stats
     , gcStatsCurrentBytesUsed       = fromIntegral $ gcdetails_live_bytes gcdetails
     , gcStatsCurrentBytesSlop       = fromIntegral $ gcdetails_slop_bytes gcdetails
     , gcStatsMaxBytesSlop           = fromIntegral $ max_slop_bytes stats
     , gcStatsPeakMegabytesAllocated = fromIntegral (max_mem_in_use_bytes stats) `quot` (1024*1024)
     , gcStatsMutatorCpuSeconds      = nsToSecs $ mutator_cpu_ns stats
     , gcStatsMutatorWallSeconds     = nsToSecs $ mutator_elapsed_ns stats
-    , gcStatsGcCpuSeconds           = nsToSecs $ gcdetails_cpu_ns gcdetails
-    , gcStatsGcWallSeconds          = nsToSecs $ gcdetails_elapsed_ns gcdetails
+    , gcStatsGcCpuSeconds           = nsToSecs $ gc_cpu_ns stats
+    , gcStatsGcWallSeconds          = nsToSecs $ gc_elapsed_ns stats
     , gcStatsCpuSeconds             = nsToSecs $ cpu_ns stats
     , gcStatsWallSeconds            = nsToSecs $ elapsed_ns stats
     }
@@ -175,10 +175,10 @@ measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   startCpuTime <- getCPUTime
   startCycles <- getCycles
   act
+  endStats <- getGCStatistics
   endTime <- getTime
   endCpuTime <- getCPUTime
   endCycles <- getCycles
-  endStats <- getGCStatistics
   let !m = applyGCStatistics endStats startStats $ measured {
              measTime    = max 0 (endTime - startTime)
            , measCpuTime = max 0 (endCpuTime - startCpuTime)
