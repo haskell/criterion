@@ -132,8 +132,8 @@ getGCStatistics = do
     , gcStatsPeakMegabytesAllocated = fromIntegral (max_mem_in_use_bytes stats) `quot` (1024*1024)
     , gcStatsMutatorCpuSeconds      = nsToSecs $ mutator_cpu_ns stats
     , gcStatsMutatorWallSeconds     = nsToSecs $ mutator_elapsed_ns stats
-    , gcStatsGcCpuSeconds           = nsToSecs $ cpu_ns stats
-    , gcStatsGcWallSeconds          = nsToSecs $ elapsed_ns stats
+    , gcStatsGcCpuSeconds           = nsToSecs $ gc_cpu_ns stats
+    , gcStatsGcWallSeconds          = nsToSecs $ gc_elapsed_ns stats
     , gcStatsCpuSeconds             = nsToSecs $ cpu_ns stats
     , gcStatsWallSeconds            = nsToSecs $ elapsed_ns stats
     }
