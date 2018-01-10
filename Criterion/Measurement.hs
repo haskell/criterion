@@ -330,14 +330,19 @@ applyGCStatistics :: Maybe GCStatistics
                   -- ^ Value to \"modify\".
                   -> Measured
 applyGCStatistics (Just endPostGC) (Just endPreGC) (Just start) m = m {
-    measAllocated          = diff endPostGC start gcStatsBytesAllocated
-  , measNumGcs             = diff endPreGC  start gcStatsNumGcs
-  , measBytesCopied        = diff endPostGC start gcStatsBytesCopied
-  , measMutatorWallSeconds = diff endPostGC start gcStatsMutatorWallSeconds
-  , measMutatorCpuSeconds  = diff endPostGC start gcStatsMutatorCpuSeconds
-  , measGcWallSeconds      = diff endPreGC  start gcStatsGcWallSeconds
-  , measGcCpuSeconds       = diff endPreGC  start gcStatsGcCpuSeconds
-  } where diff a b f = f a - f b
+    -- The choice of endPostGC or endPreGC is important.
+    -- For bytes allocated/copied, and mutator statistics, we use
+    -- endPostGC, because the intermediate performGC ensures they're up-to-date.
+    -- The others (num GCs and GC cpu/wall seconds) must be diffed against
+    -- endPreGC so that the extra performGC does not taint them.
+    measAllocated          = diff endPostGC gcStatsBytesAllocated
+  , measNumGcs             = diff endPreGC  gcStatsNumGcs
+  , measBytesCopied        = diff endPostGC gcStatsBytesCopied
+  , measMutatorWallSeconds = diff endPostGC gcStatsMutatorWallSeconds
+  , measMutatorCpuSeconds  = diff endPostGC gcStatsMutatorCpuSeconds
+  , measGcWallSeconds      = diff endPreGC  gcStatsGcWallSeconds
+  , measGcCpuSeconds       = diff endPreGC  gcStatsGcCpuSeconds
+  } where diff a f = f a - f start
 applyGCStatistics _ _ _ m = m
 
 -- | Convert a number of seconds to a string.  The string will consist
