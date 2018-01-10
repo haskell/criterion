@@ -337,7 +337,7 @@ applyGCStatistics (Just endPostGC) (Just endPreGC) (Just start) m = m {
   , measMutatorCpuSeconds  = diff endPostGC start gcStatsMutatorCpuSeconds
   , measGcWallSeconds      = diff endPreGC  start gcStatsGcWallSeconds
   , measGcCpuSeconds       = diff endPreGC  start gcStatsGcCpuSeconds
-  } where diff end start f = f end - f start
+  } where diff a b f = f a - f b
 applyGCStatistics _ _ _ m = m
 
 -- | Convert a number of seconds to a string.  The string will consist
