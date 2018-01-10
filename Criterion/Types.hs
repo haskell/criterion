@@ -212,7 +212,7 @@ instance ToJSON Measured where
       (measTime, measCpuTime, measCycles, measIters,
        i measAllocated, i measNumGcs, i measBytesCopied,
        d measMutatorWallSeconds, d measMutatorCpuSeconds,
-       d measGcWallSeconds, d measMutatorCpuSeconds)
+       d measGcWallSeconds, d measGcCpuSeconds)
       where i = fromInt; d = fromDouble
 
 instance NFData Measured where

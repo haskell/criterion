@@ -108,6 +108,7 @@ data GCStatistics = GCStatistics
 -- | Try to get GC statistics, bearing in mind that the GHC runtime
 -- will throw an exception if statistics collection was not enabled
 -- using \"@+RTS -T@\".
+-- If you need guaranteed up-to-date stats, call 'performGC' first.
 getGCStatistics :: IO (Maybe GCStatistics)
 #if MIN_VERSION_base(4,10,0)
 -- Use RTSStats/GCDetails to gather GC stats
@@ -170,16 +171,23 @@ measure :: Benchmarkable        -- ^ Operation to benchmark.
         -> Int64                -- ^ Number of iterations.
         -> IO (Measured, Double)
 measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
+  -- Ensure the stats from getGCStatistics are up-to-date.
+  performGC
   startStats <- getGCStatistics
   startTime <- getTime
   startCpuTime <- getCPUTime
   startCycles <- getCycles
   act
-  endStats <- getGCStatistics
   endTime <- getTime
   endCpuTime <- getCPUTime
   endCycles <- getCycles
-  let !m = applyGCStatistics endStats startStats $ measured {
+  -- From these we can derive GC-related deltas.
+  endStatsPreGC <- getGCStatistics
+  performGC
+  -- From these we can derive all other deltas, and performGC guarantees they
+  -- are up-to-date.
+  endStatsPostGC <- getGCStatistics
+  let !m = applyGCStatistics endStatsPostGC endStatsPreGC startStats $ measured {
              measTime    = max 0 (endTime - startTime)
            , measCpuTime = max 0 (endCpuTime - startCpuTime)
            , measCycles  = max 0 (fromIntegral (endCycles - startCycles))
@@ -313,22 +321,29 @@ measured = Measured {
 -- | Apply the difference between two sets of GC statistics to a
 -- measurement.
 applyGCStatistics :: Maybe GCStatistics
-                  -- ^ Statistics gathered at the __end__ of a run.
+                  -- ^ Statistics gathered at the __end__ of a run, post GC.
+                  -> Maybe GCStatistics
+                  -- ^ Statistics gathered at the __end__ of a run, pre GC.
                   -> Maybe GCStatistics
                   -- ^ Statistics gathered at the __beginning__ of a run.
                   -> Measured
                   -- ^ Value to \"modify\".
                   -> Measured
-applyGCStatistics (Just end) (Just start) m = m {
-    measAllocated          = diff gcStatsBytesAllocated
-  , measNumGcs             = diff gcStatsNumGcs
-  , measBytesCopied        = diff gcStatsBytesCopied
-  , measMutatorWallSeconds = diff gcStatsMutatorWallSeconds
-  , measMutatorCpuSeconds  = diff gcStatsMutatorCpuSeconds
-  , measGcWallSeconds      = diff gcStatsGcWallSeconds
-  , measGcCpuSeconds       = diff gcStatsGcCpuSeconds
-  } where diff f = f end - f start
-applyGCStatistics _ _ m = m
+applyGCStatistics (Just endPostGC) (Just endPreGC) (Just start) m = m {
+    -- The choice of endPostGC or endPreGC is important.
+    -- For bytes allocated/copied, and mutator statistics, we use
+    -- endPostGC, because the intermediate performGC ensures they're up-to-date.
+    -- The others (num GCs and GC cpu/wall seconds) must be diffed against
+    -- endPreGC so that the extra performGC does not taint them.
+    measAllocated          = diff endPostGC gcStatsBytesAllocated
+  , measNumGcs             = diff endPreGC  gcStatsNumGcs
+  , measBytesCopied        = diff endPostGC gcStatsBytesCopied
+  , measMutatorWallSeconds = diff endPostGC gcStatsMutatorWallSeconds
+  , measMutatorCpuSeconds  = diff endPostGC gcStatsMutatorCpuSeconds
+  , measGcWallSeconds      = diff endPreGC  gcStatsGcWallSeconds
+  , measGcCpuSeconds       = diff endPreGC  gcStatsGcCpuSeconds
+  } where diff a f = f a - f start
+applyGCStatistics _ _ _ m = m
 
 -- | Convert a number of seconds to a string.  The string will consist
 -- of four decimal places, followed by a short description of the time
