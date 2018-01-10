@@ -108,6 +108,7 @@ data GCStatistics = GCStatistics
 -- | Try to get GC statistics, bearing in mind that the GHC runtime
 -- will throw an exception if statistics collection was not enabled
 -- using \"@+RTS -T@\".
+-- 
 -- If you need guaranteed up-to-date stats, call 'performGC' first.
 getGCStatistics :: IO (Maybe GCStatistics)
 #if MIN_VERSION_base(4,10,0)
@@ -321,9 +322,9 @@ measured = Measured {
 -- | Apply the difference between two sets of GC statistics to a
 -- measurement.
 applyGCStatistics :: Maybe GCStatistics
-                  -- ^ Statistics gathered at the __end__ of a run, post GC.
+                  -- ^ Statistics gathered at the __end__ of a run, post-GC.
                   -> Maybe GCStatistics
-                  -- ^ Statistics gathered at the __end__ of a run, pre GC.
+                  -- ^ Statistics gathered at the __end__ of a run, pre-GC.
                   -> Maybe GCStatistics
                   -- ^ Statistics gathered at the __beginning__ of a run.
                   -> Measured

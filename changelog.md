@@ -1,3 +1,36 @@
+1.4.0.0
+
+* We now do three samples for statistics:
+
+  * `performGC` before the first sample, to ensure it's up to date.
+  * Take another sample after the action, without a `performGC`, so we can
+    gather legitimate readings on GC-related statistics.
+  * Then `performGC` and sample once more, so we can get up-to-date
+    readings on other metrics.
+
+  The type of `applyGCStatistics` has changed accordingly. Before, it was:
+
+  ```haskell
+     Maybe GCStatistics -- ^ Statistics gathered at the end of a run.
+  -> Maybe GCStatistics -- ^ Statistics gathered at the beginning of a run.
+  -> Measured -> Measured
+  ```
+
+  Now, it is:
+
+  ```haskell
+     Maybe GCStatistics -- ^ Statistics gathered at the end of a run, post-GC. 
+  -> Maybe GCStatistics -- ^ Statistics gathered at the end of a run, pre-GC. 
+  -> Maybe GCStatistics -- ^ Statistics gathered at the beginning of a run.
+  -> Measured -> Measured
+  ```
+
+  When diffing `GCStatistics` in `applyGCStatistics`, we carefully choose
+  whether to diff against the end stats pre- or post-GC.
+
+* Fix a bug in the `ToJSON Measured` instance which duplicated the
+  mutator CPU seconds where GC CPU seconds should go.
+
 1.3.0.0
 
 * `criterion` was previously reporting the following statistics incorrectly
