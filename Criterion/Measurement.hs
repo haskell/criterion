@@ -108,7 +108,7 @@ data GCStatistics = GCStatistics
 -- | Try to get GC statistics, bearing in mind that the GHC runtime
 -- will throw an exception if statistics collection was not enabled
 -- using \"@+RTS -T@\".
--- If you need guaranteed up-to-date stats, call performGC first.
+-- If you need guaranteed up-to-date stats, call 'performGC' first.
 getGCStatistics :: IO (Maybe GCStatistics)
 #if MIN_VERSION_base(4,10,0)
 -- Use RTSStats/GCDetails to gather GC stats
