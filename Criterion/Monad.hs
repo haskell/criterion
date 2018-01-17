@@ -14,26 +14,20 @@ module Criterion.Monad
       Criterion
     , withConfig
     , getGen
-    , getOverhead
     ) where
 
 import Control.Monad.Reader (asks, runReaderT)
 import Control.Monad.Trans (liftIO)
-import Control.Monad (when)
-import Criterion.Measurement (measure, runBenchmark, secs)
 import Criterion.Monad.Internal (Criterion(..), Crit(..))
 import Criterion.Types hiding (measure)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
-import Statistics.Regression (olsRegress)
 import System.Random.MWC (GenIO, createSystemRandom)
-import qualified Data.Vector.Generic as G
 
 -- | Run a 'Criterion' action with the given 'Config'.
 withConfig :: Config -> Criterion a -> IO a
 withConfig cfg (Criterion act) = do
   g <- newIORef Nothing
-  o <- newIORef Nothing
-  runReaderT act (Crit cfg g o)
+  runReaderT act (Crit cfg g)
 
 -- | Return a random number generator, creating one if necessary.
 --
@@ -41,19 +35,6 @@ withConfig cfg (Criterion act) = do
 -- call 'createSystemRandom' more than once if multiple threads race).
 getGen :: Criterion GenIO
 getGen = memoise gen createSystemRandom
-
--- | Return an estimate of the measurement overhead.
-getOverhead :: Criterion Double
-getOverhead = do
-  verbose <- asks ((== Verbose) . verbosity)
-  memoise overhead $ do
-    (meas,_) <- runBenchmark (whnfIO $ measure (whnfIO $ return ()) 1) 1
-    let metric get = G.convert . G.map get $ meas
-    let o = G.head . fst $
-            olsRegress [metric (fromIntegral . measIters)] (metric measTime)
-    when verbose . liftIO $
-      putStrLn $ "measurement overhead " ++ secs o
-    return o
 
 -- | Memoise the result of an 'IO' action.
 --

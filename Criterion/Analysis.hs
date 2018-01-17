@@ -37,7 +37,7 @@ import Control.Monad.Trans
 import Control.Monad.Trans.Except
 import Criterion.IO.Printf (note, prolix)
 import Criterion.Measurement (secs, threshold)
-import Criterion.Monad (Criterion, getGen, getOverhead)
+import Criterion.Monad (Criterion, getGen)
 import Criterion.Types
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
@@ -142,16 +142,13 @@ analyseSample :: Int            -- ^ Experiment number.
               -> ExceptT String Criterion Report
 analyseSample i name meas = do
   Config{..} <- ask
-  overhead <- lift getOverhead
   let ests      = [Mean,StdDev]
       -- The use of filter here throws away very-low-quality
       -- measurements when bootstrapping the mean and standard
       -- deviations.  Without this, the numbers look nonsensical when
       -- very brief actions are measured.
       stime     = measure (measTime . rescale) .
-                  G.filter ((>= threshold) . measTime) . G.map fixTime .
-                  G.tail $ meas
-      fixTime m = m { measTime = measTime m - overhead / 2 }
+                  G.filter ((>= threshold) . measTime) $ meas
       n         = G.length meas
       s         = G.length stime
   _ <- lift $ prolix "bootstrapping with %d of %d samples (%d%%)\n"
@@ -164,7 +161,6 @@ analyseSample i name meas = do
       ov = outlierVariance estMean estStdDev (fromIntegral n)
       an = SampleAnalysis {
                anRegress    = rs
-             , anOverhead   = overhead
              , anMean       = estMean
              , anStdDev     = estStdDev
              , anOutlierVar = ov

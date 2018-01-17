@@ -709,9 +709,6 @@ instance NFData Regression where
 data SampleAnalysis = SampleAnalysis {
       anRegress    :: [Regression]
       -- ^ Estimates calculated via linear regression.
-    , anOverhead   :: Double
-      -- ^ Estimated measurement overhead, in seconds.  Estimation is
-      -- performed via linear regression.
     , anMean       :: St.Estimate St.ConfInt Double
       -- ^ Estimated mean.
     , anStdDev     :: St.Estimate St.ConfInt Double
@@ -726,12 +723,12 @@ instance ToJSON SampleAnalysis
 
 instance Binary SampleAnalysis where
     put SampleAnalysis{..} = do
-      put anRegress; put anOverhead; put anMean; put anStdDev; put anOutlierVar
-    get = SampleAnalysis <$> get <*> get <*> get <*> get <*> get
+      put anRegress; put anMean; put anStdDev; put anOutlierVar
+    get = SampleAnalysis <$> get <*> get <*> get <*> get
 
 instance NFData SampleAnalysis where
     rnf SampleAnalysis{..} =
-        rnf anRegress `seq` rnf anOverhead `seq` rnf anMean `seq`
+        rnf anRegress `seq` rnf anMean `seq`
         rnf anStdDev `seq` rnf anOutlierVar
 
 -- | Data for a KDE chart of performance.
@@ -760,9 +757,7 @@ data Report = Report {
     , reportKeys     :: [String]
       -- ^ See 'measureKeys'.
     , reportMeasured :: V.Vector Measured
-      -- ^ Raw measurements. These are /not/ corrected for the
-      -- estimated measurement overhead that can be found via the
-      -- 'anOverhead' field of 'reportAnalysis'.
+      -- ^ Raw measurements.
     , reportAnalysis :: SampleAnalysis
       -- ^ Report analysis.
     , reportOutliers :: Outliers
