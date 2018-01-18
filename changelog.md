@@ -32,7 +32,8 @@
   mutator CPU seconds where GC CPU seconds should go.
 
 * Fix a bug in sample analysis which incorrectly accounted for overhead
-  causing runtime errors and invalid results.
+  causing runtime errors and invalid results. Accordingly, the buggy
+  `getOverhead` function has been removed.
 
 1.3.0.0
 
