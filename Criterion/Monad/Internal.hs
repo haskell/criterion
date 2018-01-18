@@ -29,7 +29,6 @@ import System.Random.MWC (GenIO)
 data Crit = Crit {
     config   :: !Config
   , gen      :: !(IORef (Maybe GenIO))
-  , overhead :: !(IORef (Maybe Double))
   }
 
 -- | The monad in which most criterion code executes.
