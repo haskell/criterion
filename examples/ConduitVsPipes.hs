@@ -5,7 +5,7 @@
 -- by compiling with the -fno-full-laziness option.
 
 import Criterion.Main (bench, bgroup, defaultMain, nfIO, whnf)
-import Data.Conduit (($=), ($$))
+import Data.Conduit (runConduit, (.|))
 import Data.Functor.Identity (Identity(..))
 import Pipes ((>->), discard, each, for, runEffect)
 import qualified Data.Conduit.List as C
@@ -28,7 +28,7 @@ criterion n = defaultMain
 
 pipes, conduit :: (Monad m) => Int -> m ()
 pipes n = runEffect $ for (each [1..n] >-> P.map (+1) >-> P.filter even) discard
-conduit n = C.sourceList [1..n] $= C.map (+1) $= C.filter even $$ C.sinkNull
+conduit n = runConduit $ C.sourceList [1..n] .| C.map (+1) .| C.filter even .| C.sinkNull
 
 main :: IO ()
 main = criterion 10000

@@ -33,7 +33,7 @@ executable conduit-vs-pipes
   ghc-options: -Wall -rtsopts
   build-depends:
     base == 4.*,
-    conduit >= 1.1,
+    conduit >= 1.2.1,
     criterion,
     pipes >= 4.1,
     transformers
