@@ -197,7 +197,7 @@ measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   return (m, endTime)
   where
     addResults :: (Measured, Double) -> (Measured, Double) -> (Measured, Double)
-    addResults (!m1, !d1) (!m2, !d2) = (m3, d1 + d2)
+    addResults (!m1, _) (!m2, !d2) = (m3, d2)
       where
         add f = f m1 + f m2
 
