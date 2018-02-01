@@ -329,7 +329,8 @@ pureFunc :: (b -> c) -> (a -> b) -> a -> Benchmarkable
 pureFunc reduce f0 x0 = toBenchmarkable (go f0 x0)
   where go f x n
           | n <= 0    = return ()
-          | otherwise = evaluate (reduce (f x)) >> go f x (n-1)
+          | otherwise = let !y = reduce (f x)
+                        in evaluate y >> go f x (n-1)
 {-# INLINE pureFunc #-}
 
 -- | Perform an action, then evaluate its result to normal form.
