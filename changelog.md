@@ -35,6 +35,9 @@
   causing runtime errors and invalid results. Accordingly, the buggy
   `getOverhead` function has been removed.
 
+* Fix a bug in `Measurement.measure` which inflated the reported time taken
+  for `perRun` benchmarks.
+
 1.3.0.0
 
 * `criterion` was previously reporting the following statistics incorrectly
