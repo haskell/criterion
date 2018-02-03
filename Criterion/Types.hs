@@ -77,7 +77,7 @@ import Data.Semigroup
 
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (evaluate)
-import Criterion.Types.Internal (fakeEnvironment)
+import Criterion.Types.Internal (fakeEnvironment, nf', whnf')
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
@@ -316,22 +316,12 @@ instance Binary Measured where
 -- | Apply an argument to a function, and evaluate the result to weak
 -- head normal form (WHNF).
 whnf :: (a -> b) -> a -> Benchmarkable
-whnf = pureFunc id
-{-# INLINE whnf #-}
+whnf f x = toBenchmarkable (whnf' f x)
 
 -- | Apply an argument to a function, and evaluate the result to
 -- normal form (NF).
 nf :: NFData b => (a -> b) -> a -> Benchmarkable
-nf = pureFunc rnf
-{-# INLINE nf #-}
-
-pureFunc :: (b -> c) -> (a -> b) -> a -> Benchmarkable
-pureFunc reduce f0 x0 = toBenchmarkable (go f0 x0)
-  where go f x n
-          | n <= 0    = return ()
-          | otherwise = let !y = reduce (f x)
-                        in evaluate y >> go f x (n-1)
-{-# INLINE pureFunc #-}
+nf f x = toBenchmarkable (nf' rnf f x)
 
 -- | Perform an action, then evaluate its result to normal form.
 -- This is particularly useful for forcing a lazy 'IO' action to be
