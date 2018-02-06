@@ -57,8 +57,8 @@ module Criterion.Types
     , addPrefix
     , benchNames
     -- ** Evaluation control
-    , whnf
     , nf
+    , whnf
     , nfIO
     , whnfIO
     -- * Result types
