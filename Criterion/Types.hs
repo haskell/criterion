@@ -313,36 +313,45 @@ instance Binary Measured where
     get = Measured <$> get <*> get <*> get <*> get
                    <*> get <*> get <*> get <*> get <*> get <*> get <*> get
 
--- | Apply an argument to a function, and evaluate the result to weak
--- head normal form (WHNF).
-whnf :: (a -> b) -> a -> Benchmarkable
-whnf f x = toBenchmarkable (whnf' f x)
-
 -- | Apply an argument to a function, and evaluate the result to
 -- normal form (NF).
 nf :: NFData b => (a -> b) -> a -> Benchmarkable
 nf f x = toBenchmarkable (nf' rnf f x)
 
+-- | Apply an argument to a function, and evaluate the result to weak
+-- head normal form (WHNF).
+whnf :: (a -> b) -> a -> Benchmarkable
+whnf f x = toBenchmarkable (whnf' f x)
+
 -- | Perform an action, then evaluate its result to normal form.
 -- This is particularly useful for forcing a lazy 'IO' action to be
 -- completely performed.
 nfIO :: NFData a => IO a -> Benchmarkable
-nfIO = toBenchmarkable . impure rnf
-{-# INLINE nfIO #-}
+nfIO a = toBenchmarkable (nfIO' rnf a)
 
 -- | Perform an action, then evaluate its result to weak head normal
 -- form (WHNF).  This is useful for forcing an 'IO' action whose result
 -- is an expression to be evaluated down to a more useful value.
 whnfIO :: IO a -> Benchmarkable
-whnfIO = toBenchmarkable . impure id
-{-# INLINE whnfIO #-}
+whnfIO a = toBenchmarkable (whnfIO' a)
 
-impure :: (a -> b) -> IO a -> Int64 -> IO ()
-impure strategy a = go
+nfIO' :: (a -> b) -> IO a -> Int64 -> IO ()
+nfIO' reduce a = go
   where go n
           | n <= 0    = return ()
-          | otherwise = a >>= (evaluate . strategy) >> go (n-1)
-{-# INLINE impure #-}
+          | otherwise = do
+              x <- a
+              let !y = reduce x
+              evaluate y >> go (n-1)
+{-# NOINLINE nfIO' #-}
+
+whnfIO' :: IO a -> Int64 -> IO ()
+whnfIO' a = go
+  where
+    go n | n <= 0    = return ()
+         | otherwise = evaluate a >> go (n-1)
+{-# NOINLINE whnfIO' #-}
+
 
 -- | Specification of a collection of benchmarks and environments. A
 -- benchmark may consist of:
@@ -514,7 +523,7 @@ perBatchEnvWithCleanup
     -- newly generated environment.
     -> Benchmarkable
 perBatchEnvWithCleanup alloc clean work
-    = Benchmarkable alloc clean (impure rnf . work) False
+    = Benchmarkable alloc clean (nfIO' rnf . work) False
 
 -- | Create a Benchmarkable where a fresh environment is allocated for every
 -- run of the operation to benchmark. This is useful for benchmarking mutable
