@@ -1,3 +1,4 @@
+{-# LANGUAGE BangPatterns #-}
 {-# OPTIONS_GHC -fno-full-laziness #-}
 -- |
 -- Module      : Criterion.Types.Internal
