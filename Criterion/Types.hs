@@ -341,8 +341,7 @@ nfIO' reduce a = go
           | n <= 0    = return ()
           | otherwise = do
               x <- a
-              let !y = reduce x
-              evaluate y >> go (n-1)
+              reduce x `seq` go (n-1)
 {-# NOINLINE nfIO' #-}
 
 whnfIO' :: IO a -> Int64 -> IO ()
@@ -351,7 +350,7 @@ whnfIO' a = go
     go n | n <= 0    = return ()
          | otherwise = do
              x <- a
-             evaluate x >> go (n-1)
+             x `seq` go (n-1)
 {-# NOINLINE whnfIO' #-}
 
 -- | Specification of a collection of benchmarks and environments. A
