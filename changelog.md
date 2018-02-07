@@ -38,6 +38,9 @@
 * Fix a bug in `Measurement.measure` which inflated the reported time taken
   for `perRun` benchmarks.
 
+* Reduce overhead of `nf`, `whnf`, `nfIO`, and `whnfIO` by removing allocation
+  from the central loops.
+
 1.3.0.0
 
 * `criterion` was previously reporting the following statistics incorrectly

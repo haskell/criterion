@@ -334,7 +334,13 @@ nfIO a = toBenchmarkable (nfIO' rnf a)
 whnfIO :: IO a -> Benchmarkable
 whnfIO a = toBenchmarkable (whnfIO' a)
 
-nfIO' :: (a -> b) -> IO a -> Int64 -> IO ()
+-- Along with nf' and whnf', the following two functions are the core
+-- benchmarking loops. They have been carefully constructed to avoid
+-- allocation while also evaluating 'a'. See #183 and #184 for discussion.
+
+-- | Generate a function that will run an action a given number of times,
+-- reducing it to normal form each time.
+nfIO' :: (a -> b) -> IO a -> (Int64 -> IO ())
 nfIO' reduce a = go
   where go n
           | n <= 0    = return ()
@@ -343,7 +349,8 @@ nfIO' reduce a = go
               reduce x `seq` go (n-1)
 {-# NOINLINE nfIO' #-}
 
-whnfIO' :: IO a -> Int64 -> IO ()
+-- | Generate a function that will run an action a given number of times.
+whnfIO' :: IO a -> (Int64 -> IO ())
 whnfIO' a = go
   where
     go n | n <= 0    = return ()

@@ -24,7 +24,17 @@ fakeEnvironment = error $ unlines
   , "\t(see the documentation for `env` for details)"
   ]
 
--- | Return a function which applies an argument to a function a
+-- Along with Criterion.Types.nfIO' and Criterion.Types.whnfIO', the following
+-- two functions are the core benchmarking loops. They have been carefully
+-- constructed to avoid allocation while also evaluating 'f x'.
+--
+-- Because these functions are pure, GHC is particularly smart about
+-- optimizing them. We must turn of `-ffull-laziness` to prevent the
+-- computation from being floated out of the loop.
+--
+-- See #183 and #184 for discussion.
+
+-- | Generate a function which applies an argument to a function a
 -- given number of times, reducing the result to normal form.
 nf' :: (b -> ()) -> (a -> b) -> a -> (Int64 -> IO ())
 nf' reduce f x = go
@@ -34,7 +44,7 @@ nf' reduce f x = go
                        in reduce y `seq` go (n-1)
 {-# NOINLINE nf' #-}
 
--- | Return a function which applies an argument to a function a
+-- | Generate a function which applies an argument to a function a
 -- given number of times.
 whnf' :: (a -> b) -> a -> (Int64 -> IO ())
 whnf' f x = go
