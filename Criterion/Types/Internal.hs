@@ -26,11 +26,17 @@ fakeEnvironment = error $ unlines
 
 -- Along with Criterion.Types.nfIO' and Criterion.Types.whnfIO', the following
 -- two functions are the core benchmarking loops. They have been carefully
--- constructed to avoid allocation while also evaluating 'f x'.
+-- constructed to avoid allocation while also evaluating @f x@.
 --
--- Because these functions are pure, GHC is particularly smart about
--- optimizing them. We must turn of `-ffull-laziness` to prevent the
--- computation from being floated out of the loop.
+-- Because these functions are pure, GHC is particularly smart about optimizing
+-- them. We must turn off @-ffull-laziness@ to prevent the computation from
+-- being floated out of the loop.
+--
+-- For a similar reason, these functions must not be inlined. There are two
+-- possible issues that can arise if they are inlined. First, the work is often
+-- floated out of the loop, which creates a nonsense benchmark. Second, the
+-- benchmark code itself could be changed by the user's optimization level. By
+-- marking them @NOINLINE@, the core benchmark code is always the same.
 --
 -- See #183 and #184 for discussion.
 

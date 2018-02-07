@@ -336,7 +336,15 @@ whnfIO a = toBenchmarkable (whnfIO' a)
 
 -- Along with nf' and whnf', the following two functions are the core
 -- benchmarking loops. They have been carefully constructed to avoid
--- allocation while also evaluating 'a'. See #183 and #184 for discussion.
+-- allocation while also evaluating @a@.
+--
+-- These functions must not be inlined. There are two possible issues that
+-- can arise if they are inlined. First, the work is often floated out of
+-- the loop, which creates a nonsense benchmark. Second, the benchmark code
+-- itself could be changed by the user's optimization level. By marking them
+-- @NOINLINE@, the core benchmark code is always the same.
+--
+-- See #183 and #184 for discussion.
 
 -- | Generate a function that will run an action a given number of times,
 -- reducing it to normal form each time.
