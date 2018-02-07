@@ -349,9 +349,10 @@ whnfIO' :: IO a -> Int64 -> IO ()
 whnfIO' a = go
   where
     go n | n <= 0    = return ()
-         | otherwise = evaluate a >> go (n-1)
+         | otherwise = do
+             x <- a
+             evaluate x >> go (n-1)
 {-# NOINLINE whnfIO' #-}
-
 
 -- | Specification of a collection of benchmarks and environments. A
 -- benchmark may consist of:
