@@ -57,8 +57,8 @@ module Criterion.Types
     , addPrefix
     , benchNames
     -- ** Evaluation control
-    , whnf
     , nf
+    , whnf
     , nfIO
     , whnfIO
     -- * Result types
@@ -76,8 +76,7 @@ module Criterion.Types
 import Data.Semigroup
 
 import Control.DeepSeq (NFData(rnf))
-import Control.Exception (evaluate)
-import Criterion.Types.Internal (fakeEnvironment)
+import Criterion.Types.Internal (fakeEnvironment, nf', whnf')
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
@@ -313,45 +312,60 @@ instance Binary Measured where
     get = Measured <$> get <*> get <*> get <*> get
                    <*> get <*> get <*> get <*> get <*> get <*> get <*> get
 
--- | Apply an argument to a function, and evaluate the result to weak
--- head normal form (WHNF).
-whnf :: (a -> b) -> a -> Benchmarkable
-whnf = pureFunc id
-{-# INLINE whnf #-}
-
 -- | Apply an argument to a function, and evaluate the result to
 -- normal form (NF).
 nf :: NFData b => (a -> b) -> a -> Benchmarkable
-nf = pureFunc rnf
-{-# INLINE nf #-}
+nf f x = toBenchmarkable (nf' rnf f x)
 
-pureFunc :: (b -> c) -> (a -> b) -> a -> Benchmarkable
-pureFunc reduce f0 x0 = toBenchmarkable (go f0 x0)
-  where go f x n
-          | n <= 0    = return ()
-          | otherwise = evaluate (reduce (f x)) >> go f x (n-1)
-{-# INLINE pureFunc #-}
+-- | Apply an argument to a function, and evaluate the result to weak
+-- head normal form (WHNF).
+whnf :: (a -> b) -> a -> Benchmarkable
+whnf f x = toBenchmarkable (whnf' f x)
 
 -- | Perform an action, then evaluate its result to normal form.
 -- This is particularly useful for forcing a lazy 'IO' action to be
 -- completely performed.
 nfIO :: NFData a => IO a -> Benchmarkable
-nfIO = toBenchmarkable . impure rnf
-{-# INLINE nfIO #-}
+nfIO a = toBenchmarkable (nfIO' rnf a)
 
 -- | Perform an action, then evaluate its result to weak head normal
 -- form (WHNF).  This is useful for forcing an 'IO' action whose result
 -- is an expression to be evaluated down to a more useful value.
 whnfIO :: IO a -> Benchmarkable
-whnfIO = toBenchmarkable . impure id
-{-# INLINE whnfIO #-}
+whnfIO a = toBenchmarkable (whnfIO' a)
 
-impure :: (a -> b) -> IO a -> Int64 -> IO ()
-impure strategy a = go
+-- Along with nf' and whnf', the following two functions are the core
+-- benchmarking loops. They have been carefully constructed to avoid
+-- allocation while also evaluating @a@.
+--
+-- These functions must not be inlined. There are two possible issues that
+-- can arise if they are inlined. First, the work is often floated out of
+-- the loop, which creates a nonsense benchmark. Second, the benchmark code
+-- itself could be changed by the user's optimization level. By marking them
+-- @NOINLINE@, the core benchmark code is always the same.
+--
+-- See #183 and #184 for discussion.
+
+-- | Generate a function that will run an action a given number of times,
+-- reducing it to normal form each time.
+nfIO' :: (a -> b) -> IO a -> (Int64 -> IO ())
+nfIO' reduce a = go
   where go n
           | n <= 0    = return ()
-          | otherwise = a >>= (evaluate . strategy) >> go (n-1)
-{-# INLINE impure #-}
+          | otherwise = do
+              x <- a
+              reduce x `seq` go (n-1)
+{-# NOINLINE nfIO' #-}
+
+-- | Generate a function that will run an action a given number of times.
+whnfIO' :: IO a -> (Int64 -> IO ())
+whnfIO' a = go
+  where
+    go n | n <= 0    = return ()
+         | otherwise = do
+             x <- a
+             x `seq` go (n-1)
+{-# NOINLINE whnfIO' #-}
 
 -- | Specification of a collection of benchmarks and environments. A
 -- benchmark may consist of:
@@ -523,7 +537,7 @@ perBatchEnvWithCleanup
     -- newly generated environment.
     -> Benchmarkable
 perBatchEnvWithCleanup alloc clean work
-    = Benchmarkable alloc clean (impure rnf . work) False
+    = Benchmarkable alloc clean (nfIO' rnf . work) False
 
 -- | Create a Benchmarkable where a fresh environment is allocated for every
 -- run of the operation to benchmark. This is useful for benchmarking mutable
