@@ -76,7 +76,6 @@ module Criterion.Types
 import Data.Semigroup
 
 import Control.DeepSeq (NFData(rnf))
-import Control.Exception (evaluate)
 import Criterion.Types.Internal (fakeEnvironment, nf', whnf')
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..), putWord8, getWord8)
