@@ -49,7 +49,7 @@ import GHC.Stats (GCStats(..))
 #endif
 import Prelude ()
 import Prelude.Compat
-import System.Mem (performGC)
+import System.Mem (performGC, performMinorGC)
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
 import qualified Data.Vector as V
@@ -173,7 +173,7 @@ measure :: Benchmarkable        -- ^ Operation to benchmark.
         -> IO (Measured, Double)
 measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   -- Ensure the stats from getGCStatistics are up-to-date.
-  performGC
+  performMinorGC
   startStats <- getGCStatistics
   startTime <- getTime
   startCpuTime <- getCPUTime
@@ -184,7 +184,7 @@ measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   endCycles <- getCycles
   -- From these we can derive GC-related deltas.
   endStatsPreGC <- getGCStatistics
-  performGC
+  performMinorGC
   -- From these we can derive all other deltas, and performGC guarantees they
   -- are up-to-date.
   endStatsPostGC <- getGCStatistics
@@ -250,8 +250,7 @@ runBenchmarkable Benchmarkable{..} i comb f
 
         clean `seq` run `seq` evaluate $ rnf env
 
-        performGC
-        f count run `finally` clean <* performGC
+        f count run `finally` clean
     {-# INLINE work #-}
 {-# INLINE runBenchmarkable #-}
 
