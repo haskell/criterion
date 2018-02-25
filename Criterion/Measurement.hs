@@ -178,11 +178,11 @@ measure :: Benchmarkable        -- ^ Operation to benchmark.
 measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   -- Ensure the stats from getGCStatistics are up-to-date.
   -- Use performMinorGC if we can to improve performance.
-  #if MIN_VERSION_base(4,7,0)
+#if MIN_VERSION_base(4,7,0)
   performMinorGC
-  #else
+#else
   performGC
-  #endif
+#endif
   startStats <- getGCStatistics
   startTime <- getTime
   startCpuTime <- getCPUTime
@@ -193,11 +193,11 @@ measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   endCycles <- getCycles
   -- From these we can derive GC-related deltas.
   endStatsPreGC <- getGCStatistics
-  #if MIN_VERSION_base(4,7,0)
+#if MIN_VERSION_base(4,7,0)
   performMinorGC
-  #else
+#else
   performGC
-  #endif
+#endif
   -- From these we can derive all other deltas, and performGC guarantees they
   -- are up-to-date.
   endStatsPostGC <- getGCStatistics
