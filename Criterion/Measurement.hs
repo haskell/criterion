@@ -49,7 +49,11 @@ import GHC.Stats (GCStats(..))
 #endif
 import Prelude ()
 import Prelude.Compat
+#if MIN_VERSION_base(4,7,0)
 import System.Mem (performGC, performMinorGC)
+#else
+import System.Mem (performGC)
+#endif
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
 import qualified Data.Vector as V
@@ -173,7 +177,12 @@ measure :: Benchmarkable        -- ^ Operation to benchmark.
         -> IO (Measured, Double)
 measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   -- Ensure the stats from getGCStatistics are up-to-date.
+  -- Use performMinorGC if we can to improve performance.
+  #if MIN_VERSION_base(4,7,0)
   performMinorGC
+  #else
+  performGC
+  #endif
   startStats <- getGCStatistics
   startTime <- getTime
   startCpuTime <- getCPUTime
@@ -184,7 +193,11 @@ measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   endCycles <- getCycles
   -- From these we can derive GC-related deltas.
   endStatsPreGC <- getGCStatistics
+  #if MIN_VERSION_base(4,7,0)
   performMinorGC
+  #else
+  performGC
+  #endif
   -- From these we can derive all other deltas, and performGC guarantees they
   -- are up-to-date.
   endStatsPostGC <- getGCStatistics
