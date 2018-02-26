@@ -36,6 +36,8 @@ executable conduit-vs-pipes
     conduit >= 1.2.1,
     criterion,
     pipes >= 4.1,
+    -- Work around https://github.com/snoyberg/conduit/issues/353
+    resourcet >= 1.1.11,
     transformers
 
 executable maps
