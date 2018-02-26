@@ -2,10 +2,10 @@
 
 * We now do three samples for statistics:
 
-  * `performGC` before the first sample, to ensure it's up to date.
-  * Take another sample after the action, without a `performGC`, so we can
-    gather legitimate readings on GC-related statistics.
-  * Then `performGC` and sample once more, so we can get up-to-date
+  * `performMinorGC` before the first sample, to ensure it's up to date.
+  * Take another sample after the action, without a garbage collection, so we
+    can gather legitimate readings on GC-related statistics.
+  * Then `performMinorGC` and sample once more, so we can get up-to-date
     readings on other metrics.
 
   The type of `applyGCStatistics` has changed accordingly. Before, it was:
@@ -27,6 +27,10 @@
 
   When diffing `GCStatistics` in `applyGCStatistics`, we carefully choose
   whether to diff against the end stats pre- or post-GC.
+
+* Use `performMinorGC` rather than `performGC` to update garbage collection
+  statistics. This improves the benchmark performance of fast functions on large
+  objects.
 
 * Fix a bug in the `ToJSON Measured` instance which duplicated the
   mutator CPU seconds where GC CPU seconds should go.

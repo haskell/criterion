@@ -49,11 +49,19 @@ import GHC.Stats (GCStats(..))
 #endif
 import Prelude ()
 import Prelude.Compat
+#if MIN_VERSION_base(4,7,0)
+import System.Mem (performGC, performMinorGC)
+# else
 import System.Mem (performGC)
+#endif
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
 import qualified Data.Vector as V
 import qualified GHC.Stats as Stats
+
+#if !(MIN_VERSION_base(4,7,0))
+foreign import ccall "performGC" performMinorGC :: IO ()
+#endif
 
 -- | Statistics about memory usage and the garbage collector. Apart from
 -- 'gcStatsCurrentBytesUsed' and 'gcStatsCurrentBytesSlop' all are cumulative values since
@@ -172,8 +180,14 @@ measure :: Benchmarkable        -- ^ Operation to benchmark.
         -> Int64                -- ^ Number of iterations.
         -> IO (Measured, Double)
 measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
-  -- Ensure the stats from getGCStatistics are up-to-date.
-  performGC
+  -- Ensure the stats from getGCStatistics are up-to-date
+  -- by garbage collecting. performMinorGC does /not/ update all stats, but
+  -- it does update the ones we need (see applyGCStatistics for details.
+  --
+  -- We use performMinorGC instead of performGC to avoid the cost of copying
+  -- the live data in the heap potentially hundreds of times in a
+  -- single benchmark.
+  performMinorGC
   startStats <- getGCStatistics
   startTime <- getTime
   startCpuTime <- getCPUTime
@@ -184,7 +198,7 @@ measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   endCycles <- getCycles
   -- From these we can derive GC-related deltas.
   endStatsPreGC <- getGCStatistics
-  performGC
+  performMinorGC
   -- From these we can derive all other deltas, and performGC guarantees they
   -- are up-to-date.
   endStatsPostGC <- getGCStatistics
@@ -250,8 +264,7 @@ runBenchmarkable Benchmarkable{..} i comb f
 
         clean `seq` run `seq` evaluate $ rnf env
 
-        performGC
-        f count run `finally` clean <* performGC
+        f count run `finally` clean
     {-# INLINE work #-}
 {-# INLINE runBenchmarkable #-}
 
