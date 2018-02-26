@@ -53,6 +53,7 @@ import Prelude.Compat
 import System.Mem (performGC, performMinorGC)
 #else
 import System.Mem (performGC)
+foreign import ccall "performGC" performMinorGC :: IO ()
 #endif
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
@@ -176,13 +177,14 @@ measure :: Benchmarkable        -- ^ Operation to benchmark.
         -> Int64                -- ^ Number of iterations.
         -> IO (Measured, Double)
 measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
-  -- Ensure the stats from getGCStatistics are up-to-date.
-  -- Use performMinorGC if we can to improve performance.
-#if MIN_VERSION_base(4,7,0)
+  -- Ensure the stats from getGCStatistics are up-to-date
+  -- by garbage collecting. performMinorGC does /not/ update all stats, but
+  -- it does update the ones we need (see applyGCStatistics for details.
+  --
+  -- We use performMinorGC instead of performGC to avoid the cost of copying
+  -- the live data in the heap potentially hundreds of times in a
+  -- single benchmark.
   performMinorGC
-#else
-  performGC
-#endif
   startStats <- getGCStatistics
   startTime <- getTime
   startCpuTime <- getCPUTime
@@ -193,11 +195,7 @@ measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   endCycles <- getCycles
   -- From these we can derive GC-related deltas.
   endStatsPreGC <- getGCStatistics
-#if MIN_VERSION_base(4,7,0)
   performMinorGC
-#else
-  performGC
-#endif
   -- From these we can derive all other deltas, and performGC guarantees they
   -- are up-to-date.
   endStatsPostGC <- getGCStatistics
