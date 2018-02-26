@@ -51,14 +51,17 @@ import Prelude ()
 import Prelude.Compat
 #if MIN_VERSION_base(4,7,0)
 import System.Mem (performGC, performMinorGC)
-#else
+# else
 import System.Mem (performGC)
-foreign import ccall "performGC" performMinorGC :: IO ()
 #endif
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
 import qualified Data.Vector as V
 import qualified GHC.Stats as Stats
+
+#if !(MIN_VERSION_base(4,7,0))
+foreign import ccall "performGC" performMinorGC :: IO ()
+#endif
 
 -- | Statistics about memory usage and the garbage collector. Apart from
 -- 'gcStatsCurrentBytesUsed' and 'gcStatsCurrentBytesSlop' all are cumulative values since
