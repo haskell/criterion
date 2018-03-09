@@ -19,6 +19,9 @@ tested-with:
   GHC==8.2.2,
   GHC==8.4.1
 
+flag maps
+  default: True
+
 executable fibber
   main-is: Fibber.hs
 
@@ -39,6 +42,9 @@ executable conduit-vs-pipes
     transformers
 
 executable maps
+  if !flag(maps)
+    buildable: False
+
   main-is: Maps.hs
 
   ghc-options: -Wall -rtsopts
