@@ -38,7 +38,7 @@ executable conduit-vs-pipes
     base == 4.*,
     conduit >= 1.2.13.1,
     criterion,
-    pipes >= 4.1,
+    pipes >= 4.3.5,
     transformers
 
 executable maps
