@@ -96,8 +96,10 @@ install:
       cabal new-update head.hackage -v
     fi
   - grep -Ev -- '^\s*--' ${HOME}/.cabal/config | grep -Ev '^\s*$'
-  - "printf 'packages: \".\" \"./examples\"\\n' > cabal.project"
+  - "printf 'packages: \".\" \"./criterion-measurement\" \"./examples\"\\n' > cabal.project"
   - echo 'package criterion' >> cabal.project
+  - "echo '  ghc-options: -Werror' >> cabal.project"
+  - echo 'package criterion-measurement' >> cabal.project
   - "echo '  ghc-options: -Werror' >> cabal.project"
   - echo 'package criterion-examples' >> cabal.project
   - "echo '  ghc-options: -Werror' >> cabal.project"
@@ -105,12 +107,15 @@ install:
   - if [ -f "./configure.ac" ]; then
       (cd "." && autoreconf -i);
     fi
+  - if [ -f "./criterion-measurement/configure.ac" ]; then
+      (cd "./criterion-measurement" && autoreconf -i);
+    fi
   - if [ -f "./examples/configure.ac" ]; then
       (cd "./examples" && autoreconf -i);
     fi
   - rm -f cabal.project.freeze
   - cabal new-build -w ${HC} ${CABALFLAGS} ${TEST} ${BENCH} --project-file="cabal.project" --dep -j2 all
-  - rm -rf "."/.ghc.environment.* "./examples"/.ghc.environment.* "."/dist "./examples"/dist
+  - rm -rf .ghc.environment.* "."/dist "./criterion-measurement"/dist "./examples"/dist
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
 
 # Here starts the actual work to be performed for the package under test;
@@ -118,12 +123,15 @@ install:
 script:
   # test that source-distributions can be generated
   - (cd "." && cabal sdist)
+  - (cd "./criterion-measurement" && cabal sdist)
   - (cd "./examples" && cabal sdist)
-  - mv "."/dist/criterion-*.tar.gz "./examples"/dist/criterion-examples-*.tar.gz ${DISTDIR}/
+  - mv "."/dist/criterion-*.tar.gz "./criterion-measurement"/dist/criterion-measurement-*.tar.gz "./examples"/dist/criterion-examples-*.tar.gz ${DISTDIR}/
   - cd ${DISTDIR} || false
   - find . -maxdepth 1 -name '*.tar.gz' -exec tar -xvf '{}' \;
-  - "printf 'packages: criterion-*/*.cabal criterion-examples-*/*.cabal\\n' > cabal.project"
+  - "printf 'packages: criterion-*/*.cabal criterion-measurement-*/*.cabal criterion-examples-*/*.cabal\\n' > cabal.project"
   - echo 'package criterion' >> cabal.project
+  - "echo '  ghc-options: -Werror' >> cabal.project"
+  - echo 'package criterion-measurement' >> cabal.project
   - "echo '  ghc-options: -Werror' >> cabal.project"
   - echo 'package criterion-examples' >> cabal.project
   - "echo '  ghc-options: -Werror' >> cabal.project"
@@ -137,6 +145,7 @@ script:
   # cabal check
   #   Commented out due to https://github.com/haskell/cabal/issues/4551
   # - (cd criterion-* && cabal check)
+  # - (cd criterion-measurement-* && cabal check)
   - (cd criterion-examples-* && cabal check)
 
   # haddock
