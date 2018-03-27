@@ -1,12 +1,12 @@
 name:                criterion-measurement
 version:             0.1.0.0
--- synopsis:
--- description:
+synopsis:            Criterion measurement functionality and associated types
+description:         Measurement-related functionality extracted from Criterion, with minimal dependencies. The rationale for this is to enable alternative analysis front-ends.
 homepage:            https://github.com/bos/criterion
 license:             BSD3
 license-file:        LICENSE
 author:              Bryan O'Sullivan <bos@serpentine.com>
-maintainer:          Ryan Scott
+maintainer:          Marco Zocca <zocca.marco gmail>, Ryan Scott
 copyright:           2009-2016 Bryan O'Sullivan and others
 category:            Development, Performance, Testing, Benchmarking
 build-type:          Simple
@@ -55,17 +55,6 @@ library
       c-sources: cbits/time-posix.c
   }  
 
-
--- test-suite spec
---   default-language:    Haskell2010
---   ghc-options:         -Wall
---   type:                exitcode-stdio-1.0
---   hs-source-dirs:      test
---   main-is:             Spec.hs
---   build-depends:       base
---                      , criterion-measurement
---                      , hspec
---                      , QuickCheck
 
 source-repository head
   type:     git

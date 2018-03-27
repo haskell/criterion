@@ -5,7 +5,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE Trustworthy #-}
-{-# LANGUAGE PackageImports #-}
 
 -- |
 -- Module      : Criterion.Report
@@ -38,7 +37,6 @@ import Control.Monad.IO.Class (MonadIO(liftIO))
 import Control.Monad.Reader (ask)
 import Criterion.Monad (Criterion)
 import Criterion.Types
-import "criterion-measurement" Criterion.Types 
 import Data.Aeson (ToJSON (..), Value(..), object, (.=), Value, encode)
 import Data.Data (Data, Typeable)
 import Data.Foldable (forM_)
