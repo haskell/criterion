@@ -19,7 +19,7 @@ module Criterion.Monad
 import Control.Monad.Reader (asks, runReaderT)
 import Control.Monad.Trans (liftIO)
 import Criterion.Monad.Internal (Criterion(..), Crit(..))
-import Criterion.Types 
+import Criterion.Types hiding (measure)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import System.Random.MWC (GenIO, createSystemRandom)
 

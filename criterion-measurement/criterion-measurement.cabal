@@ -6,7 +6,7 @@ homepage:            https://github.com/bos/criterion
 license:             BSD3
 license-file:        LICENSE
 author:              Bryan O'Sullivan <bos@serpentine.com>
-maintainer:          Marco Zocca <zocca.marco gmail>, Ryan Scott
+maintainer:          Marco Zocca <zocca.marco gmail>, Ryan Scott <ryan.gl.scott@gmail.com>
 copyright:           2009-2016 Bryan O'Sullivan and others
 category:            Development, Performance, Testing, Benchmarking
 build-type:          Simple
