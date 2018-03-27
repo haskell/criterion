@@ -189,8 +189,7 @@ test-suite tests
   build-depends:
     QuickCheck >= 2.4,
     base,
-    criterion,
-    criterion-measurement,                    
+    criterion,                
     statistics,
     HUnit,
     tasty,

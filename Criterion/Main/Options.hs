@@ -1,5 +1,4 @@
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, RecordWildCards #-}
-{-# LANGUAGE PackageImports #-}
 
 -- |
 -- Module      : Criterion.Main.Options
@@ -28,8 +27,7 @@ import Data.Semigroup ((<>))
 
 import Control.Monad (when)
 import Criterion.Analysis (validateAccessors)
-import Criterion.Types (Config(..), Verbosity(..))
-import "criterion-measurement" Criterion.Types (measureAccessors, measureKeys)       
+import Criterion.Types (Config(..), Verbosity(..), measureAccessors, measureKeys)       
 import Data.Char (isSpace, toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)

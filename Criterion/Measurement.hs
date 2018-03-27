@@ -4,7 +4,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface,
     ScopedTypeVariables #-}
-{-# LANGUAGE PackageImports #-}
 
 -- |
 -- Module      : Criterion.Measurement
@@ -35,10 +34,9 @@ module Criterion.Measurement
     , threshold
     ) where
 
--- import "criterion-measurement" Criterion.Measurement
-import "criterion-measurement" Criterion.Types (Benchmarkable(..), Measured(..))
+import Criterion.Types (Benchmarkable(..), Measured(..))
 import Control.DeepSeq (NFData(rnf))
-import Control.Exception (finally,evaluate)
+import Control.Exception (finally, evaluate)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.List (unfoldr)
