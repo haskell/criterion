@@ -1,5 +1,4 @@
 {-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE PackageImports #-}
 -- |
 -- Module      : Criterion
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan
@@ -44,7 +43,7 @@ import Criterion.Internal (runAndAnalyseOne)
 import Criterion.Main.Options (defaultConfig)
 import Criterion.Monad (withConfig)
 import Criterion.Types
-import "criterion-measurement" Criterion.Measurement (initializeTime)
+import Criterion.Measurement (initializeTime)
 
 -- | Run a benchmark interactively, and analyse its performance.
 benchmark :: Benchmarkable -> IO ()
