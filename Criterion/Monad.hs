@@ -1,5 +1,4 @@
 {-# LANGUAGE Trustworthy #-}
-{-# LANGUAGE PackageImports #-}
 -- |
 -- Module      : Criterion.Monad
 -- Copyright   : (c) 2009 Neil Brown
@@ -21,7 +20,6 @@ import Control.Monad.Reader (asks, runReaderT)
 import Control.Monad.Trans (liftIO)
 import Criterion.Monad.Internal (Criterion(..), Crit(..))
 import Criterion.Types 
--- import "criterion-measurement" Criterion.Types hiding (measure)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import System.Random.MWC (GenIO, createSystemRandom)
 

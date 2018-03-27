@@ -45,7 +45,6 @@ import Criterion.Main.Options (defaultConfig)
 import Criterion.Monad (withConfig)
 import Criterion.Types
 import "criterion-measurement" Criterion.Measurement (initializeTime)
-import "criterion-measurement" Criterion.Types 
 
 -- | Run a benchmark interactively, and analyse its performance.
 benchmark :: Benchmarkable -> IO ()

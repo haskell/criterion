@@ -29,8 +29,38 @@
 
 module Criterion.Types
     (
+      -- * Benchmark descriptions
+      Benchmarkable(..)
+    , Benchmark(..)      
+    -- * Measurements
+    , Measured(..)
+    , fromInt
+    , toInt
+    , fromDouble
+    , toDouble
+    , measureAccessors
+    , measureKeys
+    , measure
+    , rescale
+    -- * Benchmark construction
+    , env
+    , envWithCleanup
+    , perBatchEnv
+    , perBatchEnvWithCleanup
+    , perRunEnv
+    , perRunEnvWithCleanup
+    , toBenchmarkable
+    , bench
+    , bgroup
+    , addPrefix
+    , benchNames
+    -- ** Evaluation control
+    , nf
+    , whnf
+    , nfIO
+    , whnfIO          
     -- * Configuration
-      Config(..)
+    , Config(..)
     , Verbosity(..)
     -- * Result types
     , Outliers(..)

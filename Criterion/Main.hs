@@ -1,5 +1,4 @@
 {-# LANGUAGE Trustworthy #-}
-{-# LANGUAGE PackageImports #-}
 
 -- |
 -- Module      : Criterion.Main
@@ -63,7 +62,6 @@ import Criterion.Main.Options (MatchType(..), Mode(..), defaultConfig, describe,
 import Criterion.Measurement (initializeTime)
 import Criterion.Monad (withConfig)
 import Criterion.Types
-import "criterion-measurement" Criterion.Types
 import Data.Char (toLower)
 import Data.List (isInfixOf, isPrefixOf, sort, stripPrefix)
 import Data.Maybe (fromMaybe)
