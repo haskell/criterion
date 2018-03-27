@@ -12,12 +12,19 @@ category:            Development, Performance, Testing, Benchmarking
 build-type:          Simple
 extra-source-files:  README.md
 cabal-version:       >=1.10
-tested-with:         GHC == 8.0.2
+tested-with:
+  GHC==7.4.2,
+  GHC==7.6.3,
+  GHC==7.8.4,
+  GHC==7.10.3,
+  GHC==8.0.2,
+  GHC==8.2.2,
+  GHC==8.4.1
 
 flag fast
   description: compile without optimizations
   default: False
-  manual: True                     
+  manual: True
 
 library
   hs-source-dirs:      src
@@ -43,7 +50,7 @@ library
     ghc-options: -O0
   else
     ghc-options: -O2
-                     
+
 
   c-sources: cbits/cycles.c
   if os(darwin)
@@ -53,7 +60,7 @@ library
       c-sources: cbits/time-windows.c
     else
       c-sources: cbits/time-posix.c
-  }  
+  }
 
 
 source-repository head

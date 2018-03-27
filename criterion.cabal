@@ -97,7 +97,7 @@ library
     cassava >= 0.3.0.0,
     code-page,
     containers,
-    criterion-measurement,            
+    criterion-measurement,
     deepseq >= 1.1.0.0,
     directory,
     exceptions >= 0.8.2 && < 0.11,
@@ -189,7 +189,7 @@ test-suite tests
   build-depends:
     QuickCheck >= 2.4,
     base,
-    criterion,                
+    criterion,
     statistics,
     HUnit,
     tasty,

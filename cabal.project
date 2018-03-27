@@ -1,2 +1,3 @@
 packages: .
+          ./criterion-measurement
           ./examples
