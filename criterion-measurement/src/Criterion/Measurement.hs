@@ -4,7 +4,6 @@
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface,
     ScopedTypeVariables #-}
-{-# LANGUAGE PackageImports #-}
 
 -- |
 -- Module      : Criterion.Measurement
@@ -33,10 +32,10 @@ module Criterion.Measurement
     , measured
     , applyGCStatistics
     , threshold
-    ) where
+    )
+    where
 
--- import "criterion-measurement" Criterion.Measurement
-import "criterion-measurement" Criterion.Types (Benchmarkable(..), Measured(..))
+import Criterion.Types (Benchmarkable(..), Measured(..))
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (finally,evaluate)
 import Data.Data (Data, Typeable)
@@ -399,3 +398,5 @@ foreign import ccall unsafe "criterion_gettime" getTime :: IO Double
 -- | Return the amount of elapsed CPU time, combining user and kernel
 -- (system) time into a single measure.
 foreign import ccall unsafe "criterion_getcputime" getCPUTime :: IO Double
+
+

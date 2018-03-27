@@ -1,6 +1,8 @@
+{-# language PackageImports #-}
 module Main (main) where
 
-import Criterion.Types
+import Criterion.Types (Report(..))
+import "criterion-measurement" Criterion.Types (Measured(..))
 import qualified Data.Aeson as Aeson
 import qualified Data.Vector as V
 import Properties

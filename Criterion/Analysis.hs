@@ -1,5 +1,6 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE BangPatterns, DeriveDataTypeable, RecordWildCards #-}
+{-# LANGUAGE PackageImports #-}
 
 -- |
 -- Module      : Criterion.Analysis
@@ -39,6 +40,7 @@ import Criterion.IO.Printf (note, prolix)
 import Criterion.Measurement (secs, threshold)
 import Criterion.Monad (Criterion, getGen)
 import Criterion.Types
+import "criterion-measurement" Criterion.Types 
 import Data.Int (Int64)
 import Data.Maybe (fromJust)
 import Prelude ()

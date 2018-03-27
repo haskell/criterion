@@ -2,6 +2,7 @@ resolver: lts-10.5
 
 packages:
 - '.'
+- 'criterion-measurement/'
 
 extra-deps:
 - microstache-1.0.1.1

@@ -1,0 +1,72 @@
+name:                criterion-measurement
+version:             0.1.0.0
+-- synopsis:
+-- description:
+homepage:            https://github.com/bos/criterion
+license:             BSD3
+license-file:        LICENSE
+author:              Bryan O'Sullivan <bos@serpentine.com>
+maintainer:          Ryan Scott
+copyright:           2009-2016 Bryan O'Sullivan and others
+category:            Development, Performance, Testing, Benchmarking
+build-type:          Simple
+extra-source-files:  README.md
+cabal-version:       >=1.10
+tested-with:         GHC == 8.0.2
+
+flag fast
+  description: compile without optimizations
+  default: False
+  manual: True                     
+
+library
+  hs-source-dirs:      src
+  exposed-modules:     Criterion.Measurement
+                       Criterion.Types
+  other-modules:       Criterion.Types.Internal
+  build-depends:       aeson >= 0.8
+                     , base >= 4.7 && < 5
+                     , base-compat >= 0.9
+                     , binary >= 0.5.1.0
+                     , containers
+                     , deepseq >= 1.1.0.0
+                     , vector >= 0.7.1
+  if impl(ghc < 7.6)
+    build-depends:
+      ghc-prim
+
+  default-language: Haskell2010
+  ghc-options: -Wall -funbox-strict-fields
+  if impl(ghc >= 6.8)
+    ghc-options: -fwarn-tabs
+  if flag(fast)
+    ghc-options: -O0
+  else
+    ghc-options: -O2
+                     
+
+  c-sources: cbits/cycles.c
+  if os(darwin)
+    c-sources: cbits/time-osx.c
+  else {
+    if os(windows)
+      c-sources: cbits/time-windows.c
+    else
+      c-sources: cbits/time-posix.c
+  }  
+
+
+-- test-suite spec
+--   default-language:    Haskell2010
+--   ghc-options:         -Wall
+--   type:                exitcode-stdio-1.0
+--   hs-source-dirs:      test
+--   main-is:             Spec.hs
+--   build-depends:       base
+--                      , criterion-measurement
+--                      , hspec
+--                      , QuickCheck
+
+source-repository head
+  type:     git
+  location: https://github.com/bos/criterion

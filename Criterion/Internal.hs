@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns, RecordWildCards #-}
+{-# LANGUAGE PackageImports #-}
 -- |
 -- Module      : Criterion
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan
@@ -35,7 +36,8 @@ import Criterion.IO.Printf (note, printError, prolix, writeCsv)
 import Criterion.Measurement (runBenchmark, runBenchmarkable_, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
-import Criterion.Types hiding (measure)
+import Criterion.Types 
+import "criterion-measurement" Criterion.Types hiding (measure)
 import Criterion.Types.Internal (fakeEnvironment)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
