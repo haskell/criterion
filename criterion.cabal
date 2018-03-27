@@ -4,7 +4,7 @@ synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
 author:         Bryan O'Sullivan <bos@serpentine.com>
-maintainer:     Bryan O'Sullivan <bos@serpentine.com>
+maintainer:     Ryan Scott <ryan.gl.scott@gmail.com>
 copyright:      2009-2016 Bryan O'Sullivan and others
 category:       Development, Performance, Testing, Benchmarking
 homepage:       http://www.serpentine.com/criterion
