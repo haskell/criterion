@@ -36,7 +36,7 @@ import Criterion.Measurement (runBenchmark, runBenchmarkable_, secs)
 import Criterion.Monad (Criterion)
 import Criterion.Report (report)
 import Criterion.Types hiding (measure)
-import Criterion.Types.Internal (fakeEnvironment)
+import Criterion.Measurement.Types.Internal (fakeEnvironment)
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import Statistics.Types (Estimate(..),ConfInt(..),confidenceInterval,cl95,confidenceLevel)

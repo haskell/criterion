@@ -65,24 +65,12 @@ library
     Criterion.Internal
     Criterion.Main
     Criterion.Main.Options
-    Criterion.Measurement
     Criterion.Monad
     Criterion.Report
     Criterion.Types
 
   other-modules:
     Criterion.Monad.Internal
-    Criterion.Types.Internal
-
-  c-sources: cbits/cycles.c
-  if os(darwin)
-    c-sources: cbits/time-osx.c
-  else {
-    if os(windows)
-      c-sources: cbits/time-windows.c
-    else
-      c-sources: cbits/time-posix.c
-  }
 
   other-modules:
     Paths_criterion
@@ -217,7 +205,8 @@ test-suite cleanup
     directory,
     tasty,
     tasty-hunit
-
+    
 source-repository head
   type:     git
   location: https://github.com/bos/criterion.git
+  subdir: criterion-measurement

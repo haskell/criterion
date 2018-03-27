@@ -2,7 +2,6 @@
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GADTs, RecordWildCards #-}
-{-# LANGUAGE PackageImports #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
 
 -- |
@@ -77,7 +76,7 @@ module Criterion.Types
 import Data.Semigroup
 
 import Control.DeepSeq (NFData(rnf))
-import "criterion-measurement" Criterion.Types 
+import Criterion.Measurement.Types 
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)
@@ -127,14 +126,6 @@ data Config = Config {
     , template     :: FilePath
       -- ^ Template file to use if writing a report.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
-
-
-
-
-
-
-
-
 
 
 -- | Outliers from sample data, calculated using the boxplot
