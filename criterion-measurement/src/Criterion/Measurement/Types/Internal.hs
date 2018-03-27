@@ -10,7 +10,7 @@
 -- Portability : GHC
 --
 -- Exports 'fakeEnvironment'.
-module Criterion.Types.Internal (fakeEnvironment, nf', whnf') where
+module Criterion.Measurement.Types.Internal (fakeEnvironment, nf', whnf') where
 
 import Data.Int (Int64)
 

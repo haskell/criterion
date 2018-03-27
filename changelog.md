@@ -1,3 +1,14 @@
+1.5.0.0
+
+* Moved the measurement functionality into a standalone package,
+  `criterion-measurement`. In particular, `cbits/` and `Criterion.Measurement`
+  are now in `criterion-measurement`, along with the relevant definitions of
+  `Criterion.Types` and `Criterion.Types.Internal` (both of which are now under
+  the `Criterion.Measurement` namespace).
+  Consequently, `criterion` re-imports `criterion-measurement`.
+  This will let other libraries, e.g. alternative statistical analysis front-ends
+  to import the measurement functionality alone as a lightweight dependency.
+
 1.4.0.0
 
 * We now do three samples for statistics:
