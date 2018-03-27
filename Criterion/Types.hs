@@ -28,9 +28,12 @@
 
 module Criterion.Types
     (
-      -- * Benchmark descriptions
-      Benchmarkable(..)
-    , Benchmark(..)      
+    -- * Configuration
+      Config(..)
+    , Verbosity(..)
+    -- * Benchmark descriptions
+    , Benchmarkable(..)
+    , Benchmark(..)
     -- * Measurements
     , Measured(..)
     , fromInt
@@ -57,10 +60,7 @@ module Criterion.Types
     , nf
     , whnf
     , nfIO
-    , whnfIO          
-    -- * Configuration
-    , Config(..)
-    , Verbosity(..)
+    , whnfIO
     -- * Result types
     , Outliers(..)
     , OutlierEffect(..)

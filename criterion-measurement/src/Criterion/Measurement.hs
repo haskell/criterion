@@ -32,8 +32,7 @@ module Criterion.Measurement
     , measured
     , applyGCStatistics
     , threshold
-    )
-    where
+    ) where
 
 import Criterion.Measurement.Types (Benchmarkable(..), Measured(..))
 import Control.DeepSeq (NFData(rnf))
@@ -398,5 +397,3 @@ foreign import ccall unsafe "criterion_gettime" getTime :: IO Double
 -- | Return the amount of elapsed CPU time, combining user and kernel
 -- (system) time into a single measure.
 foreign import ccall unsafe "criterion_getcputime" getCPUTime :: IO Double
-
-
