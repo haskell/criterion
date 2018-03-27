@@ -28,7 +28,7 @@ import Data.Semigroup ((<>))
 import Control.Monad (when)
 import Criterion.Analysis (validateAccessors)
 import Criterion.Types (Config(..), Verbosity(..), measureAccessors,
-                        measureKeys)       
+                        measureKeys)
 import Data.Char (isSpace, toLower)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)

@@ -205,7 +205,7 @@ test-suite cleanup
     directory,
     tasty,
     tasty-hunit
-            
+
 source-repository head
   type:     git
   location: https://github.com/bos/criterion.git

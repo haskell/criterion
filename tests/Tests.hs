@@ -1,6 +1,6 @@
 module Main (main) where
 
-import Criterion.Types 
+import Criterion.Types
 import qualified Data.Aeson as Aeson
 import qualified Data.Vector as V
 import Properties
