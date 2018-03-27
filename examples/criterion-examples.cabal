@@ -67,7 +67,8 @@ executable overhead
   ghc-options: -Wall -rtsopts
   build-depends:
     base == 4.*,
-    criterion
+    criterion,
+    criterion-measurement
 
 executable bad-read-file
   main-is: BadReadFile.hs
