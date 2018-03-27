@@ -41,9 +41,9 @@ import Control.Monad (void)
 import Criterion.IO.Printf (note)
 import Criterion.Internal (runAndAnalyseOne)
 import Criterion.Main.Options (defaultConfig)
+import Criterion.Measurement (initializeTime)
 import Criterion.Monad (withConfig)
 import Criterion.Types
-import Criterion.Measurement (initializeTime)
 
 -- | Run a benchmark interactively, and analyse its performance.
 benchmark :: Benchmarkable -> IO ()
