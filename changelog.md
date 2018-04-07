@@ -9,6 +9,9 @@
   This will let other libraries, e.g. alternative statistical analysis front-ends
   to import the measurement functionality alone as a lightweight dependency.
 
+1.4.1.0
+* Use `base-compat-batteries`.
+
 1.4.0.0
 
 * We now do three samples for statistics:
@@ -30,8 +33,8 @@
   Now, it is:
 
   ```haskell
-     Maybe GCStatistics -- ^ Statistics gathered at the end of a run, post-GC. 
-  -> Maybe GCStatistics -- ^ Statistics gathered at the end of a run, pre-GC. 
+     Maybe GCStatistics -- ^ Statistics gathered at the end of a run, post-GC.
+  -> Maybe GCStatistics -- ^ Statistics gathered at the end of a run, pre-GC.
   -> Maybe GCStatistics -- ^ Statistics gathered at the beginning of a run.
   -> Measured -> Measured
   ```
