@@ -72,11 +72,8 @@ module Criterion.Types
     , DataRecord(..)
     ) where
 
--- Temporary: to support pre-SMP
-import Data.Semigroup
-
 import Control.DeepSeq (NFData(rnf))
-import Criterion.Measurement.Types 
+import Criterion.Measurement.Types
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Data (Data, Typeable)

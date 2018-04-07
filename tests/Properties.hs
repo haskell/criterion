@@ -5,22 +5,14 @@ module Properties (tests) where
 
 import Control.Applicative as A ((<$>))
 import Criterion.Analysis
+import Prelude ()
+import Prelude.Compat
 import Statistics.Types (Sample)
 import Test.Tasty (TestTree, testGroup)
 import Test.Tasty.QuickCheck (testProperty)
 import Test.QuickCheck
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
-
-#if __GLASGOW_HASKELL__ >= 704
-import Data.Monoid ((<>))
-#else
-import Data.Monoid
-
-(<>) :: Monoid m => m -> m -> m
-(<>) = mappend
-infixr 6 <>
-#endif
 
 instance (Arbitrary a, U.Unbox a) => Arbitrary (U.Vector a) where
   arbitrary = U.fromList A.<$> arbitrary

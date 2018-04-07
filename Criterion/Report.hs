@@ -40,7 +40,6 @@ import Criterion.Types
 import Data.Aeson (ToJSON (..), Value(..), object, (.=), Value, encode)
 import Data.Data (Data, Typeable)
 import Data.Foldable (forM_)
-import Data.Monoid ((<>))
 import GHC.Generics (Generic)
 import Paths_criterion (getDataFileName)
 import Statistics.Function (minMax)
