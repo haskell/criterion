@@ -8,7 +8,6 @@ module Options
     ) where
 
 import Data.Data (Data, Typeable)
-import Data.Semigroup ((<>))
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Paths_criterion (version)

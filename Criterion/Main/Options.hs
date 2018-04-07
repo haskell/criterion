@@ -22,9 +22,6 @@ module Criterion.Main.Options
     , versionInfo
     ) where
 
--- Temporary: to support pre-SMP
-import Data.Semigroup ((<>))
-
 import Control.Monad (when)
 import Criterion.Analysis (validateAccessors)
 import Criterion.Types (Config(..), Verbosity(..), measureAccessors,
