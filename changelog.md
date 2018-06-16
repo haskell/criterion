@@ -9,6 +9,9 @@
   This will let other libraries, e.g. alternative statistical analysis front-ends
   to import the measurement functionality alone as a lightweight dependency.
 
+* Fixed a macOS-specific bug where using `runAndAnalyse` and other lower-level
+  benchmarking functions would result in an infinite loop.
+
 1.4.1.0
 * Use `base-compat-batteries`.
 

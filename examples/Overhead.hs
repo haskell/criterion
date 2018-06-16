@@ -11,6 +11,7 @@ import GHC.Stats as GHC
 
 main :: IO ()
 main = do
+  M.initializeTime -- Need to do this before calling M.getTime
   statsEnabled <- getRTSStatsEnabled
   defaultMain $ [
       bench "measure" $            whnfIO (M.measure (whnfIO $ return ()) 1)

@@ -188,6 +188,7 @@ measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   -- the live data in the heap potentially hundreds of times in a
   -- single benchmark.
   performMinorGC
+  initializeTime
   startStats <- getGCStatistics
   startTime <- getTime
   startCpuTime <- getCPUTime
@@ -283,6 +284,7 @@ runBenchmark :: Benchmarkable
              -- meaningful statistical analyses.
              -> IO (V.Vector Measured, Double)
 runBenchmark bm timeLimit = do
+  initializeTime
   runBenchmarkable_ bm 1
   start <- performGC >> getTime
   let loop [] !_ !_ _ = error "unpossible!"
