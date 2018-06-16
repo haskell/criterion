@@ -11,6 +11,10 @@
 --
 -- Wrappers for compiling and running benchmarks quickly and easily.
 -- See 'defaultMain' below for an example.
+--
+-- All of the 'IO'-returning functions in this module initialize the timer
+-- before measuring time (refer to the documentation for 'initializeTime'
+-- for more details).
 
 module Criterion.Main
     (

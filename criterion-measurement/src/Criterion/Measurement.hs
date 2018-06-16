@@ -116,7 +116,7 @@ data GCStatistics = GCStatistics
 -- | Try to get GC statistics, bearing in mind that the GHC runtime
 -- will throw an exception if statistics collection was not enabled
 -- using \"@+RTS -T@\".
--- 
+--
 -- If you need guaranteed up-to-date stats, call 'performGC' first.
 getGCStatistics :: IO (Maybe GCStatistics)
 #if MIN_VERSION_base(4,10,0)
@@ -176,6 +176,9 @@ getGCStatistics = do
 #endif
 
 -- | Measure the execution of a benchmark a given number of times.
+--
+-- This function initializes the timer before measuring time (refer to the
+-- documentation for 'initializeTime' for more details).
 measure :: Benchmarkable        -- ^ Operation to benchmark.
         -> Int64                -- ^ Number of iterations.
         -> IO (Measured, Double)
@@ -276,6 +279,9 @@ runBenchmarkable_ bm i = runBenchmarkable bm i (\() () -> ()) (const id)
 -- | Run a single benchmark, and return measurements collected while
 -- executing it, along with the amount of time the measurement process
 -- took.
+--
+-- This function initializes the timer before measuring time (refer to the
+-- documentation for 'initializeTime' for more details).
 runBenchmark :: Benchmarkable
              -> Double
              -- ^ Lower bound on how long the benchmarking process
@@ -385,6 +391,19 @@ secs k
                | otherwise = printf "%.3f %s" t u
 
 -- | Set up time measurement.
+--
+-- @criterion@ measures time using OS-specific APIs whenever possible for
+-- efficiency. On certain operating systems, such as macOS and Windows, one
+-- must explicitly initialize a timer (which 'initializeTime' accomplishes)
+-- before one can actually measure the current time (which 'getTime'
+-- accomplishes).
+--
+-- It is imperative that you call 'initializeTime' before calling 'getTime'.
+-- (See [this bug report](https://github.com/bos/criterion/issues/195) for an
+-- example of what can happen if you do not do so.) All of the 'IO'-returning
+-- functions in "Criterion.Main" make sure that this is done, but other
+-- functions (such as those in "Criterion.Measurement") do not guarantee this
+-- unless otherwise stated.
 foreign import ccall unsafe "criterion_inittime" initializeTime :: IO ()
 
 -- | Read the CPU cycle counter.
@@ -394,6 +413,7 @@ foreign import ccall unsafe "criterion_rdtsc" getCycles :: IO Word64
 -- arbitrary time.
 --
 -- You /must/ call 'initializeTime' once before calling this function!
+-- Refer to the documentation for 'initializeTime' for more details.
 foreign import ccall unsafe "criterion_gettime" getTime :: IO Double
 
 -- | Return the amount of elapsed CPU time, combining user and kernel
