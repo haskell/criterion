@@ -67,3 +67,4 @@ library
 source-repository head
   type:     git
   location: https://github.com/bos/criterion
+  subdir:   criterion-measurement

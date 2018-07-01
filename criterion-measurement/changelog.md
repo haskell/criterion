@@ -1,7 +1,7 @@
-1.5.0.0
+0.1.0.0
 
 * This is the first release of `criterion-measurement`. The changelog notes
-  below are copied from the notes for the corresponding release of
+  below are copied from the notes for the corresponding `criterion` release,
   `criterion-1.5.0.0`.
 
 * Move the measurement functionality of `criterion` into a standalone package,
