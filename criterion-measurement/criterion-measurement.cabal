@@ -10,7 +10,7 @@ maintainer:          Marco Zocca <zocca.marco gmail>, Ryan Scott <ryan.gl.scott@
 copyright:           2009-2016 Bryan O'Sullivan and others
 category:            Development, Performance, Testing, Benchmarking
 build-type:          Simple
-extra-source-files:  README.md
+extra-source-files:  README.md, changelog.md
 cabal-version:       >=1.10
 tested-with:
   GHC==7.4.2,

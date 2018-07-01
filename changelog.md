@@ -1,18 +1,21 @@
 1.5.0.0
 
-* Moved the measurement functionality into a standalone package,
+* Move the measurement functionality of `criterion` into a standalone package,
   `criterion-measurement`. In particular, `cbits/` and `Criterion.Measurement`
   are now in `criterion-measurement`, along with the relevant definitions of
   `Criterion.Types` and `Criterion.Types.Internal` (both of which are now under
-  the `Criterion.Measurement` namespace).
-  Consequently, `criterion` re-imports `criterion-measurement`.
-  This will let other libraries, e.g. alternative statistical analysis front-ends
-  to import the measurement functionality alone as a lightweight dependency.
+  the `Criterion.Measurement.*` namespace).
+  Consequently, `criterion` now depends on `criterion-measurement`.
 
-* Fixed a macOS-specific bug where using `runAndAnalyse` and other lower-level
-  benchmarking functions would result in an infinite loop.
+  This will let other libraries (e.g. alternative statistical analysis
+  front-ends) to import the measurement functionality alone as a lightweight
+  dependency.
+
+* Fix a bug on macOS and Windows where using `runAndAnalyse` and other
+  lower-level benchmarking functions would result in an infinite loop.
 
 1.4.1.0
+
 * Use `base-compat-batteries`.
 
 1.4.0.0
