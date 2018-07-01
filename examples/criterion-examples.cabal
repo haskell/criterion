@@ -20,6 +20,9 @@ tested-with:
   GHC==8.4.3,
   GHC==8.6.1
 
+flag conduit-vs-pipes
+  default: True
+
 flag maps
   default: True
 
@@ -32,11 +35,14 @@ executable fibber
     criterion
 
 executable conduit-vs-pipes
+  if !flag(conduit-vs-pipes)
+    buildable: False
+
   main-is: ConduitVsPipes.hs
 
   ghc-options: -Wall -rtsopts
   build-depends:
-    base == 4.*,
+    base >= 4.8 && < 5,
     conduit >= 1.2.13.1,
     criterion,
     pipes >= 4.3.5,
