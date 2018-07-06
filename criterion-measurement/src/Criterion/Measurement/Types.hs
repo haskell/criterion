@@ -58,7 +58,9 @@ module Criterion.Measurement.Types
     , nf
     , whnf
     , nfIO
-    , whnfIO    
+    , whnfIO
+    , nfAppIO
+    , whnfAppIO
                       )
   where
 
@@ -277,14 +279,40 @@ whnf f x = toBenchmarkable (whnf' f x)
 -- | Perform an action, then evaluate its result to normal form.
 -- This is particularly useful for forcing a lazy 'IO' action to be
 -- completely performed.
+--
+-- If the construction of the 'IO a' value is an important factor
+-- in the benchmark, it is best to use 'nfAppIO' instead.
 nfIO :: NFData a => IO a -> Benchmarkable
 nfIO a = toBenchmarkable (nfIO' rnf a)
 
 -- | Perform an action, then evaluate its result to weak head normal
 -- form (WHNF).  This is useful for forcing an 'IO' action whose result
 -- is an expression to be evaluated down to a more useful value.
+--
+-- If the construction of the 'IO a' value is an important factor
+-- in the benchmark, it is best to use 'whnfAppIO' instead.
 whnfIO :: IO a -> Benchmarkable
 whnfIO a = toBenchmarkable (whnfIO' a)
+
+-- | Perform an action, then evaluate its result to normal form.
+-- This is particularly useful for forcing a lazy 'IO' action to be
+-- completely performed.
+-- This function constructs the 'IO b' value on each iteration,
+-- similar to 'nf'.
+--
+-- See issue #189 for more info.
+nfAppIO :: NFData b => (a -> IO b) -> a -> Benchmarkable
+nfAppIO f v = toBenchmarkable (nfAppIO' rnf f v)
+
+-- | Perform an action, then evaluate its result to weak head normal
+-- form (WHNF).  This is useful for forcing an 'IO' action whose result
+-- is an expression to be evaluated down to a more useful value.
+-- This function constructs the 'IO b' value on each iteration,
+-- similar to 'whnf'.
+--
+-- See issue #189 for more info.
+whnfAppIO :: (a -> IO b) -> a -> Benchmarkable
+whnfAppIO f v = toBenchmarkable (whnfAppIO' f v)
 
 -- Along with nf' and whnf', the following two functions are the core
 -- benchmarking loops. They have been carefully constructed to avoid
@@ -318,6 +346,26 @@ whnfIO' a = go
              x <- a
              x `seq` go (n-1)
 {-# NOINLINE whnfIO' #-}
+
+-- | Generate a function that will run an action a given number of times.
+nfAppIO' :: (b -> x) -> (a -> IO b) -> a -> (Int64 -> IO ())
+nfAppIO' reduce f v = go
+  where go n
+          | n <= 0    = return ()
+          | otherwise = do
+              x <- f v
+              reduce x `seq` go (n-1)
+{-# NOINLINE nfAppIO' #-}
+
+-- | Generate a function that will run an action a given number of times.
+whnfAppIO' :: (a -> IO b) -> a -> (Int64 -> IO ())
+whnfAppIO' f v = go
+  where go n
+          | n <= 0    = return ()
+          | otherwise = do
+              x <- f v
+              x `seq` go (n-1)
+{-# NOINLINE whnfAppIO' #-}
 
 -- | Specification of a collection of benchmarks and environments. A
 -- benchmark may consist of:

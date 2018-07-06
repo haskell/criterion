@@ -61,6 +61,8 @@ module Criterion.Types
     , whnf
     , nfIO
     , whnfIO
+    , nfAppIO
+    , whnfAppIO
     -- * Result types
     , Outliers(..)
     , OutlierEffect(..)

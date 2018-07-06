@@ -48,6 +48,8 @@ module Criterion.Main
     , whnf
     , nfIO
     , whnfIO
+    , nfAppIO
+    , whnfAppIO
     -- * Turning a suite of benchmarks into a program
     , defaultMain
     , defaultMainWith
