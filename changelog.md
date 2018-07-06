@@ -1,3 +1,8 @@
+next
+
+* Add some documentation in `Criterion.Main` about `criterion-measurement`'s
+  new `nfAppIO` and `whnfAppIO` functions, which `criterion` reexports.
+
 1.5.0.0
 
 * Move the measurement functionality of `criterion` into a standalone package,

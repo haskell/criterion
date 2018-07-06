@@ -1,3 +1,11 @@
+next
+
+* Add `nfAppIO` and `whnfAppIO` functions, which take a function and its
+  argument separately like `nf`/`whnf`, but whose function returns `IO` like
+  `nfIO`/`whnfIO`. This is useful for benchmarking functions in which the bulk
+  of the work is not bound by IO, but by pure computations that might otherwise
+  be optimized away if the argument is known statically.
+
 0.1.0.0
 
 * This is the first release of `criterion-measurement`. The changelog notes

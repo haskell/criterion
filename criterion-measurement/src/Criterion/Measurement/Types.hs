@@ -31,7 +31,7 @@ module Criterion.Measurement.Types
   (
       -- * Benchmark descriptions
       Benchmarkable(..)
-    , Benchmark(..)      
+    , Benchmark(..)
     -- * Measurements
     , Measured(..)
     , fromInt
@@ -87,7 +87,7 @@ data Benchmarkable = forall a . NFData a =>
       , cleanEnv :: Int64 -> a -> IO ()
       , runRepeatedly :: a -> Int64 -> IO ()
       , perRun :: Bool
-      }  
+      }
 
 noop :: Monad m => a -> m ()
 noop = const $ return ()
@@ -276,7 +276,7 @@ nf f x = toBenchmarkable (nf' rnf f x)
 whnf :: (a -> b) -> a -> Benchmarkable
 whnf f x = toBenchmarkable (whnf' f x)
 
--- | Perform an action, then evaluate its result to normal form.
+-- | Perform an action, then evaluate its result to normal form (NF).
 -- This is particularly useful for forcing a lazy 'IO' action to be
 -- completely performed.
 --
@@ -294,22 +294,26 @@ nfIO a = toBenchmarkable (nfIO' rnf a)
 whnfIO :: IO a -> Benchmarkable
 whnfIO a = toBenchmarkable (whnfIO' a)
 
--- | Perform an action, then evaluate its result to normal form.
--- This is particularly useful for forcing a lazy 'IO' action to be
--- completely performed.
+-- | Apply an argument to a function which performs an action, then
+-- evaluate its result to normal form (NF).
 -- This function constructs the 'IO b' value on each iteration,
 -- similar to 'nf'.
---
+-- This is particularly useful for 'IO' actions where the bulk of the
+-- work is not bound by IO, but by pure computations that may
+-- optimize away if the argument is known statically, as in 'nfIO'.
+
 -- See issue #189 for more info.
 nfAppIO :: NFData b => (a -> IO b) -> a -> Benchmarkable
 nfAppIO f v = toBenchmarkable (nfAppIO' rnf f v)
 
 -- | Perform an action, then evaluate its result to weak head normal
--- form (WHNF).  This is useful for forcing an 'IO' action whose result
--- is an expression to be evaluated down to a more useful value.
+-- form (WHNF).
 -- This function constructs the 'IO b' value on each iteration,
 -- similar to 'whnf'.
---
+-- This is particularly useful for 'IO' actions where the bulk of the
+-- work is not bound by IO, but by pure computations that may
+-- optimize away if the argument is known statically, as in 'nfIO'.
+
 -- See issue #189 for more info.
 whnfAppIO :: (a -> IO b) -> a -> Benchmarkable
 whnfAppIO f v = toBenchmarkable (whnfAppIO' f v)
@@ -347,8 +351,9 @@ whnfIO' a = go
              x `seq` go (n-1)
 {-# NOINLINE whnfIO' #-}
 
--- | Generate a function that will run an action a given number of times.
-nfAppIO' :: (b -> x) -> (a -> IO b) -> a -> (Int64 -> IO ())
+-- | Generate a function which applies an argument to a function a given
+-- number of times, running its action and reducing the result to normal form.
+nfAppIO' :: (b -> ()) -> (a -> IO b) -> a -> (Int64 -> IO ())
 nfAppIO' reduce f v = go
   where go n
           | n <= 0    = return ()
@@ -357,7 +362,9 @@ nfAppIO' reduce f v = go
               reduce x `seq` go (n-1)
 {-# NOINLINE nfAppIO' #-}
 
--- | Generate a function that will run an action a given number of times.
+-- | Generate a function which applies an argument to a function a given
+-- number of times, running its action and reducing the result to
+-- weak-head normal form.
 whnfAppIO' :: (a -> IO b) -> a -> (Int64 -> IO ())
 whnfAppIO' f v = go
   where go n

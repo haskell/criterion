@@ -188,7 +188,7 @@ parseError msg = do
 -- number of times.  We are most interested in benchmarking two
 -- things:
 --
--- * 'IO' actions.  Any 'IO' action can be benchmarked directly.
+-- * 'IO' actions.  Most 'IO' actions can be benchmarked directly.
 --
 -- * Pure functions.  GHC optimises aggressively when compiling with
 --   @-O@, so it is easy to write innocent-looking benchmark code that
@@ -198,12 +198,25 @@ parseError msg = do
 
 -- $io
 --
--- Any 'IO' action can be benchmarked easily if its type resembles
--- this:
+-- Most 'IO' actions can be benchmarked easily using one of the following
+-- two functions:
 --
 -- @
--- 'IO' a
+-- 'nfIO'   :: 'NFData' a => 'IO' a -> 'Benchmarkable'
+-- 'whnfIO' ::               'IO' a -> 'Benchmarkable'
 -- @
+--
+-- In certain corner cases, you may find it useful to use the following
+-- variants, which take the input as a separate argument:
+--
+-- @
+-- 'nfAppIO'   :: 'NFData' b => (a -> 'IO' b) -> a -> 'Benchmarkable'
+-- 'whnfAppIO' ::               (a -> 'IO' b) -> a -> 'Benchmarkable'
+-- @
+--
+-- This is useful when the bulk of the work performed by the function is
+-- not bound by IO, but rather by pure computations that may optimize away if
+-- the argument is known statically, as in 'nfIO'/'whnfIO'.
 
 -- $pure
 --
