@@ -1,5 +1,7 @@
 next
 
+* Add a `MonadFail Criterion` instance.
+
 * Add some documentation in `Criterion.Main` about `criterion-measurement`'s
   new `nfAppIO` and `whnfAppIO` functions, which `criterion` reexports.
 

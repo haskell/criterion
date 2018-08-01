@@ -18,8 +18,9 @@ module Criterion.Monad.Internal
     ) where
 
 import Control.Monad.Catch (MonadThrow, MonadCatch, MonadMask)
+import qualified Control.Monad.Fail as Fail (MonadFail(..))
 import Control.Monad.Reader (MonadReader(..), ReaderT)
-import Control.Monad.Trans (MonadIO)
+import Control.Monad.Trans (MonadIO, lift)
 import Criterion.Types (Config)
 import Data.IORef (IORef)
 import Prelude ()
@@ -40,3 +41,9 @@ instance MonadReader Config Criterion where
     ask     = config `fmap` Criterion ask
     local f = Criterion . local fconfig . runCriterion
       where fconfig c = c { config = f (config c) }
+
+-- ReaderT has a MonadFail instance, but only on GHC 8.0+, so I inline the
+-- fail implementation for ReaderT here to compensate. (Otherwise, I'd just
+-- derive this instance.)
+instance Fail.MonadFail Criterion where
+  fail = Criterion . lift . Fail.fail

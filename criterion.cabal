@@ -90,6 +90,7 @@ library
     deepseq >= 1.1.0.0,
     directory,
     exceptions >= 0.8.2 && < 0.11,
+    fail == 4.9.*,
     filepath,
     Glob >= 0.7.2,
     microstache >= 1.0.1 && < 1.1,
