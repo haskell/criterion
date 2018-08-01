@@ -1,4 +1,4 @@
-next
+1.5.1.0
 
 * Add a `MonadFail Criterion` instance.
 
