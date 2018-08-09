@@ -1,3 +1,7 @@
+next
+
+* Only incur a dependency on `fail` on old GHCs.
+
 1.5.1.0
 
 * Add a `MonadFail Criterion` instance.
