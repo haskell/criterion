@@ -287,7 +287,7 @@ $(function () {
   reports.map(mangulate);
 
   var benches = [{{#report}}"{{name}}",{{/report}}];
-  var ylabels = [{{#report}}[-{{number}},'<a href="#b{{number}}">{{name}}</a>'],{{/report}}];
+  var ylabels = [{{#report}}[-{{number}},"<a href=\"#b{{number}}\">{{name}}</a>"],{{/report}}];
   var means = $.scaleTimes([{{#report}}{{anMean.estPoint}},{{/report}}]);
   var stddevs = [{{#report}}{{anStdDev.estPoint}},{{/report}}];
   stddevs = $.scaleBy(means[1], stddevs);
