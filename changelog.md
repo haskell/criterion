@@ -1,5 +1,8 @@
 next
 
+* Fix a bug in which HTML reports would render incorrectly when including
+  benchmark names containing apostrophes.
+
 * Only incur a dependency on `fail` on old GHCs.
 
 1.5.1.0
