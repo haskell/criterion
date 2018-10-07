@@ -1,4 +1,4 @@
-next
+1.5.2.0
 
 * Fix a bug in which HTML reports would render incorrectly when including
   benchmark names containing apostrophes.
