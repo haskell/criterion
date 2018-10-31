@@ -7,7 +7,6 @@ import Criterion.Main
 import Data.ByteString (ByteString, pack)
 import Data.Hashable (Hashable)
 import System.Random.MWC
-import qualified Data.CritBit.Map.Lazy as C
 import qualified Data.HashMap.Lazy as H
 import qualified Data.IntMap as I
 import qualified Data.Map as M
@@ -71,16 +70,8 @@ main = defaultMain [
            , bench "random"    $ whnf hashmap random
            , bench "revsorted" $ whnf hashmap revsorted
            ]
-         , bgroup "CritBit" [
-             bench "sorted"    $ whnf critbit sorted
-           , bench "random"    $ whnf critbit random
-           , bench "revsorted" $ whnf critbit revsorted
-           ]
          ]
        ]
-
-critbit :: (G.Vector v k, C.CritBitKey k) => v k -> C.CritBit k Int
-critbit xs = G.foldl' (\m k -> C.insert k value m) C.empty xs
 
 hashmap :: (G.Vector v k, Hashable k, Eq k) => v k -> H.HashMap k Int
 hashmap xs = G.foldl' (\m k -> H.insert k value m) H.empty xs

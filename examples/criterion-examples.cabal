@@ -59,7 +59,6 @@ executable maps
     base == 4.*,
     bytestring,
     containers,
-    critbit,
     criterion,
     deepseq,
     hashable,
