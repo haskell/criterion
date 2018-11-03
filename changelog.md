@@ -1,3 +1,8 @@
+next
+
+* Make more functions (e.g., `runMode`) able to print the `µ` character on
+  non-UTF-8 encodings.
+
 1.5.2.0
 
 * Fix a bug in which HTML reports would render incorrectly when including

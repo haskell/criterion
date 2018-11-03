@@ -75,7 +75,6 @@ import Options.Applicative (execParser)
 import System.Environment (getProgName)
 import System.Exit (ExitCode(..), exitWith)
 import System.FilePath.Glob
-import System.IO.CodePage (withCP65001)
 
 -- | An entry point that can be used as a @main@ function.
 --
@@ -147,7 +146,7 @@ selectBenches matchType benches bsgroup = do
 defaultMainWith :: Config
                 -> [Benchmark]
                 -> IO ()
-defaultMainWith defCfg bs = withCP65001 $ do
+defaultMainWith defCfg bs = do
   wat <- execParser (describe defCfg)
   runMode wat bs
 

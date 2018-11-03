@@ -21,11 +21,12 @@ import Control.Monad.Trans (liftIO)
 import Criterion.Monad.Internal (Criterion(..), Crit(..))
 import Criterion.Types hiding (measure)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
+import System.IO.CodePage (withCP65001)
 import System.Random.MWC (GenIO, createSystemRandom)
 
 -- | Run a 'Criterion' action with the given 'Config'.
 withConfig :: Config -> Criterion a -> IO a
-withConfig cfg (Criterion act) = do
+withConfig cfg (Criterion act) = withCP65001 $ do
   g <- newIORef Nothing
   runReaderT act (Crit cfg g)
 
