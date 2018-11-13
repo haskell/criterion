@@ -1,4 +1,4 @@
-next
+1.5.3.0
 
 * Make more functions (e.g., `runMode`) able to print the `µ` character on
   non-UTF-8 encodings.
