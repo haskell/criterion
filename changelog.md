@@ -1,3 +1,13 @@
+next
+
+* Add `parserWith`, which allows creating a `criterion` command-line interface
+  using a custom `optparse-applicative` `Parser`. This is usefule for sitations
+  where one wants to add additional command-line arguments to the default ones
+  that `criterion` provides.
+
+  For an example of how to use `parserWith`, refer to
+  `examples/ExtensibleCLI.hs`.
+
 1.5.3.0
 
 * Make more functions (e.g., `runMode`) able to print the `µ` character on
