@@ -19,6 +19,7 @@ module Criterion.Main.Options
     , parseWith
     , config
     , describe
+    , describeWith
     , versionInfo
     ) where
 
@@ -194,9 +195,13 @@ regressParams = do
   let ret = (words . map repl . drop 1 $ ps, tidy r)
   either readerError (const (return ret)) $ uncurry validateAccessors ret
 
--- | Flesh out a command line parser.
+-- | Flesh out a command-line parser.
 describe :: Config -> ParserInfo Mode
-describe cfg = info (helper <*> parseWith cfg) $
+describe cfg = describeWith $ parseWith cfg
+
+-- | Flesh out command-line information using a custom 'Parser'.
+describeWith :: Parser a -> ParserInfo a
+describeWith parser = info (helper <*> parser) $
     header ("Microbenchmark suite - " <> versionInfo) <>
     fullDesc <>
     footerDoc (unChunk regressionHelp)

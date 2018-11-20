@@ -92,6 +92,16 @@ executable good-read-file
     base == 4.*,
     criterion
 
+executable extensible-cli
+  main-is: ExtensibleCLI.hs
+
+  ghc-options: -Wall -rtsopts
+  build-depends:
+    base == 4.*,
+    base-compat-batteries,
+    criterion,
+    optparse-applicative
+
 -- Cannot uncomment due to https://github.com/haskell/cabal/issues/1725
 --
 -- executable judy
