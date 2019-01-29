@@ -5,7 +5,7 @@
 This package provides the Criterion module, a Haskell library for
 measuring and analysing software performance.
 
-<a href="http://www.serpentine.com/criterion/fibber.html" target="_blank"><img src="http://www.serpentine.com/criterion/fibber-screenshot.png"></img></a>
+<a href="http://www.serpentine.com/criterion/fibber.html" target="_blank"><img src="www/fibber-screenshot.png"></a>
 
 To get started, read the <a
 href="http://www.serpentine.com/criterion/tutorial.html"
