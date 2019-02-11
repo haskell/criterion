@@ -1,0 +1,10 @@
+ghc-head: True
+cabal-check: False
+no-tests-no-benchmarks: False
+unconstrained: False
+local-ghc-options: -Werror
+
+constraint-set embed-files
+  ghc: ==8.6.*
+  constraints: criterion +embed-data-files
+  run-tests: True
