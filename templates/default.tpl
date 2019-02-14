@@ -317,10 +317,11 @@ $(function () {
     max_time = Math.max(max_time, means[0][i] + stddevs[i]);
   }
   var oq = $("#overview");
+  var max_x = max_time * 1.02;
   o = $.plot(oq, xs, { grid: { borderColor: "#777", hoverable: true },
                        legend: { show: xs.length > 1 },
-                       xaxis: { max: max_time * 1.02 },
-                       yaxis: { ticks: ylabels, tickColor: '#ffffff' },
+                       xaxis: { max: max_x, zoomRange: [false, max_x], panRange: [0, max_x] },
+                       yaxis: { ticks: ylabels, tickColor: '#ffffff', zoomRange: false, panRange: false },
                        zoom: { interactive: true, amount: 1.05 },
                        pan: { interactive: true } });
   if (benches.length > 3)
