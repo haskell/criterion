@@ -1,4 +1,4 @@
-next
+1.5.4.0
 
 * Add `parserWith`, which allows creating a `criterion` command-line interface
   using a custom `optparse-applicative` `Parser`. This is usefule for sitations
@@ -7,6 +7,14 @@ next
 
   For an example of how to use `parserWith`, refer to
   `examples/ExtensibleCLI.hs`.
+
+* Tweak the way the graph in the HTML overview zooms:
+
+  * Zooming all the way out resets to the default view (instead of continuing
+    to zoom out towards empty space).
+  * Panning all the way to the right resets to the default view in which zero
+    is left-aligned (instead of continuing to pan off the edge of the graph).
+  * Panning and zooming only affecs the x-axis, so all results remain in-frame.
 
 1.5.3.0
 
