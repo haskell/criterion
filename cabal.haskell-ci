@@ -1,0 +1,11 @@
+ghc-head:               True
+no-tests-no-benchmarks: False
+unconstrained:          False
+local-ghc-options:      -Werror
+
+constraint-set embed-data-files
+  constraints: criterion +embed-data-files
+  tests:       True
+  run-tests:   True
+  benchmarks:  True
+  haddock:     True
