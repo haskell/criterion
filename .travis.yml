@@ -148,11 +148,6 @@ script:
   - ${CABAL} new-build -w ${HC} ${TEST} ${BENCH} all
   - ${CABAL} new-test -w ${HC} ${TEST} ${BENCH} all
 
-  # cabal check
-  - (cd criterion-* && ${CABAL} check)
-  - (cd criterion-measurement-* && ${CABAL} check)
-  - (cd criterion-examples-* && ${CABAL} check)
-
   # haddock
   - ${CABAL} new-haddock -w ${HC} ${TEST} ${BENCH} all
 
