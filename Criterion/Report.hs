@@ -325,6 +325,12 @@ readFileCheckEmbedded fp =
 #if defined(EMBED)
   `E.catch` \(e :: IOException) ->
     maybe (throwIO e)
-          (pure . TLE.decodeUtf8 . BL.fromStrict)
+          (pure . TLE.decodeUtf8 . fromStrict)
           (lookup fp dataFiles)
+  where
+# if MIN_VERSION_bytestring(0,10,0)
+    fromStrict = BL.fromStrict
+# else
+    fromStrict x = BL.fromChunks [x]
+# endif
 #endif

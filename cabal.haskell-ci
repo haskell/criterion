@@ -2,6 +2,7 @@ ghc-head:               True
 no-tests-no-benchmarks: False
 unconstrained:          False
 local-ghc-options:      -Werror
+cabal-check:            False
 
 constraint-set embed-data-files
   constraints: criterion +embed-data-files
