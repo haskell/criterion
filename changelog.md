@@ -1,3 +1,7 @@
+next
+
+* Require `transformers-0.6.4` or later.
+
 1.5.4.0
 
 * Add `parserWith`, which allows creating a `criterion` command-line interface
