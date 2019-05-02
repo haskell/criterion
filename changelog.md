@@ -1,6 +1,7 @@
-next
+1.5.5.0
 
-* Require `transformers-0.6.4` or later.
+* Fix the build on old GHCs with the `embed-data-files` flag.
+* Require `transformers-compat-0.6.4` or later.
 
 1.5.4.0
 
