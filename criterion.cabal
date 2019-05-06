@@ -218,4 +218,3 @@ test-suite cleanup
 source-repository head
   type:     git
   location: https://github.com/bos/criterion.git
-  subdir:   criterion-measurement
