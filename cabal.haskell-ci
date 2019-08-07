@@ -3,6 +3,7 @@ no-tests-no-benchmarks: False
 unconstrained:          False
 local-ghc-options:      -Werror
 cabal-check:            False
+head-hackage:           >=8.8
 
 constraint-set embed-data-files
   constraints: criterion +embed-data-files
@@ -10,3 +11,8 @@ constraint-set embed-data-files
   run-tests:   True
   benchmarks:  True
   haddock:     True
+
+constraint-set fast
+  constraints: criterion-measurement +fast, criterion +fast
+  tests:       True
+  run-tests:   True

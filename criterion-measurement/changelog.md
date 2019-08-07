@@ -1,3 +1,11 @@
+next
+
+* Ensure that `Criterion.Measurement.Types.Internal` is always compiled with
+  optimizations, even if the `criterion-measurement` library itself happens to
+  be built with `-O0` or `-fprof-auto`. This is necessary to ensure that the
+  inner benchmarking loop of criterion always finishes in a timely manner,
+  even if the rest of the library is not fully optimized.
+
 0.1.1.0
 
 * Add `nfAppIO` and `whnfAppIO` functions, which take a function and its
