@@ -5,7 +5,7 @@
 {-# OPTIONS_GHC -funbox-strict-fields #-}
 
 -- |
--- Module      : Criterion.Types
+-- Module      : Criterion.Measurement.Types
 -- Copyright   : (c) 2009-2014 Bryan O'Sullivan
 --
 -- License     : BSD-style

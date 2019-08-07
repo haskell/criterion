@@ -1,7 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# OPTIONS_GHC -fno-full-laziness #-}
 -- |
--- Module      : Criterion.Types.Internal
+-- Module      : Criterion.Measurement.Types.Internal
 -- Copyright   : (c) 2017 Ryan Scott
 --
 -- License     : BSD-style
