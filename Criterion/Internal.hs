@@ -51,7 +51,7 @@ runOne i desc bm = do
   (meas,timeTaken) <- liftIO $ runBenchmark bm timeLimit
   when (timeTaken > timeLimit * 1.25) .
     void $ prolix "measurement took %s\n" (secs timeTaken)
-  return (Measurement i desc meas)
+  return (Measurement i desc (V.fromList meas))
 
 -- | Analyse a single benchmark.
 analyseOne :: Int -> String -> V.Vector Measured -> Criterion DataRecord

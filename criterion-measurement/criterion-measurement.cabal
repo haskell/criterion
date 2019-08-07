@@ -33,13 +33,11 @@ library
   exposed-modules:     Criterion.Measurement
                        Criterion.Measurement.Types
                        Criterion.Measurement.Types.Internal
-  build-depends:       aeson >= 0.8
-                     , base >= 4.5 && < 5
+  build-depends:       base >= 4.5 && < 5
                      , base-compat >= 0.9
                      , binary >= 0.5.1.0
                      , containers
                      , deepseq >= 1.1.0.0
-                     , vector >= 0.7.1
   if impl(ghc < 7.6)
     build-depends:
       ghc-prim

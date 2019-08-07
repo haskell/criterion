@@ -140,21 +140,23 @@ analyseSample :: Int            -- ^ Experiment number.
               -> String         -- ^ Experiment name.
               -> V.Vector Measured -- ^ Sample data.
               -> ExceptT String Criterion Report
-analyseSample i name meas = do
+analyseSample i name measV = do
   Config{..} <- ask
   let ests      = [Mean,StdDev]
+      measL     = V.toList measV
       -- The use of filter here throws away very-low-quality
       -- measurements when bootstrapping the mean and standard
       -- deviations.  Without this, the numbers look nonsensical when
       -- very brief actions are measured.
-      stime     = measure (measTime . rescale) .
-                  G.filter ((>= threshold) . measTime) $ meas
-      n         = G.length meas
+      stimeL    = measure (measTime . rescale) .
+                  filter ((>= threshold) . measTime) $ measL
+      stime     = U.fromList stimeL
+      n         = G.length measV
       s         = G.length stime
   _ <- lift $ prolix "bootstrapping with %d of %d samples (%d%%)\n"
               s n ((s * 100) `quot` n)
   gen <- lift getGen
-  rs <- mapM (\(ps,r) -> regress gen ps r meas) $
+  rs <- mapM (\(ps,r) -> regress gen ps r measL) $
         ((["iters"],"time"):regressions)
   resamps <- liftIO $ resample gen ests resamples stime
   let [estMean,estStdDev] = B.bootstrapBCA confInterval stime resamps
@@ -169,7 +171,7 @@ analyseSample i name meas = do
       reportNumber   = i
     , reportName     = name
     , reportKeys     = measureKeys
-    , reportMeasured = meas
+    , reportMeasured = measV
     , reportAnalysis = an
     , reportOutliers = classifyOutliers stime
     , reportKDEs     = [uncurry (KDE "time") (kde 128 stime)]
@@ -184,16 +186,16 @@ analyseSample i name meas = do
 regress :: GenIO
         -> [String]             -- ^ Predictor names.
         -> String               -- ^ Responder name.
-        -> V.Vector Measured
+        -> [Measured]
         -> ExceptT String Criterion Regression
 regress gen predNames respName meas = do
-  when (G.null meas) $
+  when (null meas) $
     throwE "no measurements"
   accs <- ExceptT . return $ validateAccessors predNames respName
-  let unmeasured = [n | (n, Nothing) <- map (second ($ G.head meas)) accs]
+  let unmeasured = [n | (n, Nothing) <- map (second ($ head meas)) accs]
   unless (null unmeasured) $
     throwE $ "no data available for " ++ renderNames unmeasured
-  let (r:ps)      = map ((`measure` meas) . (fromJust .) . snd) accs
+  let (r:ps)      = map (U.fromList . (`measure` meas) . (fromJust .) . snd) accs
   Config{..} <- ask
   (coeffs,r2) <- liftIO $
                  bootstrapRegress gen resamples confInterval olsRegress ps r

@@ -1,6 +1,6 @@
 {-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE BangPatterns, CPP, ForeignFunctionInterface,
     ScopedTypeVariables #-}
@@ -56,7 +56,6 @@ import System.Mem (performGC)
 #endif
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
-import qualified Data.Vector as V
 import qualified GHC.Stats as Stats
 
 #if !(MIN_VERSION_base(4,7,0))
@@ -288,7 +287,7 @@ runBenchmark :: Benchmarkable
              -- should take.  In practice, this time limit may be
              -- exceeded in order to generate enough data to perform
              -- meaningful statistical analyses.
-             -> IO (V.Vector Measured, Double)
+             -> IO ([Measured], Double)
 runBenchmark bm timeLimit = do
   initializeTime
   runBenchmarkable_ bm 1
@@ -310,7 +309,7 @@ runBenchmark bm timeLimit = do
            overThresh > threshold * 10 &&
            count >= (4 :: Int)
           then do
-            let !v = V.reverse (V.fromList acc)
+            let !v = reverse acc
             return (v, endTime - start)
           else loop niters overThresh (count+1) (m:acc)
   loop (squish (unfoldr series 1)) 0 0 []

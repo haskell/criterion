@@ -216,9 +216,10 @@ formatReport reports templateName = do
         [KDE{..}]          = reportKDEs
         SampleAnalysis{..} = reportAnalysis
 
-        iters  = measure measIters reportMeasured
-        times  = measure measTime reportMeasured
-        cycles = measure measCycles reportMeasured
+        rmeas  = G.toList reportMeasured
+        iters  = U.fromList $ measure measIters  rmeas
+        times  = U.fromList $ measure measTime   rmeas
+        cycles = U.fromList $ measure measCycles rmeas
         anMeanConfidenceLevel
                = confidenceLevel $ confIntCL $ estError anMean
         (anMeanLowerBound, anMeanUpperBound)

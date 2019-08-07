@@ -1,5 +1,5 @@
 {-# LANGUAGE CPP #-}
-{-# LANGUAGE Trustworthy #-}
+{-# LANGUAGE Safe #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GADTs, RecordWildCards #-}
 {-# OPTIONS_GHC -funbox-strict-fields #-}
@@ -66,7 +66,6 @@ module Criterion.Measurement.Types
 
 import Control.DeepSeq (NFData(rnf))
 import Criterion.Measurement.Types.Internal (fakeEnvironment, nf', whnf')
-import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..))
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
@@ -74,8 +73,6 @@ import Data.Map (Map, fromList)
 import GHC.Generics (Generic)
 import Prelude ()
 import Prelude.Compat
-import qualified Data.Vector as V
-import qualified Data.Vector.Unboxed as U
 
 
 -- | A pure function or impure action that can be benchmarked. The
@@ -145,26 +142,6 @@ data Measured = Measured {
       -- ^ __(GC)__ CPU time spent doing garbage collection.  Access
       -- using 'fromDouble'.
     } deriving (Eq, Read, Show, Typeable, Data, Generic)
-
-instance FromJSON Measured where
-    parseJSON v = do
-      (a,b,c,d,e,f,g,h,i,j,k) <- parseJSON v
-      -- The first four fields are not subject to the encoding policy:
-      return $ Measured a b c d
-                       (int e) (int f) (int g)
-                       (db h) (db i) (db j) (db k)
-      where int = toInt; db = toDouble
-
--- Here we treat the numeric fields as `Maybe Int64` and `Maybe Double`
--- and we use a specific policy for deciding when they should be Nothing,
--- which becomes null in JSON.
-instance ToJSON Measured where
-    toJSON Measured{..} = toJSON
-      (measTime, measCpuTime, measCycles, measIters,
-       i measAllocated, i measNumGcs, i measBytesCopied,
-       d measMutatorWallSeconds, d measMutatorCpuSeconds,
-       d measGcWallSeconds, d measGcCpuSeconds)
-      where i = fromInt; d = fromDouble
 
 instance NFData Measured where
     rnf Measured{} = ()
@@ -617,5 +594,5 @@ instance Show Benchmark where
     show (Benchmark d _)   = "Benchmark " ++ show d
     show (BenchGroup d _)  = "BenchGroup " ++ show d
 
-measure :: (U.Unbox a) => (Measured -> a) -> V.Vector Measured -> U.Vector a
-measure f v = U.convert . V.map f $ v
+measure :: (Measured -> a) -> [Measured] -> [a]
+measure = fmap

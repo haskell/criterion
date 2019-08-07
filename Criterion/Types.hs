@@ -146,6 +146,26 @@ data Outliers = Outliers {
 instance FromJSON Outliers
 instance ToJSON Outliers
 
+instance FromJSON Measured where
+    parseJSON v = do
+      (a,b,c,d,e,f,g,h,i,j,k) <- parseJSON v
+      -- The first four fields are not subject to the encoding policy:
+      return $ Measured a b c d
+                       (int e) (int f) (int g)
+                       (db h) (db i) (db j) (db k)
+      where int = toInt; db = toDouble
+
+-- Here we treat the numeric fields as `Maybe Int64` and `Maybe Double`
+-- and we use a specific policy for deciding when they should be Nothing,
+-- which becomes null in JSON.
+instance ToJSON Measured where
+    toJSON Measured{..} = toJSON
+      (measTime, measCpuTime, measCycles, measIters,
+       i measAllocated, i measNumGcs, i measBytesCopied,
+       d measMutatorWallSeconds, d measMutatorCpuSeconds,
+       d measGcWallSeconds, d measGcCpuSeconds)
+      where i = fromInt; d = fromDouble
+
 instance Binary Outliers where
     put (Outliers v w x y z) = put v >> put w >> put x >> put y >> put z
     get = Outliers <$> get <*> get <*> get <*> get <*> get
