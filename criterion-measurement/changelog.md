@@ -1,4 +1,4 @@
-next
+0.1.2.0
 
 * Ensure that `Criterion.Measurement.Types.Internal` is always compiled with
   optimizations, even if the `criterion-measurement` library itself happens to
