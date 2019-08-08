@@ -1,5 +1,12 @@
 {-# LANGUAGE BangPatterns #-}
+
+-- Ensure that nf' and whnf' are always optimized, even if
+-- criterion-measurement is compiled with -O0 or -fprof-auto (see #184).
+{-# OPTIONS_GHC -O2 -fno-prof-auto #-}
+-- Make the function applications in nf' and whnf' strict (avoiding allocation)
+-- and avoid floating out the computations.
 {-# OPTIONS_GHC -fno-full-laziness #-}
+
 -- |
 -- Module      : Criterion.Measurement.Types.Internal
 -- Copyright   : (c) 2017 Ryan Scott
