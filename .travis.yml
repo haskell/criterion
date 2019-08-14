@@ -4,7 +4,7 @@
 #
 # For more information, see https://github.com/haskell-CI/haskell-ci
 #
-# version: 0.3.20190730
+# version: 0.3.20190814.1
 #
 language: c
 dist: xenial
@@ -26,9 +26,10 @@ before_cache:
   - rm -rfv $CABALHOME/packages/head.hackage
 matrix:
   include:
+    - compiler: ghcjs-8.4
+      addons: {"apt":{"sources":["hvr-ghc"],"packages":["cabal-install-3.0"]}}
     - compiler: ghc-8.8.1
       addons: {"apt":{"sources":["hvr-ghc"],"packages":["ghc-8.8.1","cabal-install-3.0"]}}
-      env: HEADHACKAGE=true
     - compiler: ghc-8.6.5
       addons: {"apt":{"sources":["hvr-ghc"],"packages":["ghc-8.6.5","cabal-install-2.4"]}}
     - compiler: ghc-8.4.4
@@ -47,19 +48,38 @@ matrix:
       addons: {"apt":{"sources":["hvr-ghc"],"packages":["ghc-7.4.2","cabal-install-2.4"]}}
     - compiler: ghc-head
       addons: {"apt":{"sources":["hvr-ghc"],"packages":["ghc-head","cabal-install-head"]}}
-      env: HEADHACKAGE=true
   allow_failures:
     - compiler: ghc-head
     - compiler: ghc-8.8.1
 before_install:
+  - |
+    if [ "$TRAVIS_OS_NAME" = "linux" ]; then
+      sudo add-apt-repository -y ppa:hvr/ghcjs;
+      curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
+      sudo apt-add-repository 'https://deb.nodesource.com/node_8.x xenial main'
+      sudo apt-get update;
+      sudo apt-get install $CC;
+      sudo apt-get install -y nodejs cabal-install-3.0
+    fi
   - HC=$(echo "/opt/$CC/bin/ghc" | sed 's/-/\//')
+  - WITHCOMPILER="-w $HC"
+  - |
+    if echo $CC | grep -q ghcjs; then
+        GHCJS=true
+        HC=${HC}js
+        WITHCOMPILER="--ghcjs ${WITHCOMPILER}js"
+    else
+        GHCJS=false;
+    fi
+  - if $GHCJS ; then sudo apt-get install -y ghc-8.4.4 ; fi
+  - if $GHCJS ; then PATH="/opt/ghc/8.4.4/bin:$PATH" ; fi
   - HCPKG="$HC-pkg"
   - unset CC
   - CABAL=/opt/ghc/bin/cabal
   - CABALHOME=$HOME/.cabal
   - export PATH="$CABALHOME/bin:$PATH"
   - TOP=$(pwd)
-  - HCNUMVER=$(( $(${HC} --numeric-version|sed -E 's/([0-9]+)\.([0-9]+)\.([0-9]+).*/\1 * 10000 + \2 * 100 + \3/') ))
+  - "HCNUMVER=$(${HC} --numeric-version|perl -ne '/^(\\d+)\\.(\\d+)\\.(\\d+)(\\.(\\d+))?$/; print(10000 * $1 + 100 * $2 + ($3 == 0 ? $5 != 1 : $3))')"
   - echo $HCNUMVER
   - CABAL="$CABAL -vnormal+nowrap+markoutput"
   - set -o pipefail
@@ -84,9 +104,12 @@ before_install:
 install:
   - ${CABAL} --version
   - echo "$(${HC} --version) [$(${HC} --print-project-git-commit-id 2> /dev/null || echo '?')]"
+  - node --version
+  - echo $GHCJS
   - TEST=--enable-tests
   - BENCH=--enable-benchmarks
-  - HEADHACKAGE=${HEADHACKAGE-false}
+  - HEADHACKAGE=false
+  - if ! $GHCJS && [ $HCNUMVER -ge 80800 ] ; then HEADHACKAGE=true ; fi
   - rm -f $CABALHOME/config
   - |
     echo "verbose: normal +nowrap +markoutput"          >> $CABALHOME/config
@@ -118,13 +141,14 @@ install:
   - cat $CABALHOME/config
   - rm -fv cabal.project cabal.project.local cabal.project.freeze
   - travis_retry ${CABAL} v2-update -v
+  - if $GHCJS ; then (cd /tmp && ${CABAL} v2-install -w ghc-8.4.4 happy) ; fi
   # Generate cabal.project
   - rm -rf cabal.project cabal.project.local cabal.project.freeze
   - touch cabal.project
   - |
-    echo 'packages: "."' >> cabal.project
-    echo 'packages: "./criterion-measurement"' >> cabal.project
-    echo 'packages: "./examples"' >> cabal.project
+    echo "packages: ." >> cabal.project
+    echo "packages: ./criterion-measurement" >> cabal.project
+    echo "packages: ./examples" >> cabal.project
   - |
     echo "package criterion"             >> cabal.project
     echo "  ghc-options: -Werror"        >> cabal.project
@@ -140,10 +164,10 @@ install:
   - if [ -f "./configure.ac" ]; then (cd "." && autoreconf -i); fi
   - if [ -f "./criterion-measurement/configure.ac" ]; then (cd "./criterion-measurement" && autoreconf -i); fi
   - if [ -f "./examples/configure.ac" ]; then (cd "./examples" && autoreconf -i); fi
-  - ${CABAL} v2-freeze -w ${HC} ${TEST} ${BENCH} | color_cabal_output
+  - ${CABAL} v2-freeze $WITHCOMPILER ${TEST} ${BENCH} | color_cabal_output
   - "cat cabal.project.freeze | sed -E 's/^(constraints: *| *)//' | sed 's/any.//'"
   - rm  cabal.project.freeze
-  - ${CABAL} v2-build -w ${HC} ${TEST} ${BENCH} --dep -j2 all | color_cabal_output
+  - ${CABAL} v2-build $WITHCOMPILER ${TEST} ${BENCH} --dep -j2 all | color_cabal_output
 script:
   - DISTDIR=$(mktemp -d /tmp/dist-test.XXXX)
   # Packaging...
@@ -151,14 +175,18 @@ script:
   # Unpacking...
   - mv dist-newstyle/sdist/*.tar.gz ${DISTDIR}/
   - cd ${DISTDIR} || false
-  - find . -maxdepth 1 -name '*.tar.gz' -exec tar -xvf '{}' \;
+  - find . -maxdepth 1 -type f -name '*.tar.gz' -exec tar -xvf '{}' \;
+  - find . -maxdepth 1 -type f -name '*.tar.gz' -exec rm       '{}' \;
+  - PKGDIR_criterion="$(find . -maxdepth 1 -type d -regex '.*/criterion-[0-9.]*')"
+  - PKGDIR_criterion_measurement="$(find . -maxdepth 1 -type d -regex '.*/criterion-measurement-[0-9.]*')"
+  - PKGDIR_criterion_examples="$(find . -maxdepth 1 -type d -regex '.*/criterion-examples-[0-9.]*')"
   # Generate cabal.project
   - rm -rf cabal.project cabal.project.local cabal.project.freeze
   - touch cabal.project
   - |
-    echo 'packages: "criterion-*/*.cabal"' >> cabal.project
-    echo 'packages: "criterion-measurement-*/*.cabal"' >> cabal.project
-    echo 'packages: "criterion-examples-*/*.cabal"' >> cabal.project
+    echo "packages: ${PKGDIR_criterion}" >> cabal.project
+    echo "packages: ${PKGDIR_criterion_measurement}" >> cabal.project
+    echo "packages: ${PKGDIR_criterion_examples}" >> cabal.project
   - |
     echo "package criterion"             >> cabal.project
     echo "  ghc-options: -Werror"        >> cabal.project
@@ -173,20 +201,20 @@ script:
   - cat cabal.project.local || true
   # Building with tests and benchmarks...
   # build & run tests, build benchmarks
-  - ${CABAL} v2-build -w ${HC} ${TEST} ${BENCH} all | color_cabal_output
+  - ${CABAL} v2-build $WITHCOMPILER ${TEST} ${BENCH} all | color_cabal_output
   # Testing...
-  - ${CABAL} v2-test -w ${HC} ${TEST} ${BENCH} all | color_cabal_output
+  - if ! $GHCJS ; then ${CABAL} v2-test $WITHCOMPILER ${TEST} ${BENCH} all | color_cabal_output ; fi
   # haddock...
-  - ${CABAL} v2-haddock -w ${HC} ${TEST} ${BENCH} all | color_cabal_output
+  - if ! $GHCJS ; then ${CABAL} v2-haddock $WITHCOMPILER ${TEST} ${BENCH} all | color_cabal_output ; fi
   # Constraint sets
   - rm -rf cabal.project.local
   # Constraint set embed-data-files
-  - ${CABAL} v2-build -w ${HC} --enable-tests --enable-benchmarks --constraint='criterion +embed-data-files' all | color_cabal_output
-  - ${CABAL} v2-test -w ${HC} --enable-tests --enable-benchmarks --constraint='criterion +embed-data-files' all | color_cabal_output
-  - ${CABAL} v2-haddock -w ${HC} --enable-tests --enable-benchmarks --constraint='criterion +embed-data-files' all | color_cabal_output
+  - ${CABAL} v2-build $WITHCOMPILER --enable-tests --enable-benchmarks --constraint='criterion +embed-data-files' all | color_cabal_output
+  - ${CABAL} v2-test $WITHCOMPILER --enable-tests --enable-benchmarks --constraint='criterion +embed-data-files' all | color_cabal_output
+  - ${CABAL} v2-haddock $WITHCOMPILER --enable-tests --enable-benchmarks --constraint='criterion +embed-data-files' all | color_cabal_output
   # Constraint set fast
-  - ${CABAL} v2-build -w ${HC} --enable-tests --disable-benchmarks --constraint='criterion-measurement +fast' --constraint='criterion +fast' all | color_cabal_output
-  - ${CABAL} v2-test -w ${HC} --enable-tests --disable-benchmarks --constraint='criterion-measurement +fast' --constraint='criterion +fast' all | color_cabal_output
+  - ${CABAL} v2-build $WITHCOMPILER --enable-tests --disable-benchmarks --constraint='criterion-measurement +fast' --constraint='criterion +fast' all | color_cabal_output
+  - ${CABAL} v2-test $WITHCOMPILER --enable-tests --disable-benchmarks --constraint='criterion-measurement +fast' --constraint='criterion +fast' all | color_cabal_output
 
 # REGENDATA ["--output=.travis.yml","--config=cabal.haskell-ci","cabal.project"]
 # EOF

@@ -1,3 +1,6 @@
 packages: .
           ./criterion-measurement
           ./examples
+
+packages: statistics
+packages: math-functions

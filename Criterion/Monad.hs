@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE Trustworthy #-}
 -- |
 -- Module      : Criterion.Monad
@@ -22,7 +23,13 @@ import Criterion.Monad.Internal (Criterion(..), Crit(..))
 import Criterion.Types hiding (measure)
 import Data.IORef (IORef, newIORef, readIORef, writeIORef)
 import System.IO.CodePage (withCP65001)
-import System.Random.MWC (GenIO, createSystemRandom)
+import System.Random.MWC (GenIO
+#if defined(__GHCJS__)
+  , create
+#else
+  , createSystemRandom
+#endif
+  )
 
 -- | Run a 'Criterion' action with the given 'Config'.
 withConfig :: Config -> Criterion a -> IO a
@@ -35,7 +42,12 @@ withConfig cfg (Criterion act) = withCP65001 $ do
 -- This is not currently thread-safe, but in a harmless way (we might
 -- call 'createSystemRandom' more than once if multiple threads race).
 getGen :: Criterion GenIO
-getGen = memoise gen createSystemRandom
+getGen = memoise gen
+#if defined(__GHCJS__)
+  create -- there is no /dev/urandom or GHCJS, let's just use fixed seed.
+#else
+  createSystemRandom
+#endif
 
 -- | Memoise the result of an 'IO' action.
 --

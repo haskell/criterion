@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE BangPatterns, DeriveDataTypeable, RecordWildCards #-}
 
@@ -158,7 +159,7 @@ analyseSample i name meas = do
         ((["iters"],"time"):regressions)
   resamps <- liftIO $ resample gen ests resamples stime
   let [estMean,estStdDev] = B.bootstrapBCA confInterval stime resamps
-      ov = outlierVariance estMean estStdDev (fromIntegral n)
+  let ov = outlierVariance estMean estStdDev (fromIntegral n)
       an = SampleAnalysis {
                anRegress    = rs
              , anMean       = estMean

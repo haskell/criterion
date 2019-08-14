@@ -12,7 +12,7 @@ import GHC.Stats as GHC
 main :: IO ()
 main = do
   M.initializeTime -- Need to do this before calling M.getTime
-  statsEnabled <- getRTSStatsEnabled
+  statsEnabled <- getRTSStatsEnabled'
   defaultMain $ [
       bench "measure" $            whnfIO (M.measure (whnfIO $ return ()) 1)
     , bench "getTime" $            whnfIO M.getTime
@@ -29,10 +29,14 @@ main = do
               ]
          else []
 
-#if !MIN_VERSION_base(4,6,0)
-getRTSStatsEnabled :: IO Bool
-getRTSStatsEnabled = return False
+-- On GHCJS:
+-- uncaught exception in Haskell main thread: ReferenceError: h$getRTSStatsEnabled is not defined
+-- ReferenceError: h$getRTSStatsEnabled is not defined
+getRTSStatsEnabled' :: IO Bool
+#if defined(__GHCJS__) || !MIN_VERSION_base(4,6,0)
+getRTSStatsEnabled' = return False
 #elif !MIN_VERSION_base(4,10,0)
-getRTSStatsEnabled :: IO Bool
-getRTSStatsEnabled = getGCStatsEnabled
+getRTSStatsEnabled' = getGCStatsEnabled
+#else
+getRTSStatsEnabled' = getRTSStatsEnabled
 #endif

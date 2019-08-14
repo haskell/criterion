@@ -49,18 +49,29 @@ import GHC.Stats (GCStats(..))
 #endif
 import Prelude ()
 import Prelude.Compat
-#if MIN_VERSION_base(4,7,0)
-import System.Mem (performGC, performMinorGC)
-# else
-import System.Mem (performGC)
-#endif
+
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
 import qualified Data.Vector as V
 import qualified GHC.Stats as Stats
 
-#if !(MIN_VERSION_base(4,7,0))
+-- https://github.com/ghcjs/ghcjs-boot/issues/32
+#if defined(__GHCJS__)
+import System.Mem (performGC)
+
+performMinorGC :: IO ()
+performMinorGC = return ()
+#else
+
+# if MIN_VERSION_base(4,7,0)
+import System.Mem (performGC, performMinorGC)
+# else
+import System.Mem (performGC)
+# endif
+
+# if !(MIN_VERSION_base(4,7,0))
 foreign import ccall "performGC" performMinorGC :: IO ()
+# endif
 #endif
 
 -- | Statistics about memory usage and the garbage collector. Apart from
@@ -119,7 +130,10 @@ data GCStatistics = GCStatistics
 --
 -- If you need guaranteed up-to-date stats, call 'performGC' first.
 getGCStatistics :: IO (Maybe GCStatistics)
-#if MIN_VERSION_base(4,10,0)
+#if defined(__GHCJS__)
+getGCStatistics = return Nothing
+
+#elif MIN_VERSION_base(4,10,0)
 -- Use RTSStats/GCDetails to gather GC stats
 getGCStatistics = do
   stats <- Stats.getRTSStats
@@ -390,6 +404,31 @@ secs k
                | t >= 1e1  = printf "%.2f %s" t u
                | otherwise = printf "%.3f %s" t u
 
+#if defined(__GHCJS__)
+-- atm, cabal haddock --ghcjs fails :(
+-- So, not trying to make haddocks for GHCJS variants.
+initializeTime :: IO ()
+initializeTime = return ()
+
+-- | In browser, we don't know cycles. Always returns @0@.
+getCycles :: IO Word64
+getCycles = return 0
+
+-- | In browser we don't know about a CPU. Always returns @0@.
+getCPUTime :: IO Double
+getCPUTime = return 0
+
+-- Performance API is in all major browsers: https://developer.mozilla.org/en-US/docs/Web/API/Performance
+-- and in NodeJS since 8.5.0: https://nodejs.org/api/perf_hooks.html#perf_hooks_performance_timing_api
+--
+-- Examples of GHCJS FFI: https://github.com/ghcjs/ghcjs/wiki/A-few-examples-of-Foreign-Function-Interface
+--
+-- performance.now() returns *milliseconds*. So we divide them to get seconds.
+foreign import javascript unsafe
+  "if (typeof window === 'object' && typeof window.performance === 'object') { $r = window.performance.now() / 1000; } else if (typeof require === 'function') { $r = require('perf_hooks').performance.now() / 1000; } else { $r = 0.0; }"
+  getTime :: IO Double
+
+#else
 -- | Set up time measurement.
 --
 -- @criterion@ measures time using OS-specific APIs whenever possible for
@@ -419,3 +458,4 @@ foreign import ccall unsafe "criterion_gettime" getTime :: IO Double
 -- | Return the amount of elapsed CPU time, combining user and kernel
 -- (system) time into a single measure.
 foreign import ccall unsafe "criterion_getcputime" getCPUTime :: IO Double
+#endif
