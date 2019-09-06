@@ -81,7 +81,7 @@ library
     aeson >= 0.8,
     ansi-wl-pprint >= 0.6.7.2,
     base >= 4.5 && < 5,
-    base-compat-batteries >= 0.10 && < 0.11,
+    base-compat-batteries >= 0.10 && < 0.12,
     binary >= 0.5.1.0,
     bytestring >= 0.9 && < 1.0,
     cassava >= 0.3.0.0,
