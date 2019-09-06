@@ -78,6 +78,7 @@ import Control.DeepSeq (NFData(rnf))
 import Criterion.Measurement.Types
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..), putWord8, getWord8)
+import Data.Binary.Orphans ()
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
 import Data.Map (Map)

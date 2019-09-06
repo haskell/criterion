@@ -1,3 +1,7 @@
+next
+
+* Allow building with `base-compat-batteries-0.11`.
+
 1.5.5.0
 
 * Fix the build on old GHCs with the `embed-data-files` flag.
