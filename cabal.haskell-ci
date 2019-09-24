@@ -3,7 +3,6 @@ no-tests-no-benchmarks: False
 unconstrained:          False
 local-ghc-options:      -Werror
 cabal-check:            False
-head-hackage:           >=8.8
 
 constraint-set embed-data-files
   constraints: criterion +embed-data-files
