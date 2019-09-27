@@ -1,4 +1,4 @@
-next
+1.5.6.1
 
 * Bundle `criterion-examples`' `LICENSE` file.
 
