@@ -1,3 +1,7 @@
+next
+
+* Bundle `criterion-examples`' `LICENSE` file.
+
 1.5.6.0
 
 * Allow building with `base-compat-batteries-0.11`.
