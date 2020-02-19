@@ -1,4 +1,4 @@
-next
+1.5.6.2
 
 * Use unescaped HTML in the `json.tpl` template.
 
