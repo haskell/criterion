@@ -1,3 +1,7 @@
+next
+
+* Use unescaped HTML in the `json.tpl` template.
+
 1.5.6.1
 
 * Bundle `criterion-examples`' `LICENSE` file.
