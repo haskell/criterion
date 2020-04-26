@@ -31,7 +31,7 @@ fib m | m < 0     = error "negative!"
   where
     go 0 = 0
     go 1 = 1
-    go n = go (n-1) + go (n-2)
+    go n = go (n - 1) + go (n - 2)
 
 -- Our benchmark harness.
 main = defaultMain [
