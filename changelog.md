@@ -1,3 +1,8 @@
+next
+
+* Warn if an HTML report name contains newlines, and replace newlines with
+  whitespace to avoid syntax errors in the report itself.
+
 1.5.6.2
 
 * Use unescaped HTML in the `json.tpl` template.
