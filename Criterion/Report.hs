@@ -123,10 +123,11 @@ formatReport reports templateName = do
     -- includes, only top level
     templates <- getTemplateDir
     template <- includeTemplate (includeFile [templates]) template0
+    reports' <- mapM inner reports
 
     let context = object
             [ "json"                .= reports
-            , "report"              .= map inner reports
+            , "report"              .= reports'
             , "js-jquery"           .= jQuery
             , "js-flot"             .= flot
             , "js-flot-errorbars"   .= flotErrorbars
@@ -148,11 +149,7 @@ formatReport reports templateName = do
       -- mustache conventions, but redesigning the template to avoid this
       -- warning would be more work than just substituting the array directly.
       unless (warning == MustacheDirectlyRenderedValue (Key ["json"])) $
-        mapM_ (hPutStrLn stderr)
-         [ "criterion: warning:"
-         , "  " ++ displayMustacheWarning warning
-         , ""
-         ]
+        criterionWarning $ displayMustacheWarning warning
     return formatted
   where
     jQueryFileContents, flotFileContents :: IO T.Text
@@ -196,8 +193,11 @@ formatReport reports templateName = do
             _         -> y
         _         -> y
 
-    inner r@Report {..} = merge reportAnalysis $ merge reportOutliers $ object
-        [ "name"                  .= reportName
+    inner :: Report -> IO Value
+    inner r@Report {..} = do
+      reportName' <- sanitizeJSString $ T.pack reportName
+      return $ merge reportAnalysis $ merge reportOutliers $ object
+        [ "name"                  .= reportName'
         , "json"                  .= TLE.decodeUtf8 (encode r)
         , "number"                .= reportNumber
         , "iters"                 .= vector "x" iters
@@ -225,6 +225,24 @@ formatReport reports templateName = do
                = confidenceInterval anMean
         (anStdDevLowerBound, anStdDevUpperBound)
                = confidenceInterval anStdDev
+
+        sanitizeJSString :: T.Text -> IO T.Text
+        sanitizeJSString str = do
+          let pieces = T.splitOn "\n" str
+          case pieces of
+            (_word1:_word2:_) -> do
+              criterionWarning $
+                "Report name " ++ show str ++ " contains newlines, which " ++
+                "will be replaced with spaces in the HTML report."
+              return $ T.unwords pieces
+            _ -> return str
+
+criterionWarning :: String -> IO ()
+criterionWarning msg =
+  hPutStrLn stderr $ unlines
+    [ "criterion: warning:"
+    , "  " ++ msg
+    ]
 
 -- | Render the elements of a vector.
 --
