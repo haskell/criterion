@@ -24,15 +24,16 @@ type B = V.Vector ByteString
 
 numbers :: IO (V, V, V)
 numbers = do
-  random <- withSystemRandom . asGenIO $ \gen -> uniformVector gen 40000
+  gen <- createSystemRandom
+  random <- uniformVector gen 40000
   let sorted    = G.modify I.sort random
       revsorted = G.reverse sorted
   return (random, sorted, revsorted)
 
 strings :: IO (B, B, B)
 strings = do
-  random <- withSystemRandom . asGenIO $ \gen ->
-    V.replicateM 10000 $
+  gen <- createSystemRandom
+  random <- V.replicateM 10000 $
       (pack . U.toList) `fmap` (uniformVector gen =<< uniformR (1,16) gen)
   let sorted    = G.modify I.sort random
       revsorted = G.reverse sorted

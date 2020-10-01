@@ -67,7 +67,7 @@ executable maps
     criterion,
     deepseq,
     hashable,
-    mwc-random,
+    mwc-random >= 0.13.1,
     unordered-containers,
     vector,
     vector-algorithms
