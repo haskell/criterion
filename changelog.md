@@ -1,4 +1,4 @@
-next
+1.5.7.0
 
 * Warn if an HTML report name contains newlines, and replace newlines with
   whitespace to avoid syntax errors in the report itself.
