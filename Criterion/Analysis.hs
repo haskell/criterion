@@ -89,9 +89,9 @@ outlierVariance
 outlierVariance µ σ a = OutlierVariance effect desc varOutMin
   where
     ( effect, desc ) | varOutMin < 0.01 = (Unaffected, "no")
-                     | varOutMin < 0.1  = (Slight,     "slight")
-                     | varOutMin < 0.5  = (Moderate,   "moderate")
-                     | otherwise        = (Severe,     "severe")
+                     | varOutMin < 0.1  = (Slight,     "a slight")
+                     | varOutMin < 0.5  = (Moderate,   "a moderate")
+                     | otherwise        = (Severe,     "a severe")
     varOutMin = (minBy varOut 1 (minBy cMax 0 µgMin)) / σb2
     varOut c  = (ac / a) * (σb2 - ac * σg2) where ac = a - c
     σb        = B.estPoint σ

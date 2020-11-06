@@ -1,3 +1,23 @@
+Unreleased
+
+* The HTML reports have been reworked.
+
+  * The `flot` plotting library (`js-flot` on Hackage) has been replaced by
+    `Chart.js` (`js-chart`).
+  * Most practical changes focus on improving the functionality of the overview
+    chart:
+    * It now supports logarithmic scale (#213). The scale can be toggled by
+      clicking the x-axis.
+    * Manual zooming has been replaced by clicking to focus a single bar.
+    * It now supports a variety of sort orders.
+    * The legend can now be toggled on/off and is hidden by default.
+    * Clicking the name of a group in the legend shows/hides all bars in that
+      group.
+  * The regression line on the scatter plot shows confidence interval.
+  * Better support for mobile and print.
+  * JSON escaping has been made more robust by no longer directly injecting
+    reports as JavaScript code.
+
 1.5.7.0
 
 * Warn if an HTML report name contains newlines, and replace newlines with

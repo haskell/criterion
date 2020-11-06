@@ -11,27 +11,19 @@
 --
 -- When the @embed-data-files@ @Cabal@ flag is enabled, this module exports
 -- the contents of various files (the @data-files@ from @criterion.cabal@, as
--- well as minimized versions of jQuery and Flot) embedded as 'ByteString's.
+-- well as a minimized version of Chart.js) embedded as a 'ByteString'.
 module Criterion.EmbeddedData
   ( dataFiles
-  , jQueryContents
-  , flotContents
-  , flotErrorbarsContents
-  , flotNavigateContents
+  , chartContents
   ) where
 
 import Data.ByteString (ByteString)
 import Data.FileEmbed (embedDir, embedFile)
 import Language.Haskell.TH.Syntax (runIO)
-import qualified Language.Javascript.Flot as Flot
-import qualified Language.Javascript.JQuery as JQuery
+import qualified Language.Javascript.Chart as Chart
 
 dataFiles :: [(FilePath, ByteString)]
 dataFiles = $(embedDir "templates")
 
-jQueryContents, flotContents,
-  flotErrorbarsContents, flotNavigateContents :: ByteString
-jQueryContents        = $(embedFile =<< runIO JQuery.file)
-flotContents          = $(embedFile =<< runIO (Flot.file Flot.Flot))
-flotErrorbarsContents = $(embedFile =<< runIO (Flot.file Flot.FlotErrorbars))
-flotNavigateContents  = $(embedFile =<< runIO (Flot.file Flot.FlotNavigate))
+chartContents :: ByteString
+chartContents = $(embedFile =<< runIO (Chart.file Chart.Chart))
