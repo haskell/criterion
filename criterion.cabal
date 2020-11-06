@@ -33,7 +33,7 @@ tested-with:
 data-files:
   templates/*.css
   templates/*.tpl
-  templates/js/jquery.criterion.js
+  templates/*.js
 
 description:
   This library provides a powerful but simple way to measure software
@@ -97,8 +97,7 @@ library
     filepath,
     Glob >= 0.7.2,
     microstache >= 1.0.1 && < 1.1,
-    js-flot,
-    js-jquery,
+    js-chart >= 2.9.4 && < 3,
     mtl >= 2,
     mwc-random >= 0.8.0.3,
     optparse-applicative >= 0.13,
