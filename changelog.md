@@ -1,4 +1,4 @@
-Unreleased
+1.5.8.0
 
 * The HTML reports have been reworked.
 
