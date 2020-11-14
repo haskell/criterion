@@ -17,7 +17,6 @@ extra-source-files:
   examples/LICENSE
   examples/*.cabal
   examples/*.hs
-  examples/*.html
 tested-with:
   GHC==7.4.2,
   GHC==7.6.3,
