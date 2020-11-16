@@ -10,6 +10,9 @@
   <style>
     {{{criterion-css}}}
   </style>
+  <script type="application/json" id="report-data">
+    {{{json}}}
+  </script>
   <meta name="viewport" content="width=device-width, initial-scale=1">
 </head>
 <body>
@@ -32,8 +35,6 @@
     </div>
     <aside id="overview-chart"></aside>
     <main id="reports"></main>
-
-    <div id="report-data" data-report-json='{{{json}}}'></div>
   </div>
 
   <aside id="controls-explanation" class="explanation no-print">
