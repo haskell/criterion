@@ -1,4 +1,4 @@
-next
+1.5.9.0
 
 * Fix a bug where HTML reports failed to escape JSON properly.
 
