@@ -1,3 +1,7 @@
+next
+
+* Fix a bug where HTML reports failed to escape JSON properly.
+
 1.5.8.0
 
 * The HTML reports have been reworked.
