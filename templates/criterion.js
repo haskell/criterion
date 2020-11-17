@@ -843,8 +843,8 @@
     ]);
   }
   document.addEventListener('DOMContentLoaded', function() {
-    var reportData = JSON.parse(document.getElementById('report-data')
-      .getAttribute('data-report-json'))
+    var rawJSON = document.getElementById('report-data').text;
+    var reportData = JSON.parse(rawJSON)
       .map(function(report) {
         report.groups = report.reportName.split('/');
         return report;
