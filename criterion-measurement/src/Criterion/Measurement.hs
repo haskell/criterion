@@ -399,7 +399,7 @@ secs k
 -- accomplishes).
 --
 -- It is imperative that you call 'initializeTime' before calling 'getTime'.
--- (See [this bug report](https://github.com/bos/criterion/issues/195) for an
+-- (See [this bug report](https://github.com/haskell/criterion/issues/195) for an
 -- example of what can happen if you do not do so.) All of the 'IO'-returning
 -- functions in "Criterion.Main" make sure that this is done, but other
 -- functions (such as those in "Criterion.Measurement") do not guarantee this

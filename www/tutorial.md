@@ -42,7 +42,7 @@ main = defaultMain [
                ]
   ]
 ~~~~
-([examples/Fibber.hs](https://github.com/bos/criterion/blob/master/examples/Fibber.hs))
+([examples/Fibber.hs](https://github.com/haskell/criterion/blob/master/examples/Fibber.hs))
 
 The
 [`defaultMain`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:defaultMain)
@@ -272,7 +272,7 @@ main = defaultMain [
     bench "readFile" $ nfIO (readFile "GoodReadFile.hs")
   ]
 ~~~~
-([examples/GoodReadFile.hs](https://github.com/bos/criterion/blob/master/examples/GoodReadFile.hs))
+([examples/GoodReadFile.hs](https://github.com/haskell/criterion/blob/master/examples/GoodReadFile.hs))
 
 We use
 [`nfIO`](http://hackage.haskell.org/package/criterion/docs/Criterion-Main.html#v:nfIO)
@@ -326,7 +326,7 @@ main = defaultMain [
     bench "whnfIO readFile" $ whnfIO (readFile "BadReadFile.hs")
   ]
 ~~~~
-([examples/BadReadFile.hs](https://github.com/bos/criterion/blob/master/examples/BadReadFile.hs))
+([examples/BadReadFile.hs](https://github.com/haskell/criterion/blob/master/examples/BadReadFile.hs))
 
 The reason for the crash is that `readFile` reads the contents of a
 file lazily: it can't close the file handle until whoever opened the
@@ -350,7 +350,7 @@ right structure, GHC may notice that a substantial amount of its
 computation can be memoised via "let-floating".
 
 There exists a
-[somewhat contrived example](https://github.com/bos/criterion/blob/master/examples/ConduitVsPipes.hs)
+[somewhat contrived example](https://github.com/haskell/criterion/blob/master/examples/ConduitVsPipes.hs)
 of this problem, where the first two benchmarks run between 40 and
 40,000 times faster than they "should".
 
@@ -421,7 +421,7 @@ main = defaultMain [
                ]
   ]
 ~~~~
-([examples/Fibber.hs](https://github.com/bos/criterion/blob/master/examples/Fibber.hs))
+([examples/Fibber.hs](https://github.com/haskell/criterion/blob/master/examples/Fibber.hs))
 
 We can get away with using `whnf` here because we know that an
 `Int` has only one constructor, so there's no deeper buried

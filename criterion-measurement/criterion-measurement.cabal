@@ -2,7 +2,7 @@ name:                criterion-measurement
 version:             0.1.2.0
 synopsis:            Criterion measurement functionality and associated types
 description:         Measurement-related functionality extracted from Criterion, with minimal dependencies. The rationale for this is to enable alternative analysis front-ends.
-homepage:            https://github.com/bos/criterion
+homepage:            https://github.com/haskell/criterion
 license:             BSD3
 license-file:        LICENSE
 author:              Bryan O'Sullivan <bos@serpentine.com>
@@ -68,5 +68,5 @@ library
 
 source-repository head
   type:     git
-  location: https://github.com/bos/criterion
+  location: https://github.com/haskell/criterion
   subdir:   criterion-measurement

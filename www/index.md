@@ -48,7 +48,7 @@ cabal install -j --disable-tests criterion
 Or use the bleeding edge:
 
 ~~~~
-git clone https://github.com/bos/criterion
+git clone https://github.com/haskell/criterion
 cd criterion
 cabal install
 ~~~~
@@ -74,7 +74,7 @@ main = defaultMain [
                ]
   ]
 ~~~~
-([examples/Fibber.hs](https://github.com/bos/criterion/blob/master/examples/Fibber.hs))
+([examples/Fibber.hs](https://github.com/haskell/criterion/blob/master/examples/Fibber.hs))
 
 
 <div class="jumbotron" style="margin-top: 40px;">
@@ -92,6 +92,6 @@ I'm proud of the example-filled docs.
 
 If you run into problems, let me know.
 
-<a href="https://github.com/bos/criterion" class="btn btn-warning btn-lg" role="button">Issues</a>
+<a href="https://github.com/haskell/criterion" class="btn btn-warning btn-lg" role="button">Issues</a>
 
 </div>

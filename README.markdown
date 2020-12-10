@@ -1,6 +1,6 @@
 # Criterion: robust, reliable performance measurement
 
-[![Hackage](https://img.shields.io/hackage/v/criterion.svg)](https://hackage.haskell.org/package/criterion) [![Build Status](https://travis-ci.org/bos/criterion.svg?branch=master)](https://travis-ci.org/bos/criterion)
+[![Hackage](https://img.shields.io/hackage/v/criterion.svg)](https://hackage.haskell.org/package/criterion) [![Build Status](https://travis-ci.org/haskell/criterion.svg?branch=master)](https://travis-ci.org/haskell/criterion)
 
 This package provides the Criterion module, a Haskell library for
 measuring and analysing software performance.
@@ -24,11 +24,11 @@ To build and install criterion, just run
 # Get involved!
 
 Please report bugs via the
-[github issue tracker](https://github.com/bos/criterion/issues).
+[github issue tracker](https://github.com/haskell/criterion/issues).
 
-Master [github repository](https://github.com/bos/criterion):
+Master [github repository](https://github.com/haskell/criterion):
 
-* `git clone https://github.com/bos/criterion.git`
+* `git clone https://github.com/haskell/criterion.git`
 
 # Authors
 

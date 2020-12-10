@@ -2,7 +2,7 @@ name:          criterion-examples
 version:       0
 synopsis:      Examples for the criterion benchmarking system
 description:   Examples for the criterion benchmarking system.
-homepage:      https://github.com/bos/criterion
+homepage:      https://github.com/haskell/criterion
 license:       BSD3
 license-file:  LICENSE
 author:        Bryan O'Sullivan <bos@serpentine.com>
