@@ -30,13 +30,6 @@ Master [github repository](https://github.com/bos/criterion):
 
 * `git clone https://github.com/bos/criterion.git`
 
-There's also a [Mercurial mirror](https://bitbucket.org/bos/criterion):
-
-* `hg clone https://bitbucket.org/bos/criterion`
-
-(You can create and contribute changes using either Mercurial or git.)
-
-
 # Authors
 
 This library is written and maintained by Bryan O'Sullivan,
