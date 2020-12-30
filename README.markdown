@@ -1,6 +1,6 @@
 # Criterion: robust, reliable performance measurement
 
-[![Hackage](https://img.shields.io/hackage/v/criterion.svg)](https://hackage.haskell.org/package/criterion) [![Build Status](https://travis-ci.org/haskell/criterion.svg?branch=master)](https://travis-ci.org/haskell/criterion)
+[![Hackage](https://img.shields.io/hackage/v/criterion.svg)](https://hackage.haskell.org/package/criterion) [![Build Status](https://github.com/haskell/criterion/workflows/Haskell-CI/badge.svg)](https://github.com/haskell/criterion/actions?query=workflow%3AHaskell-CI)
 
 This package provides the Criterion module, a Haskell library for
 measuring and analysing software performance.
