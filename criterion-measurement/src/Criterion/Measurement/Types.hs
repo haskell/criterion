@@ -332,7 +332,7 @@ whnfAppIO f v = toBenchmarkable (whnfAppIO' f v)
 
 -- | Generate a function that will run an action a given number of times,
 -- reducing it to normal form each time.
-nfIO' :: (a -> b) -> IO a -> (Int64 -> IO ())
+nfIO' :: (a -> ()) -> IO a -> (Int64 -> IO ())
 nfIO' reduce a = go
   where go n
           | n <= 0    = return ()
