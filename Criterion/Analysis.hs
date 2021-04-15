@@ -157,8 +157,10 @@ analyseSample i name meas = do
   rs <- mapM (\(ps,r) -> regress gen ps r meas) $
         ((["iters"],"time"):regressions)
   resamps <- liftIO $ resample gen ests resamples stime
-  let [estMean,estStdDev] = B.bootstrapBCA confInterval stime resamps
-      ov = outlierVariance estMean estStdDev (fromIntegral n)
+  (estMean,estStdDev) <- case B.bootstrapBCA confInterval stime resamps of
+    [estMean',estStdDev'] -> return (estMean',estStdDev')
+    ests' -> throwE $ "analyseSample: Expected two estimation functions, received: " ++ show ests'
+  let ov = outlierVariance estMean estStdDev (fromIntegral n)
       an = SampleAnalysis {
                anRegress    = rs
              , anMean       = estMean
@@ -193,7 +195,9 @@ regress gen predNames respName meas = do
   let unmeasured = [n | (n, Nothing) <- map (second ($ G.head meas)) accs]
   unless (null unmeasured) $
     throwE $ "no data available for " ++ renderNames unmeasured
-  let (r:ps)      = map ((`measure` meas) . (fromJust .) . snd) accs
+  (r,ps) <- case map ((`measure` meas) . (fromJust .) . snd) accs of
+    (r':ps') -> return (r',ps')
+    []       -> throwE "regress: Expected at least one accessor"
   Config{..} <- ask
   (coeffs,r2) <- liftIO $
                  bootstrapRegress gen resamples confInterval olsRegress ps r
