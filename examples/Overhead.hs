@@ -14,11 +14,11 @@ main = do
   M.initializeTime -- Need to do this before calling M.getTime
   statsEnabled <- getRTSStatsEnabled
   defaultMain $ [
-      bench "measure" $            whnfIO (M.measure (whnfIO $ return ()) 1)
-    , bench "getTime" $            whnfIO M.getTime
-    , bench "getCPUTime" $         whnfIO M.getCPUTime
-    , bench "getCycles" $          whnfIO M.getCycles
-    , bench "M.getGCStatisticss" $ whnfIO M.getGCStatistics
+      bench "measure" $           whnfIO (M.measure (whnfIO $ return ()) 1)
+    , bench "getTime" $           whnfIO M.getTime
+    , bench "getCPUTime" $        whnfIO M.getCPUTime
+    , bench "getCycles" $         whnfIO M.getCycles
+    , bench "M.getGCStatistics" $ whnfIO M.getGCStatistics
     ] ++ if statsEnabled
          then [bench
 #if MIN_VERSION_base(4,10,0)
