@@ -1,20 +1,11 @@
 #include <mach/mach.h>
-#include <mach/mach_time.h>
+#include <time.h>
 
-static mach_timebase_info_data_t timebase_info;
-static double timebase_recip;
-
-void criterion_inittime(void)
-{
-    if (timebase_recip == 0) {
-	mach_timebase_info(&timebase_info);
-	timebase_recip = (timebase_info.denom / timebase_info.numer) / 1e9;
-    }
-}
+void criterion_inittime(void) {}
 
 double criterion_gettime(void)
 {
-    return mach_absolute_time() * timebase_recip;
+    return clock_gettime_nsec_np(CLOCK_UPTIME_RAW) / 1e9;
 }
 
 static double to_double(time_value_t time)
