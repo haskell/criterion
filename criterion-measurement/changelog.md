@@ -1,4 +1,4 @@
-next
+0.1.3.0
 
 * Change `criterion_rdtsc` to return `mach_absolute_time` on macOS. This is a
   portable way of returning the number of CPU cycles that works on both Intel-

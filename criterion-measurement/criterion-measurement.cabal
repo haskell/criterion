@@ -1,5 +1,5 @@
 name:                criterion-measurement
-version:             0.1.2.0
+version:             0.1.3.0
 synopsis:            Criterion measurement functionality and associated types
 description:         Measurement-related functionality extracted from Criterion, with minimal dependencies. The rationale for this is to enable alternative analysis front-ends.
 homepage:            https://github.com/haskell/criterion
