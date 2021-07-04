@@ -1,3 +1,28 @@
+next
+
+* Change `criterion_rdtsc` to return `mach_absolute_time` on macOS. This is a
+  portable way of returning the number of CPU cycles that works on both Intel-
+  and ARM-based Macs.
+
+* Change `criterion_gettime` to use `clock_gettime_nsec_np` instead of
+  `mach_absolute_time` on macOS. While `mach_absolute_time` has nanosecond
+  resolution on Intel-based Macs, this is not the case on ARM-based Macs, so
+  the previous `mach_absolute_time`-based implementation would return incorrect
+  timing results on Apple silicon.
+
+  There are two minor consequences of this change:
+
+  * `criterion-measurement` now only supports macOS 10.02 or later, as that is
+    the first version to have `clock_gettime_nsec_np`. As macOS 10.02 was
+    released in 2002, this is unlikely to affect users, but please speak up if
+    this is a problem for you.
+
+  * As `clock_gettime_nsec_np` does not require any special initialization
+    code, `criterion_inittime` is now a no-op on macOS. If you manually invoke
+    the `getTime` function in your code, however, it is still important that
+    you `initializeTime` beforehand, as this is still required for the Windows
+    implementation to work correctly.
+
 0.1.2.0
 
 * Ensure that `Criterion.Measurement.Types.Internal` is always compiled with
