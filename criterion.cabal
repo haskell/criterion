@@ -81,7 +81,7 @@ library
 
   build-depends:
     aeson >= 1,
-    ansi-wl-pprint >= 0.6.7.2,
+    prettyprinter >= 1.7.0 && < 1.8,
     base >= 4.5 && < 5,
     base-compat-batteries >= 0.10 && < 0.12,
     binary >= 0.5.1.0,
