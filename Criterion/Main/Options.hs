@@ -133,7 +133,8 @@ config Config{..} = Config
   <*> option (range 1 1000000)
       (long "resamples" <> metavar "COUNT" <> value resamples <>
        help "Number of bootstrap resamples to perform")
-  <*> many (option regressParams
+  <*> manyDefault regressions
+           (option regressParams
             (long "regress" <> metavar "RESP:PRED.." <>
              help "Regressions to perform"))
   <*> outputOption rawDataFile (long "raw" <>
@@ -153,6 +154,12 @@ config Config{..} = Config
   <*> strOption (long "template" <> short 't' <> metavar "FILE" <>
                  value template <>
                  help "Template to use for report")
+
+manyDefault :: [a] -> Parser a -> Parser [a]
+manyDefault def m = set_default <$> many m
+  where
+    set_default [] = def
+    set_default xs = xs
 
 outputOption :: Maybe String -> Mod OptionFields String -> Parser (Maybe String)
 outputOption file m =
