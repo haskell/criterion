@@ -1,3 +1,10 @@
+next
+
+* Fix a bug in which the `defaultMainWith` function would not use the
+  `regressions` values specified in the `Config` argument. This bug only
+  affected `criterion` the library—uses of the `--regressions` flag from
+  `criterion` executables themselves were unaffected.
+
 1.5.9.0
 
 * Fix a bug where HTML reports failed to escape JSON properly.
