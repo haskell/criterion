@@ -1,3 +1,7 @@
+1.5.11.0
+
+* Allow building with `aeson-2.0.0.0`.
+
 1.5.10.0
 
 * Fix a bug in which the `defaultMainWith` function would not use the
