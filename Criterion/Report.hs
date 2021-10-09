@@ -70,6 +70,10 @@ import qualified Data.Text.Encoding as TE
 import qualified Language.Javascript.Chart as Chart
 #endif
 
+#if MIN_VERSION_aeson(2,0,0)
+import qualified Data.Aeson.Key as Key
+#endif
+
 -- | Trim long flat tails from a KDE plot.
 tidyTails :: KDE -> KDE
 tidyTails KDE{..} = KDE { kdeType   = kdeType
@@ -214,7 +218,8 @@ vector :: (G.Vector v a, ToJSON a) =>
        -> Value
 {-# SPECIALIZE vector :: T.Text -> U.Vector Double -> Value #-}
 vector name v = toJSON . map val . G.toList $ v where
-    val i = object [ name .= i ]
+    val i = object [ toKey name .= i ]
+
 
 -- | Render the elements of two vectors.
 vector2 :: (G.Vector v a, G.Vector v b, ToJSON a, ToJSON b) =>
@@ -227,9 +232,18 @@ vector2 :: (G.Vector v a, G.Vector v b, ToJSON a, ToJSON b) =>
                        -> Value #-}
 vector2 name1 name2 v1 v2 = toJSON $ zipWith val (G.toList v1) (G.toList v2) where
     val i j = object
-        [ name1 .= i
-        , name2 .= j
+        [ toKey name1 .= i
+        , toKey name2 .= j
         ]
+
+#if MIN_VERSION_aeson(2,0,0)
+toKey :: T.Text -> Key.Key
+toKey = Key.fromText
+#else
+toKey :: T.Text -> T.Text
+toKey = id
+#endif
+
 
 -- | Attempt to include the contents of a file based on a search path.
 -- Returns 'B.empty' if the search fails or the file could not be read.
