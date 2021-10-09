@@ -80,7 +80,9 @@ library
     Paths_criterion
 
   build-depends:
-    aeson >= 1,
+    -- TODO: Eventually, we should bump the lower version bounds to >=2 so that
+    -- we can remove some CPP in Criterion.Report. See #247.
+    aeson >= 1 && < 2.1,
     ansi-wl-pprint >= 0.6.7.2,
     base >= 4.5 && < 5,
     base-compat-batteries >= 0.10 && < 0.13,
@@ -195,7 +197,7 @@ test-suite tests
     tasty-hunit,
     tasty-quickcheck,
     vector,
-    aeson >= 0.8
+    aeson
 
 test-suite cleanup
   type:                 exitcode-stdio-1.0
