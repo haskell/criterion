@@ -113,20 +113,26 @@ report reports = do
 -- the <script> tag from within the JSON data is disallowed, i.e, the character
 -- sequence "</" is made impossible.
 --
--- Moreover, single quotes are escaped such that embedding JSON into HTML
--- attributes quoted with single quotes is safe, & is escaped to avoid HTML
--- character references (&<code>;) and + is escaped to avoid UTF-7 attacks
--- (should only affect old versions of IE).
+-- Moreover, & is escaped to avoid HTML character references (&<code>;), + is
+-- escaped to avoid UTF-7 attacks (should only affect old versions of IE), and
+-- \0 is escaped to allow it to be represented in JSON, as the NUL character is
+-- disallowed in JSON but valid in Haskell characters.
 --
--- The following characters are replaced with their unicode escape sequnces
+-- The following characters are replaced with their unicode escape sequences
 -- (\uXXXX):
--- <, >, &, +, \x2028 (line separator), and \x2029 (paragraph
--- separator)
+-- <, >, &, +, \x2028 (line separator), \x2029 (paragraph separator), and \0
+-- (null terminator)
 --
 -- Other characters are such as \\ (backslash) and \n (newline) are not escaped
--- here as the JSON serializer @encodeToLazyText@ already escapes them when
--- they occur inside JSON strings and they cause no issues with respect to HTML
+-- as the JSON serializer @encodeToLazyText@ already escapes them when they
+-- occur inside JSON strings and they cause no issues with respect to HTML
 -- safety when used outside of strings in the JSON-encoded payload.
+--
+-- If the resulting JSON-encoded Text is embedded in an HTML attribute, extra
+-- care is required to also escape quotes with character references in the
+-- final JSON payload.
+-- See <https://html.spec.whatwg.org/multipage/syntax.html#syntax-attributes>
+-- for details on how to escape attribute values.
 escapeJSON :: Char -> TL.Text
 escapeJSON '<'      = "\\u003c" -- ban closing of the script tag by making </ impossible
 escapeJSON '>'      = "\\u003e" -- encode tags with unicode escape sequences
