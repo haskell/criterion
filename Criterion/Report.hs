@@ -119,8 +119,14 @@ report reports = do
 -- (should only affect old versions of IE).
 --
 -- The following characters are replaced with their unicode escape sequnces
--- (\uXXXX) <, >, &, +, \0, \n, \r, ' (single quote), /, \, \x2028 (line
--- separator) and \x2029 (paragraph separator)
+-- (\uXXXX):
+-- <, >, &, +, \x2028 (line separator), and \x2029 (paragraph
+-- separator)
+--
+-- Other characters are such as \\ (backslash) and \n (newline) are not escaped
+-- here as the JSON serializer @encodeToLazyText@ already escapes them when
+-- they occur inside JSON strings and they cause no issues with respect to HTML
+-- safety when used outside of strings in the JSON-encoded payload.
 escapeJSON :: Char -> TL.Text
 escapeJSON '<'      = "\\u003c" -- ban closing of the script tag by making </ impossible
 escapeJSON '>'      = "\\u003e" -- encode tags with unicode escape sequences
@@ -129,11 +135,6 @@ escapeJSON '\x2029' = "\\u2029" -- paragraph separator
 escapeJSON '&'      = "\\u0026" -- avoid HTML entities
 escapeJSON '+'      = "\\u002b" -- + can be used in UTF-7 escape sequences
 escapeJSON '\0'     = "\\u0000" -- make null characters explicit
-escapeJSON '\n'     = "\\u000a" -- for good measure also escape newlines
-escapeJSON '\r'     = "\\u000d" -- , carriage returns
-escapeJSON '\''     = "\\u0027" -- , single quotes
-escapeJSON '/'      = "\\u002f" -- , slashes
-escapeJSON '\\'     = "\\u005c" -- , and backslashes
 escapeJSON c        = TL.singleton c
 
 -- | Format a series of 'Report' values using the given Mustache template.
