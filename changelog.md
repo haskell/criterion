@@ -1,3 +1,8 @@
+1.5.12.0
+
+* Fix a bug introduced in version 1.5.9.0 in which benchmark names that include
+  double quotes would produce broken HTML reports.
+
 1.5.11.0
 
 * Allow building with `aeson-2.0.0.0`.
