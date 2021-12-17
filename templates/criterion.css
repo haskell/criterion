@@ -64,7 +64,7 @@ footer .content {
 }
 
 span#explain-interactivity {
-  display-block: inline;
+  display: inline-block;
   float: right;
   color: #444;
   font-size: 0.7em;

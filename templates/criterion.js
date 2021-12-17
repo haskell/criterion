@@ -844,7 +844,7 @@
   }
   document.addEventListener('DOMContentLoaded', function() {
     var rawJSON = document.getElementById('report-data').text;
-    var reportData = JSON.parse(rawJSON)
+    var reportData = (window.reportData || JSON.parse(rawJSON))
       .map(function(report) {
         report.groups = report.reportName.split('/');
         return report;
