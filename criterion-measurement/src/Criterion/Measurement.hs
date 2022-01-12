@@ -27,6 +27,7 @@ module Criterion.Measurement
     , secs
     , measure
     , runBenchmark
+    , runBenchmarkWith
     , runBenchmarkable
     , runBenchmarkable_
     , measured
@@ -39,7 +40,7 @@ import Control.DeepSeq (NFData(rnf))
 import Control.Exception (finally,evaluate)
 import Data.Data (Data, Typeable)
 import Data.Int (Int64)
-import Data.List (unfoldr)
+import Data.List.NonEmpty (NonEmpty (..))
 import Data.Word (Word64)
 import GHC.Generics (Generic)
 #if MIN_VERSION_base(4,10,0)
@@ -58,6 +59,7 @@ import Text.Printf (printf)
 import qualified Control.Exception as Exc
 import qualified Data.Vector as V
 import qualified GHC.Stats as Stats
+import qualified Data.List.NonEmpty as NE
 
 #if !(MIN_VERSION_base(4,7,0))
 foreign import ccall "performGC" performMinorGC :: IO ()
@@ -289,41 +291,70 @@ runBenchmark :: Benchmarkable
              -- exceeded in order to generate enough data to perform
              -- meaningful statistical analyses.
              -> IO (V.Vector Measured, Double)
-runBenchmark bm timeLimit = do
+runBenchmark bm timeLimit = runBenchmarkWith endAt 0 bm where
+  endAt :: Int -> Int64 -> Double -> NonEmpty Measured -> Double -> Either (V.Vector Measured, Double) (Int64, Double)
+  endAt count iters delta ms prev = do
+    let m = NE.head ms
+
+    -- we accumulate the time spent in runs longer then threshold.
+    let prev' | measTime m >= threshold = prev + measTime m
+              | otherwise               = prev
+
+    -- We try to honour the time limit, but we also have more
+    -- important constraints:
+    --
+    -- We must generate enough data that bootstrapping won't
+    -- simply crash.
+    --
+    -- We need to generate enough measurements that have long
+    -- spans of execution to outweigh the (rather high) cost of
+    -- measurement.
+
+    if delta >= timeLimit && prev' >= threshold * 10 && count >= 4
+    then do
+      let !v = V.reverse (V.fromList ms)
+      Left (v, delta)
+    else
+      Right (nextIters iters, prev')
+
+  -- Multiply by 1.05, but always increase
+  nextIters :: Int64 -> Int64
+  nextIters n = max (n + 1) (div (105 * n) 100)
+
+-- | Run benchmark with provided dynamic termination condition.
+--
+-- The first argument is termination check, it takes as arguments:
+--
+-- * current run count (starting from zero)
+-- * current iteration count (starting from one)
+-- * amount of time the measurement process took so far.
+-- * results so far (in reverse order, latest first in the list).
+-- * user defined state
+--
+-- and should return 'Nothing' for run to terminate
+-- or @'Just' (nextIters, nextState)@ for run to continue with new iteration count and state.
+--
+runBenchmarkWith :: forall s r. (Int -> Int64 -> Double -> NonEmpty Measured -> s -> Either r (Int64, s))
+                 -> s
+                 -> Benchmarkable
+                 -> IO r
+runBenchmarkWith f s0 bm = do
   initializeTime
   runBenchmarkable_ bm 1
-  start <- performGC >> getTime
-  let loop [] !_ !_ _ = error "unpossible!"
-      loop (iters:niters) prev count acc = do
+  startTime <- performGC >> getTime
+
+  let loop :: Int -> Int64 -> [Measured] -> s -> IO r
+      loop count iters acc s = do
         (m, endTime) <- measure bm iters
-        let overThresh = max 0 (measTime m - threshold) + prev
-        -- We try to honour the time limit, but we also have more
-        -- important constraints:
-        --
-        -- We must generate enough data that bootstrapping won't
-        -- simply crash.
-        --
-        -- We need to generate enough measurements that have long
-        -- spans of execution to outweigh the (rather high) cost of
-        -- measurement.
-        if endTime - start >= timeLimit &&
-           overThresh > threshold * 10 &&
-           count >= (4 :: Int)
-          then do
-            let !v = V.reverse (V.fromList acc)
-            return (v, endTime - start)
-          else loop niters overThresh (count+1) (m:acc)
-  loop (squish (unfoldr series 1)) 0 0 []
+        let accNE = m :| acc
+        let acc'  = m : acc
+        let delta = endTime - startTime
+        case f count iters delta accNE s of
+          Right (iters', s') ->
+            loop (count + 1) iters' acc' s'
+          Left r -> return r
 
--- Our series starts its growth very slowly when we begin at 1, so we
--- eliminate repeated values.
-squish :: (Eq a) => [a] -> [a]
-squish ys = foldr go [] ys
-  where go x xs = x : dropWhile (==x) xs
-
-series :: Double -> Maybe (Int64, Double)
-series k = Just (truncate l, l)
-  where l = k * 1.05
+  loop 0 1 [] s0
 
 -- | An empty structure.
 measured :: Measured
