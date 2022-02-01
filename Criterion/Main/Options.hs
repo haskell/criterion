@@ -25,6 +25,7 @@ module Criterion.Main.Options
 
 import Control.Monad (when)
 import Criterion.Analysis (validateAccessors)
+import Criterion.Main.Options.Internal (tabulate)
 import Criterion.Types (Config(..), Verbosity(..), measureAccessors,
                         measureKeys)
 import Data.Char (isSpace, toLower)
@@ -34,7 +35,7 @@ import Data.List (isPrefixOf)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Options.Applicative
-import Options.Applicative.Help (Chunk(..), tabulate)
+import Options.Applicative.Help (Chunk(..))
 import Options.Applicative.Help.Pretty ((.$.))
 import Options.Applicative.Types
 import Paths_criterion (version)
