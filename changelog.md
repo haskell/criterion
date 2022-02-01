@@ -1,3 +1,7 @@
+next
+
+* Allow building with `optparse-applicative-0.17.*`.
+
 1.5.12.0
 
 * Fix a bug introduced in version 1.5.9.0 in which benchmark names that include
