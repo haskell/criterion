@@ -1,4 +1,4 @@
-next
+1.5.13.0
 
 * Allow building with `optparse-applicative-0.17.*`.
 
