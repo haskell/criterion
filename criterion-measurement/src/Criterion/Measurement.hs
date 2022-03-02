@@ -182,7 +182,7 @@ getGCStatistics = do
 measure :: Benchmarkable        -- ^ Operation to benchmark.
         -> Int64                -- ^ Number of iterations.
         -> IO (Measured, Double)
-measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
+measure bm iters = runBenchmarkable bm iters combineResults $ \ !n act -> do
   -- Ensure the stats from getGCStatistics are up-to-date
   -- by garbage collecting. performMinorGC does /not/ update all stats, but
   -- it does update the ones we need (see applyGCStatistics for details.
@@ -216,10 +216,14 @@ measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
   where
     -- When combining runs, the Measured value is accumulated over many runs,
     -- but the Double value is the most recent absolute measurement of time.
-    addResults :: (Measured, Double) -> (Measured, Double) -> (Measured, Double)
-    addResults (!m1, _) (!m2, !d2) = (m3, d2)
+    combineResults :: (Measured, Double) -> (Measured, Double) -> (Measured, Double)
+    combineResults (!m1, _) (!m2, !d2) = (m3, d2)
       where
-        add f = f m1 + f m2
+        combine :: (a -> a -> a) -> (Measured -> a) -> a
+        combine g sel = sel m1 `g` sel m2
+
+        add :: Num a => (Measured -> a) -> a
+        add = combine (+)
 
         m3 = Measured
             { measTime               = add measTime
@@ -228,6 +232,7 @@ measure bm iters = runBenchmarkable bm iters addResults $ \ !n act -> do
             , measIters              = add measIters
 
             , measAllocated          = add measAllocated
+            , measPeakMbAllocated    = combine max measPeakMbAllocated
             , measNumGcs             = add measNumGcs
             , measBytesCopied        = add measBytesCopied
             , measMutatorWallSeconds = add measMutatorWallSeconds
@@ -334,6 +339,7 @@ measured = Measured {
     , measIters              = 0
 
     , measAllocated          = minBound
+    , measPeakMbAllocated    = minBound
     , measNumGcs             = minBound
     , measBytesCopied        = minBound
     , measMutatorWallSeconds = bad
@@ -360,6 +366,7 @@ applyGCStatistics (Just endPostGC) (Just endPreGC) (Just start) m = m {
     -- The others (num GCs and GC cpu/wall seconds) must be diffed against
     -- endPreGC so that the extra performGC does not taint them.
     measAllocated          = diff endPostGC gcStatsBytesAllocated
+  , measPeakMbAllocated    = gcStatsPeakMegabytesAllocated endPostGC
   , measNumGcs             = diff endPreGC  gcStatsNumGcs
   , measBytesCopied        = diff endPostGC gcStatsBytesCopied
   , measMutatorWallSeconds = diff endPostGC gcStatsMutatorWallSeconds

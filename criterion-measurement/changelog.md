@@ -1,3 +1,8 @@
+0.2.0.0
+
+* Adds the `measPeakMbAllocated` field to `Measured` for reporting maximum
+  megabytes allocated. Naturally, this affects the JSON and Binary interfaces.
+
 0.1.3.0
 
 * Change `criterion_rdtsc` to return `mach_absolute_time` on macOS. This is a
