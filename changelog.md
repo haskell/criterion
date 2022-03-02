@@ -1,3 +1,9 @@
+1.6.0.0
+
+* `criterion-measurement-0.2.0.0` adds the `measPeakMbAllocated` field to
+  `Measured` for reporting maximum megabytes allocated. Naturally, this
+  affects the JSON and Binary interfaces.
+
 1.5.13.0
 
 * Allow building with `optparse-applicative-0.17.*`.

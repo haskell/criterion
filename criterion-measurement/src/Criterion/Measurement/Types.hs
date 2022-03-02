@@ -125,6 +125,8 @@ data Measured = Measured {
 
     , measAllocated          :: !Int64
       -- ^ __(GC)__ Number of bytes allocated.  Access using 'fromInt'.
+    , measPeakMbAllocated    :: !Int64
+      -- ^ __(GC)__ Max number of megabytes allocated.  Access using 'fromInt'.
     , measNumGcs             :: !Int64
       -- ^ __(GC)__ Number of garbage collections performed.  Access
       -- using 'fromInt'.
@@ -148,11 +150,11 @@ data Measured = Measured {
 
 instance FromJSON Measured where
     parseJSON v = do
-      (a,b,c,d,e,f,g,h,i,j,k) <- parseJSON v
+      (a,b,c,d,e,f,g,h,i,j,k,l) <- parseJSON v
       -- The first four fields are not subject to the encoding policy:
       return $ Measured a b c d
-                       (int e) (int f) (int g)
-                       (db h) (db i) (db j) (db k)
+                       (int e) (int f) (int g) (int h)
+                       (db i) (db j) (db k) (db l)
       where int = toInt; db = toDouble
 
 -- Here we treat the numeric fields as `Maybe Int64` and `Maybe Double`
@@ -161,7 +163,7 @@ instance FromJSON Measured where
 instance ToJSON Measured where
     toJSON Measured{..} = toJSON
       (measTime, measCpuTime, measCycles, measIters,
-       i measAllocated, i measNumGcs, i measBytesCopied,
+       i measAllocated, i measPeakMbAllocated, i measNumGcs, i measBytesCopied,
        d measMutatorWallSeconds, d measMutatorCpuSeconds,
        d measGcWallSeconds, d measGcCpuSeconds)
       where i = fromInt; d = fromDouble
@@ -186,6 +188,8 @@ measureAccessors_ = [
                             "loop iterations"))
   , ("allocated",          (fmap fromIntegral . fromInt . measAllocated,
                             "(+RTS -T) bytes allocated"))
+  , ("peakMbAllocated",    (fmap fromIntegral . fromInt . measPeakMbAllocated,
+                            "(+RTS -T) peak megabytes allocated"))
   , ("numGcs",             (fmap fromIntegral . fromInt . measNumGcs,
                             "(+RTS -T) number of garbage collections"))
   , ("bytesCopied",        (fmap fromIntegral . fromInt . measBytesCopied,
@@ -260,10 +264,10 @@ toDouble (Just d) = d
 instance Binary Measured where
     put Measured{..} = do
       put measTime; put measCpuTime; put measCycles; put measIters
-      put measAllocated; put measNumGcs; put measBytesCopied
+      put measAllocated; put measPeakMbAllocated; put measNumGcs; put measBytesCopied
       put measMutatorWallSeconds; put measMutatorCpuSeconds
       put measGcWallSeconds; put measGcCpuSeconds
-    get = Measured <$> get <*> get <*> get <*> get
+    get = Measured <$> get <*> get <*> get <*> get <*> get
                    <*> get <*> get <*> get <*> get <*> get <*> get <*> get
 
 -- | Apply an argument to a function, and evaluate the result to

@@ -12,7 +12,7 @@ import Test.HUnit
 r1 :: Report
 r1 = Report 0 "" [] v1 s1 (Outliers 0 0 0 0 0) []
  where
-  m1 = Measured 4.613000783137977e-05 3.500000000000378e-05 31432 1 0 0 0 0.0 0.0 0.0 0.0
+  m1 = Measured 4.613000783137977e-05 3.500000000000378e-05 31432 1 0 0 0 0 0.0 0.0 0.0 0.0
   v1 = V.fromList [m1]
   est1 = estimateFromErr 0.0 (0.0, 0.0) (mkCL 0.0)
   s1 = SampleAnalysis [] est1 est1 (OutlierVariance Unaffected "" 0.0)
@@ -24,6 +24,7 @@ m2 = Measured {measTime = 1.1438998626545072e-5
               , measIters = 1
 
               , measAllocated = minBound
+              , measPeakMbAllocated = minBound
               , measNumGcs = minBound
               , measBytesCopied = minBound
 

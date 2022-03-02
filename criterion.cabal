@@ -1,5 +1,5 @@
 name:           criterion
-version:        1.5.13.0
+version:        1.6.0.0
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
@@ -94,7 +94,7 @@ library
     cassava >= 0.3.0.0,
     code-page,
     containers,
-    criterion-measurement >= 0.1.1.0 && < 0.2,
+    criterion-measurement >= 0.1.1.0 && < 0.3,
     deepseq >= 1.1.0.0,
     directory,
     exceptions >= 0.8.2 && < 0.11,
