@@ -1,7 +1,8 @@
 0.2.0.0
 
-* Adds the `measPeakMbAllocated` field to `Measured` for reporting maximum
-  megabytes allocated. Naturally, this affects the JSON and Binary interfaces.
+* Add a `measPeakMbAllocated` field to `Measured` for reporting maximum
+  megabytes allocated. Naturally, this affects the behavior of `Measured`'s
+  `{To,From}JSON` and `Binary` instances.
 
 0.1.3.0
 

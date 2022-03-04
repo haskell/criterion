@@ -1,8 +1,10 @@
 1.6.0.0
 
 * `criterion-measurement-0.2.0.0` adds the `measPeakMbAllocated` field to
-  `Measured` for reporting maximum megabytes allocated. Naturally, this
-  affects the JSON and Binary interfaces.
+  `Measured` for reporting maximum megabytes allocated. Since `criterion`
+  re-exports `Measured` from `Criterion.Types`, this change affects `criterion`
+  as well. Naturally, this affects the behavior of `Measured`'s `{To,From}JSON`
+  and `Binary` instances.
 
 1.5.13.0
 

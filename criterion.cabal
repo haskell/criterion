@@ -94,7 +94,7 @@ library
     cassava >= 0.3.0.0,
     code-page,
     containers,
-    criterion-measurement >= 0.1.1.0 && < 0.3,
+    criterion-measurement >= 0.2 && < 0.3,
     deepseq >= 1.1.0.0,
     directory,
     exceptions >= 0.8.2 && < 0.11,
