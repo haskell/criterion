@@ -5,6 +5,8 @@
   re-exports `Measured` from `Criterion.Types`, this change affects `criterion`
   as well. Naturally, this affects the behavior of `Measured`'s `{To,From}JSON`
   and `Binary` instances.
+* Fix a bug in which the `--help` text for the `--match` option was printed
+  twice in `criterion` applications.
 
 1.5.13.0
 

@@ -96,27 +96,47 @@ parseWith :: Config
              -- ^ Default configuration to use if options are not
              -- explicitly specified.
           -> Parser Mode
-parseWith cfg = config cfg <**> runMode
-                -- Important: only run `config` once here, as we only want the
-                -- command-line options resulting from `config` to appear once
-                -- in the `--help` output. See #168.
+parseWith cfg =
+  runOrRunIters <|>
+  (List <$ switch (long "list" <> short 'l' <> help "List benchmarks")) <|>
+  (Version <$ switch (long "version" <> help "Show version info"))
   where
-    runMode :: Parser (Config -> Mode)
-    runMode =
-      matchNames (pure $ \mt bs cfg' -> Run cfg' mt bs) <|>
-      runIters <|>
-      (const List <$ switch (long "list" <> short 'l' <> help "List benchmarks")) <|>
-      (const Version <$ switch (long "version" <> help "Show version info"))
-
-    runIters :: Parser (Config -> Mode)
-    runIters = matchNames $ (\iters mt bs cfg' -> RunIters cfg' iters mt bs)
-      <$> option auto
+    runOrRunIters :: Parser Mode
+    runOrRunIters =
+          -- Because Run and RunIters are separate Modes, it's tempting to
+          -- split them out into their own Parsers and choose between them
+          -- using (<|>), i.e.,
+          --
+          --       (Run      <$> config cfg                   <*> ...)
+          --   <|> (RunIters <$> config cfg <*> (... "iters") <*> ...)
+          --
+          -- This is possible, but it has the unfortunate consequence of
+          -- invoking the same Parsers (e.g., @config@) multiple times. As a
+          -- result, the help text for each Parser would be duplicated when the
+          -- user runs --help. See #168.
+          --
+          -- To avoid this problem, we combine Run and RunIters into a single
+          -- Parser that only runs each of its sub-Parsers once. The trick is
+          -- to make the Parser for "iters" (the key difference between Run and
+          -- RunIters) an optional Parser. If the Parser yields Nothing, select
+          -- Run, and if the Parser yields Just, select RunIters.
+          --
+          -- This is admittedly a bit of a design smell, as the idiomatic way
+          -- to handle this would be to turn Run and RunIters into subcommands
+          -- rather than options. That way, each subcommand would have its own
+          -- --help prompt, thereby avoiding the need to deduplicate the help
+          -- text. Unfortunately, this would require breaking the CLI interface
+          -- of every criterion-based program, which seems like a leap too far.
+          -- The solution used here, while a bit grimy, gets the job done while
+          -- keeping Run and RunIters as options.
+          (\cfg' mbIters ->
+            case mbIters of
+              Just iters -> RunIters cfg' iters
+              Nothing    -> Run cfg')
+      <$> config cfg
+      <*> optional (option auto
           (long "iters" <> short 'n' <> metavar "ITERS" <>
-           help "Run benchmarks, don't analyse")
-
-    matchNames :: Parser (MatchType -> [String] -> Config -> Mode)
-               -> Parser (Config -> Mode)
-    matchNames wat = wat
+           help "Run benchmarks, don't analyse"))
       <*> option match
           (long "match" <> short 'm' <> metavar "MATCH" <> value Prefix <>
            help "How to match benchmark names (\"prefix\", \"glob\", \"pattern\", or \"ipattern\")")
