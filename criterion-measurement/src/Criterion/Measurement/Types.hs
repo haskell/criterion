@@ -567,7 +567,7 @@ perRunEnv
     -- ^ Action that creates the environment for a single run.
     -> (env -> IO b)
     -- ^ Function returning the IO action that should be benchmarked with the
-    -- newly genereted environment.
+    -- newly generated environment.
     -> Benchmarkable
 perRunEnv alloc = perRunEnvWithCleanup alloc noop
 
@@ -582,7 +582,7 @@ perRunEnvWithCleanup
     -- ^ Clean up the created environment.
     -> (env -> IO b)
     -- ^ Function returning the IO action that should be benchmarked with the
-    -- newly genereted environment.
+    -- newly generated environment.
     -> Benchmarkable
 perRunEnvWithCleanup alloc clean work = bm { perRun = True }
   where
