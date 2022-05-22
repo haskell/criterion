@@ -1,3 +1,4 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE Trustworthy #-}
 
 -- |
@@ -45,6 +46,9 @@ module Criterion.Main
     , bgroup
     -- ** Running a benchmark
     , nf
+#if MIN_VERSION_base(4,16,0)
+    , lf
+#endif
     , whnf
     , nfIO
     , whnfIO

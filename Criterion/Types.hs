@@ -58,6 +58,9 @@ module Criterion.Types
     , benchNames
     -- ** Evaluation control
     , nf
+#if MIN_VERSION_base(4,16,0)
+    , lf
+#endif
     , whnf
     , nfIO
     , whnfIO

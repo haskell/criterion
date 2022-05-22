@@ -1,4 +1,9 @@
 {-# LANGUAGE CPP #-}
+
+#if MIN_VERSION_base(4,16,0)
+{-# LANGUAGE LinearTypes #-}
+#endif
+
 {-# LANGUAGE Trustworthy #-}
 {-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE DeriveDataTypeable, DeriveGeneric, GADTs, RecordWildCards #-}
@@ -56,6 +61,7 @@ module Criterion.Measurement.Types
     , benchNames
     -- ** Evaluation control
     , nf
+    , lf
     , whnf
     , nfIO
     , whnfIO
@@ -65,7 +71,11 @@ module Criterion.Measurement.Types
   where
 
 import Control.DeepSeq (NFData(rnf))
+#if MIN_VERSION_base(4,16,0)
+import Criterion.Measurement.Types.Internal (fakeEnvironment, nf', lf', whnf')
+#else
 import Criterion.Measurement.Types.Internal (fakeEnvironment, nf', whnf')
+#endif
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..))
 import Data.Data (Data, Typeable)
@@ -274,6 +284,12 @@ instance Binary Measured where
 -- normal form (NF).
 nf :: NFData b => (a -> b) -> a -> Benchmarkable
 nf f x = toBenchmarkable (nf' rnf f x)
+
+#if MIN_VERSION_base(4,16,0)  
+-- | Apply an argument to a linear function.
+lf :: NFData b => (a %1 -> b) -> a -> Benchmarkable
+lf f x = toBenchmarkable (lf' rnf f x)
+#endif
 
 -- | Apply an argument to a function, and evaluate the result to weak
 -- head normal form (WHNF).

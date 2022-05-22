@@ -1,8 +1,17 @@
 {-# LANGUAGE CPP #-}
+#if MIN_VERSION_base(4,16,0)
+{-# LANGUAGE LinearTypes #-}
+#endif
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
-import Criterion.Main (bench, bgroup, env, whnf)
+#if MIN_VERSION_base(4,16,0)
+import Criterion.Main (bench, bgroup, env, whnf, lf)
+import qualified Data.List.Linear as DLL
+import qualified Prelude.Linear as PL
+#else
+import Criterion.Main (bench, bgroup, env, whnf)  
+#endif
 import System.Environment (getEnv, withArgs)
 import System.Timeout (timeout)
 import Test.Tasty (defaultMain)
@@ -21,6 +30,19 @@ fib = sum . go
   where go 0 = [0]
         go 1 = [1]
         go n = go (n-1) ++ go (n-2)
+        
+#if MIN_VERSION_base(4,16,0)
+lfib :: PL.Int %1 -> PL.Int
+lfib = DLL.sum PL.. go
+  where go :: PL.Int %1 -> [PL.Int]
+        -- go 0 = [0]
+        -- go 1 = [1]
+        go n = PL.dup n PL.& 
+          \(np, nv) ->
+            if np PL.< 2 
+              then [nv]
+              else PL.dup nv PL.& \(n', n'') -> go (n' PL.- 1) PL.++ go (n'' PL.- 2)
+#endif
 
 -- Additional arguments to include along with the ARGS environment variable.
 extraArgs :: [String]
@@ -37,6 +59,9 @@ sanity = do
                bgroup "fib" [
                  bench "fib 10" $ whnf fib 10
                , bench "fib 22" $ whnf fib 22
+#if MIN_VERSION_base(4,16,0)
+               , bench "lfib 10" $ lf lfib 10  
+#endif               
                ]
              , env (return (replicate 1024 0)) $ \xs ->
                bgroup "length . filter" [

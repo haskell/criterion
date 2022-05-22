@@ -176,6 +176,7 @@ test-suite sanity
     bytestring,
     criterion,
     deepseq,
+    linear-base,
     tasty,
     tasty-hunit
 
