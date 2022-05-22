@@ -1,12 +1,13 @@
-resolver: lts-10.5
+resolver: nightly-2022-04-26
+compiler: ghc-9.2.2
 
 packages:
 - '.'
 - 'criterion-measurement/'
 
 extra-deps:
-- microstache-1.0.1.1
-- statistics-0.14.0.0
+- microstache-1.0.2.1
+- statistics-0.16.1.0
 - js-chart-2.9.4.1
 
 flags: {}
