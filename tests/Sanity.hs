@@ -6,7 +6,7 @@
 {-# OPTIONS_GHC -fno-warn-orphans #-}
 
 #if MIN_VERSION_base(4,16,0)
-import Criterion.Main (bench, bgroup, env, whnf, lf)
+import Criterion.Main (bench, bgroup, env, whnf, nfLinear)
 import qualified Data.List.Linear as DLL
 import qualified Prelude.Linear as PL
 #else
@@ -60,7 +60,7 @@ sanity = do
                  bench "fib 10" $ whnf fib 10
                , bench "fib 22" $ whnf fib 22
 #if MIN_VERSION_base(4,16,0)
-               , bench "lfib 10" $ lf lfib 10  
+               , bench "lfib 10" $ nfLinear lfib 10  
 #endif               
                ]
              , env (return (replicate 1024 0)) $ \xs ->

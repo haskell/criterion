@@ -58,14 +58,17 @@ module Criterion.Types
     , benchNames
     -- ** Evaluation control
     , nf
-#if MIN_VERSION_base(4,16,0)
-    , lf
-#endif
     , whnf
     , nfIO
     , whnfIO
     , nfAppIO
     , whnfAppIO
+#if MIN_VERSION_base(4,16,0)
+    , nfLinear
+    , whnfLinear
+    , nfAppIoLinear
+    , whnfAppIoLinear    
+#endif    
     -- * Result types
     , Outliers(..)
     , OutlierEffect(..)

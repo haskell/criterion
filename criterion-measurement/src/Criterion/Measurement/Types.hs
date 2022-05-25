@@ -60,8 +60,13 @@ module Criterion.Measurement.Types
     , addPrefix
     , benchNames
     -- ** Evaluation control
+#if MIN_VERSION_base(4,16,0)
+    , nfLinear
+    , whnfLinear
+    , nfAppIoLinear
+    , whnfAppIoLinear
+#endif      
     , nf
-    , lf
     , whnf
     , nfIO
     , whnfIO
@@ -71,11 +76,13 @@ module Criterion.Measurement.Types
   where
 
 import Control.DeepSeq (NFData(rnf))
+
+import Criterion.Measurement.Types.Internal (fakeEnvironment, nf', 
 #if MIN_VERSION_base(4,16,0)
-import Criterion.Measurement.Types.Internal (fakeEnvironment, nf', lf', whnf')
-#else
-import Criterion.Measurement.Types.Internal (fakeEnvironment, nf', whnf')
-#endif
+  nfLinear', whnfLinear',
+#endif  
+  whnf')
+
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..))
 import Data.Data (Data, Typeable)
@@ -285,12 +292,6 @@ instance Binary Measured where
 nf :: NFData b => (a -> b) -> a -> Benchmarkable
 nf f x = toBenchmarkable (nf' rnf f x)
 
-#if MIN_VERSION_base(4,16,0)  
--- | Apply an argument to a linear function.
-lf :: NFData b => (a %1 -> b) -> a -> Benchmarkable
-lf f x = toBenchmarkable (lf' rnf f x)
-#endif
-
 -- | Apply an argument to a function, and evaluate the result to weak
 -- head normal form (WHNF).
 whnf :: (a -> b) -> a -> Benchmarkable
@@ -393,6 +394,44 @@ whnfAppIO' f v = go
               x <- f v
               x `seq` go (n-1)
 {-# NOINLINE whnfAppIO' #-}
+
+#if MIN_VERSION_base(4,16,0)  
+-- | linear variant of 'nf'
+nfLinear :: NFData b => (a %1 -> b) -> a -> Benchmarkable
+nfLinear f x = toBenchmarkable (nfLinear' rnf f x)
+
+-- | linear variant of 'whnf'
+whnfLinear :: (a %1 -> b) -> a -> Benchmarkable
+whnfLinear f x = toBenchmarkable (whnfLinear' f x)
+
+-- | linear variant of 'nfAppIO'
+nfAppIoLinear :: NFData b => (a %1 -> IO b) -> a -> Benchmarkable
+nfAppIoLinear f v = toBenchmarkable (nfAppIoLinear' rnf f v)
+
+-- | linear variant of 'whnAppIO'
+whnfAppIoLinear :: (a %1 -> IO b) -> a -> Benchmarkable
+whnfAppIoLinear f v = toBenchmarkable (whnfAppIoLinear' f v)
+
+-- | linear variant of 'nfAppIO'''
+nfAppIoLinear' :: (b -> ()) -> (a %1 -> IO b) -> a -> (Int64 -> IO ())
+nfAppIoLinear' reduce f v = go
+  where go n
+          | n <= 0    = return ()
+          | otherwise = do
+              x <- f v
+              reduce x `seq` go (n-1)
+{-# NOINLINE nfAppIoLinear' #-}
+
+-- | linear variant of 'whnfAppIO'''
+whnfAppIoLinear' :: (a %1 -> IO b) -> a -> (Int64 -> IO ())
+whnfAppIoLinear' f v = go
+  where go n
+          | n <= 0    = return ()
+          | otherwise = do
+              x <- f v
+              x `seq` go (n-1)
+{-# NOINLINE whnfAppIoLinear' #-}
+#endif
 
 -- | Specification of a collection of benchmarks and environments. A
 -- benchmark may consist of:

@@ -46,14 +46,17 @@ module Criterion.Main
     , bgroup
     -- ** Running a benchmark
     , nf
-#if MIN_VERSION_base(4,16,0)
-    , lf
-#endif
     , whnf
     , nfIO
     , whnfIO
     , nfAppIO
     , whnfAppIO
+#if MIN_VERSION_base(4,16,0)
+    , nfLinear
+    , whnfLinear
+    , nfAppIoLinear
+    , whnfAppIoLinear
+#endif
     -- * Turning a suite of benchmarks into a program
     , defaultMain
     , defaultMainWith

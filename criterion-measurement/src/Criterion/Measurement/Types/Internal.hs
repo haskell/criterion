@@ -23,11 +23,11 @@
 --
 -- Exports 'fakeEnvironment'.
 
+module Criterion.Measurement.Types.Internal (fakeEnvironment, nf', 
 #if MIN_VERSION_base(4,16,0)
-module Criterion.Measurement.Types.Internal (fakeEnvironment, nf', lf', whnf') where
-#else
-module Criterion.Measurement.Types.Internal (fakeEnvironment, nf', whnf') where
-#endif    
+  nfLinear', whnfLinear',
+#endif      
+  whnf') where
 
 import Data.Int (Int64)
 
@@ -67,16 +67,6 @@ nf' reduce f x = go
                        in reduce y `seq` go (n-1)
 {-# NOINLINE nf' #-}
 
-#if MIN_VERSION_base(4,16,0)
-lf' :: (b -> ()) -> (a %1 -> b) -> a -> (Int64 -> IO ())
-lf' reduce f x = go
-  where
-    go n | n <= 0    = return ()
-         | otherwise = let !y = f x
-                       in reduce y `seq` go (n-1)
-{-# NOINLINE lf' #-}
-#endif
-
 -- | Generate a function which applies an argument to a function a
 -- given number of times.
 whnf' :: (a -> b) -> a -> (Int64 -> IO ())
@@ -85,3 +75,20 @@ whnf' f x = go
     go n | n <= 0    = return ()
          | otherwise = f x `seq` go (n-1)
 {-# NOINLINE whnf' #-}
+
+#if MIN_VERSION_base(4,16,0)
+nfLinear' :: (b -> ()) -> (a %1 -> b) -> a -> (Int64 -> IO ())
+nfLinear' reduce f x = go
+  where
+    go n | n <= 0    = return ()
+         | otherwise = let !y = f x
+                       in reduce y `seq` go (n-1)
+{-# NOINLINE nfLinear' #-}
+
+whnfLinear' :: (a %1 -> b) -> a -> (Int64 -> IO ())
+whnfLinear' f x = go
+  where
+    go n | n <= 0    = return ()
+         | otherwise = f x `seq` go (n-1)
+{-# NOINLINE whnfLinear' #-}
+#endif
