@@ -4,6 +4,11 @@
   megabytes allocated. Naturally, this affects the behavior of `Measured`'s
   `{To,From}JSON` and `Binary` instances.
 
+0.1.4.0
+
+* Fix a bug that occurred with GHC 9.2.4 or later that would cause incorrect
+  measurements.
+
 0.1.3.0
 
 * Change `criterion_rdtsc` to return `mach_absolute_time` on macOS. This is a
