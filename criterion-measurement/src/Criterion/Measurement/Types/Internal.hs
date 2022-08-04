@@ -20,6 +20,7 @@
 module Criterion.Measurement.Types.Internal (fakeEnvironment, nf', whnf') where
 
 import Data.Int (Int64)
+import Control.Exception
 
 -- | A dummy environment that is passed to functions that create benchmarks
 -- from environments when no concrete environment is available.
@@ -45,7 +46,17 @@ fakeEnvironment = error $ unlines
 -- benchmark code itself could be changed by the user's optimization level. By
 -- marking them @NOINLINE@, the core benchmark code is always the same.
 --
--- See #183 and #184 for discussion.
+-- Finally, it's important that both branches of the loop depend on the state
+-- token from the IO action. This is achieved by using `evaluate` rather than `let !y = f x`
+-- in order to force the value to whnf. `evaluate` is in the IO monad and therefore the state
+-- token needs to be passed through the loop.
+--
+-- See ghc#21948 where a change in eta-expansion behaviour
+-- caused the work to be performed in the wrong place because the otherwise branch
+-- did not depend on the state token at all, and the whole loop could be evaluated to
+-- a single return function before being run in the IO monad.
+--
+-- See #183, #184 and #264 for discussion.
 
 -- | Generate a function which applies an argument to a function a
 -- given number of times, reducing the result to normal form.
@@ -53,8 +64,9 @@ nf' :: (b -> ()) -> (a -> b) -> a -> (Int64 -> IO ())
 nf' reduce f x = go
   where
     go n | n <= 0    = return ()
-         | otherwise = let !y = f x
-                       in reduce y `seq` go (n-1)
+         | otherwise = do
+            y <- evaluate (f x)
+            reduce y `seq` go (n-1)
 {-# NOINLINE nf' #-}
 
 -- | Generate a function which applies an argument to a function a
@@ -63,5 +75,7 @@ whnf' :: (a -> b) -> a -> (Int64 -> IO ())
 whnf' f x = go
   where
     go n | n <= 0    = return ()
-         | otherwise = f x `seq` go (n-1)
+         | otherwise = do
+            _ <- evaluate (f x)
+            go (n-1)
 {-# NOINLINE whnf' #-}
