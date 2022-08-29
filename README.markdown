@@ -13,14 +13,6 @@ target="_blank">online tutorial</a>, and take a look at the programs
 in the <a href="/examples"
 target="_blank">examples directory</a>.
 
-
-# Building and installing
-
-To build and install criterion, just run
-
-    cabal install criterion
-
-
 # Get involved!
 
 Please report bugs via the
