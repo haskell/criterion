@@ -1,27 +1,16 @@
 % A criterion tutorial
 % Learn how to write Haskell microbenchmarks.
 
-# Installation
-
-To install the `criterion` package, simply use `cabal`, the standard Haskell
-package management command.
-
-~~~~
-cabal update
-cabal install -j --disable-tests criterion
-~~~~
-
-Depending on how many prerequisites you already have installed, and
-what your Cabal configuration looks like, the build will probably take
-just a few minutes.
-
-
 # Getting started
 
-Here's a a simple and complete benchmark, measuring the performance of
+Here's `Fibber.hs`: a simple and complete benchmark, measuring the performance of
 the ever-ridiculous `fib` function.
 
 ~~~~ {.haskell}
+{- cabal:
+build-depends: base, criterion
+-}
+
 import Criterion.Main
 
 -- The function we're benchmarking.
@@ -52,35 +41,51 @@ values, each of which describes a function to benchmark.  (We'll come
 back to `bench` and `whnf` shortly, don't worry.)
 
 To maximise our convenience, `defaultMain` will parse command line
-arguments and then run any benchmarks we ask.  Let's compile our
-benchmark program.
+arguments and then run any benchmarks we ask. Let's run our benchmark
+program (it might take some time if you never used Criterion before, since
+the library has to be downloaded and compiled).
 
 ~~~~
-$ ghc -O --make Fibber
-[1 of 1] Compiling Main             ( Fibber.hs, Fibber.o )
-Linking Fibber ...
-~~~~
-
-If we run our newly compiled `Fibber` program, it will benchmark all
-of the functions we specified.
-
-~~~~
-$ ./Fibber --output fibber.html
+$ cabal run Fibber.hs
 benchmarking fib/1
-time                 23.91 ns   (23.30 ns .. 24.54 ns)
-                     0.994 R²   (0.991 R² .. 0.997 R²)
-mean                 24.36 ns   (23.77 ns .. 24.97 ns)
-std dev              2.033 ns   (1.699 ns .. 2.470 ns)
-variance introduced by outliers: 88% (severely inflated)
+time                 13.77 ns   (13.49 ns .. 14.07 ns)
+                     0.998 R²   (0.997 R² .. 1.000 R²)
+mean                 13.56 ns   (13.49 ns .. 13.70 ns)
+std dev              305.1 ps   (64.14 ps .. 532.5 ps)
+variance introduced by outliers: 36% (moderately inflated)
 
-...more output follows...
+benchmarking fib/5
+time                 173.9 ns   (172.8 ns .. 175.6 ns)
+                     1.000 R²   (0.999 R² .. 1.000 R²)
+mean                 173.8 ns   (173.1 ns .. 175.4 ns)
+std dev              3.149 ns   (1.842 ns .. 5.954 ns)
+variance introduced by outliers: 23% (moderately inflated)
+
+benchmarking fib/9
+time                 1.219 μs   (1.214 μs .. 1.228 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 1.219 μs   (1.216 μs .. 1.223 μs)
+std dev              12.43 ns   (9.907 ns .. 17.29 ns)
+
+benchmarking fib/11
+time                 3.253 μs   (3.246 μs .. 3.260 μs)
+                     1.000 R²   (1.000 R² .. 1.000 R²)
+mean                 3.248 μs   (3.243 μs .. 3.254 μs)
+std dev              18.94 ns   (16.57 ns .. 21.95 ns)
+
 ~~~~
 
 Even better, the `--output` option directs our program to write a
-report to the file [`fibber.html`](fibber.html).  Click on the image
-to see a complete report.  If you mouse over the data points in the
-charts, you'll see that they are *live*, giving additional information
-about what's being displayed.
+report to the file [`fibber.html`](fibber.html).
+
+~~~~
+$ cabal run Fibber.hs -- --output fibber.html
+...similar output as before...
+~~~~
+
+Click on the image to see a complete report. If you mouse over the data
+points in the charts, you'll see that they are *live*, giving additional
+information about what's being displayed.
 
 <a href="fibber.html" target="_blank"><img src="fibber-screenshot.png"></img></a>
 
@@ -573,23 +578,23 @@ runtime using `+RTS -T`.
   </tr></thead>
   <tbody><tr>
     <td>CPU cycles</td>
-	<td>`cycles:iters`</td>
-	<td></td>
+        <td>`cycles:iters`</td>
+        <td></td>
   </tr>
   <tr>
     <td>Bytes allocated</td>
-	<td>`allocated:iters`</td>
-	<td>`+RTS -T`</td>
+        <td>`allocated:iters`</td>
+        <td>`+RTS -T`</td>
   </tr>
   <tr>
     <td>Number of garbage collections</td>
-	<td>`numGcs:iters`</td>
-	<td>`+RTS -T`</td>
+        <td>`numGcs:iters`</td>
+        <td>`+RTS -T`</td>
   </tr>
   <tr>
     <td>CPU frequency</td>
-	<td>`cycles:time`</td>
-	<td></td>
+        <td>`cycles:time`</td>
+        <td></td>
   </tr></tbody>
 </table>
 

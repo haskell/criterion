@@ -1,8 +1,11 @@
--- The simplest/silliest of all benchmarks!
+{- cabal:
+build-depends: base, criterion
+-}
 
 import Criterion.Main
 
-fib :: Integer -> Integer
+-- The function we're benchmarking.
+fib :: Int -> Int
 fib m | m < 0     = error "negative!"
       | otherwise = go m
   where
