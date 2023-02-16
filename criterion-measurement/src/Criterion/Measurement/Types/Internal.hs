@@ -1,4 +1,5 @@
 {-# LANGUAGE BangPatterns #-}
+{-# LANGUAGE CPP #-}
 
 -- Ensure that nf' and whnf' are always optimized, even if
 -- criterion-measurement is compiled with -O0 or -fprof-auto (see #184).
@@ -17,10 +18,21 @@
 -- Portability : GHC
 --
 -- Exports 'fakeEnvironment'.
-module Criterion.Measurement.Types.Internal (fakeEnvironment, nf', whnf') where
+module Criterion.Measurement.Types.Internal
+  ( fakeEnvironment
+  , nf'
+  , whnf'
+  , SPEC(..)
+  ) where
 
 import Data.Int (Int64)
 import Control.Exception
+
+#if MIN_VERSION_ghc_prim(0,3,1)
+import GHC.Types (SPEC(..))
+#else
+import GHC.Exts (SpecConstrAnnotation(..))
+#endif
 
 -- | A dummy environment that is passed to functions that create benchmarks
 -- from environments when no concrete environment is available.
@@ -46,6 +58,9 @@ fakeEnvironment = error $ unlines
 -- benchmark code itself could be changed by the user's optimization level. By
 -- marking them @NOINLINE@, the core benchmark code is always the same.
 --
+-- To ensure that the behavior of these functions remains independent of
+-- -fspec-constr-count, we force SpecConst optimization by passing SPEC.
+--
 -- Finally, it's important that both branches of the loop depend on the state
 -- token from the IO action. This is achieved by using `evaluate` rather than `let !y = f x`
 -- in order to force the value to whnf. `evaluate` is in the IO monad and therefore the state
@@ -61,21 +76,30 @@ fakeEnvironment = error $ unlines
 -- | Generate a function which applies an argument to a function a
 -- given number of times, reducing the result to normal form.
 nf' :: (b -> ()) -> (a -> b) -> a -> (Int64 -> IO ())
-nf' reduce f x = go
+nf' reduce f x = go SPEC
   where
-    go n | n <= 0    = return ()
-         | otherwise = do
-            y <- evaluate (f x)
-            reduce y `seq` go (n-1)
+    go :: SPEC -> Int64 -> IO ()
+    go !_ n
+      | n <= 0    = return ()
+      | otherwise = do
+         y <- evaluate (f x)
+         reduce y `seq` go SPEC (n-1)
 {-# NOINLINE nf' #-}
 
 -- | Generate a function which applies an argument to a function a
 -- given number of times.
 whnf' :: (a -> b) -> a -> (Int64 -> IO ())
-whnf' f x = go
+whnf' f x = go SPEC
   where
-    go n | n <= 0    = return ()
-         | otherwise = do
-            _ <- evaluate (f x)
-            go (n-1)
+    go :: SPEC -> Int64 -> IO ()
+    go !_ n
+      | n <= 0    = return ()
+      | otherwise = do
+         _ <- evaluate (f x)
+         go SPEC (n-1)
 {-# NOINLINE whnf' #-}
+
+#if !(MIN_VERSION_ghc_prim(0,3,1))
+data SPEC = SPEC | SPEC2
+{-# ANN type SPEC ForceSpecConstr #-}
+#endif

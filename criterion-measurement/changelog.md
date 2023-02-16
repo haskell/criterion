@@ -1,3 +1,8 @@
+next
+
+* Make the behavior of the benchmarking functions independent of the
+  `-fspec-const-count` limit.
+
 0.2.0.0
 
 * Add a `measPeakMbAllocated` field to `Measured` for reporting maximum
