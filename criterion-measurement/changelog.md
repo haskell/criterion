@@ -1,4 +1,4 @@
-next
+0.2.1.0
 
 * Make the behavior of the benchmarking functions independent of the
   `-fspec-const-count` limit.
