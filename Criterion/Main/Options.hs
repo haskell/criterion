@@ -25,7 +25,6 @@ module Criterion.Main.Options
 
 import Control.Monad (when)
 import Criterion.Analysis (validateAccessors)
-import Criterion.Main.Options.Internal (tabulate, text)
 import Criterion.Types (Config(..), Verbosity(..), measureAccessors,
                         measureKeys)
 import Data.Char (isSpace, toLower)
@@ -35,12 +34,14 @@ import Data.List (isPrefixOf)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Options.Applicative
-import Options.Applicative.Help (Chunk(..))
-import Options.Applicative.Help.Pretty ((.$.), Doc)
+import Options.Applicative.Help (Chunk(..), tabulate)
+import Options.Applicative.Help.Pretty ((.$.))
 import Options.Applicative.Types
 import Paths_criterion (version)
 import Prelude ()
 import Prelude.Compat
+import Prettyprinter (Doc, pretty)
+import Prettyprinter.Render.Terminal (AnsiStyle)
 import Statistics.Types (mkCL,cl95)
 import qualified Data.Map as M
 
@@ -239,8 +240,10 @@ versionInfo :: String
 versionInfo = "built with criterion " <> showVersion version
 
 -- We sort not by name, but by likely frequency of use.
-regressionHelp :: Chunk Doc
+regressionHelp :: Chunk (Doc AnsiStyle)
 regressionHelp =
-    fmap (text "Regression metrics (for use with --regress):" .$.) $
-      tabulate [(text n,text d) | (n,(_,d)) <- map f measureKeys]
+    fmap (pretty "Regression metrics (for use with --regress):" .$.) $
+      tabulate
+        (prefTabulateFill defaultPrefs)
+        [(pretty n, pretty d) | (n,(_,d)) <- map f measureKeys]
   where f k = (k, measureAccessors M.! k)

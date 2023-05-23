@@ -1,3 +1,8 @@
+1.6.2.0
+
+* Require `optparse-applicative-0.18.*` as the minimum and add an explicit
+  dependency on `prettyprinter` and `prettyprinter-ansi-terminal`.
+
 1.6.1.0
 
 * Support building with `optparse-applicative-0.18.*`.
