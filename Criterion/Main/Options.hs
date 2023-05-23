@@ -25,7 +25,7 @@ module Criterion.Main.Options
 
 import Control.Monad (when)
 import Criterion.Analysis (validateAccessors)
-import Criterion.Main.Options.Internal (tabulate)
+import Criterion.Main.Options.Internal (tabulate, text)
 import Criterion.Types (Config(..), Verbosity(..), measureAccessors,
                         measureKeys)
 import Data.Char (isSpace, toLower)
@@ -36,13 +36,12 @@ import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Options.Applicative
 import Options.Applicative.Help (Chunk(..))
-import Options.Applicative.Help.Pretty ((.$.))
+import Options.Applicative.Help.Pretty ((.$.), Doc)
 import Options.Applicative.Types
 import Paths_criterion (version)
 import Prelude ()
 import Prelude.Compat
 import Statistics.Types (mkCL,cl95)
-import Text.PrettyPrint.ANSI.Leijen (Doc, text)
 import qualified Data.Map as M
 
 -- | How to match a benchmark name.

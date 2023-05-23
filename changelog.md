@@ -1,3 +1,7 @@
+1.6.1.0
+
+* Support building with `optparse-applicative-0.18.*`.
+
 1.6.0.0
 
 * `criterion-measurement-0.2.0.0` adds the `measPeakMbAllocated` field to

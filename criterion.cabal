@@ -1,5 +1,5 @@
 name:           criterion
-version:        1.6.0.0
+version:        1.6.1.0
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
@@ -87,7 +87,6 @@ library
     -- TODO: Eventually, we should bump the lower version bounds to >=2 so that
     -- we can remove some CPP in Criterion.Report. See #247.
     aeson >= 1 && < 2.2,
-    ansi-wl-pprint >= 0.6.7.2,
     base >= 4.5 && < 5,
     base-compat-batteries >= 0.10 && < 0.14,
     binary >= 0.5.1.0,
@@ -106,8 +105,8 @@ library
     js-chart >= 2.9.4 && < 3,
     mtl >= 2,
     mwc-random >= 0.8.0.3,
-    -- TODO: Depend on optparse-applicative-0.17 as the minimum (see #258)
-    optparse-applicative >= 0.13 && < 0.18,
+    -- TODO: Depend on optparse-applicative-0.18 as the minimum (see #258)
+    optparse-applicative >= 0.13 && < 0.19,
     parsec >= 3.1.0,
     statistics >= 0.14 && < 0.17,
     text >= 0.11,
