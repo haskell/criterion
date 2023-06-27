@@ -85,7 +85,7 @@ library
   build-depends:
     -- TODO: Eventually, we should bump the lower version bounds to >=2 so that
     -- we can remove some CPP in Criterion.Report. See #247.
-    aeson >= 1 && < 2.2,
+    aeson >= 1 && < 2.3,
     base >= 4.5 && < 5,
     base-compat-batteries >= 0.10 && < 0.14,
     binary >= 0.5.1.0,
