@@ -1,4 +1,4 @@
-next
+1.6.3.0
 
 * Remove a use of the partial `head` function within `criterion`.
 
