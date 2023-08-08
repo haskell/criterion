@@ -40,6 +40,7 @@ import Criterion.Measurement (secs, threshold)
 import Criterion.Monad (Criterion, getGen)
 import Criterion.Types
 import Data.Int (Int64)
+import Data.List.NonEmpty (NonEmpty(..))
 import Data.Maybe (fromJust)
 import Prelude ()
 import Prelude.Compat
@@ -52,6 +53,7 @@ import Statistics.Sample.KernelDensity (kde)
 import Statistics.Types (Sample)
 import System.Random.MWC (GenIO)
 import qualified Data.List as List
+import qualified Data.List.NonEmpty as NE
 import qualified Data.Map as Map
 import qualified Data.Vector as V
 import qualified Data.Vector.Generic as G
@@ -207,9 +209,9 @@ regress gen predNames respName meas = do
     , regRSquare   = r2
     }
 
-singleton :: [a] -> Bool
-singleton [_] = True
-singleton _   = False
+singleton :: NonEmpty a -> Bool
+singleton (_ :| []) = True
+singleton _         = False
 
 -- | Given a list of accessor names (see 'measureKeys'), return either
 -- a mapping from accessor name to function or an error message if
@@ -233,8 +235,8 @@ validateAccessors predNames respName = do
   when (null predNames) $
     Left "no predictors specified"
   let names = respName:predNames
-      dups = map head . filter (not . singleton) .
-             List.group . List.sort $ names
+      dups = map NE.head . List.filter (not . singleton) .
+             NE.group . List.sort $ names
   unless (null dups) $
     Left $ "duplicated metric " ++ renderNames dups
   resolveAccessors names

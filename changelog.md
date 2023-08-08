@@ -1,3 +1,7 @@
+next
+
+* Remove a use of the partial `head` function within `criterion`.
+
 1.6.2.0
 
 * Require `optparse-applicative-0.18.*` as the minimum and add an explicit
