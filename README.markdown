@@ -7,11 +7,10 @@ measuring and analysing software performance.
 
 <a href="http://www.serpentine.com/criterion/fibber.html" target="_blank"><img src="www/fibber-screenshot.png"></a>
 
-To get started, read the <a
-href="http://www.serpentine.com/criterion/tutorial.html"
-target="_blank">online tutorial</a>, and take a look at the programs
-in the <a href="/examples"
-target="_blank">examples directory</a>.
+To get started, read the [online
+tutorial](http://www.serpentine.com/criterion/tutorial.html), and take a look
+at the programs in the [examples
+directory](https://github.com/haskell/criterion/tree/master/examples).
 
 # Get involved!
 
