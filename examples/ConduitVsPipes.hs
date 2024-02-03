@@ -1,4 +1,4 @@
--- Contributed by Gabriel Gonzales as a test case for
+-- Contributed by Gabriella Gonzales as a test case for
 -- https://github.com/haskell/criterion/issues/35
 --
 -- The numbers reported by this benchmark can be made "more correct"
