@@ -9,6 +9,15 @@ StgWord64 criterion_rdtsc(void)
   return mach_absolute_time();
 }
 
+#elif aarch64_HOST_ARCH
+
+StgWord64 criterion_rdtsc(void)
+{
+  StgWord64 ret;
+  __asm__ __volatile__ ("mrs %0, cntvct_el0" : "=r"(ret));
+  return ret;
+}
+
 #elif x86_64_HOST_ARCH || i386_HOST_ARCH
 
 StgWord64 criterion_rdtsc(void)
