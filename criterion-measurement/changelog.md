@@ -1,3 +1,7 @@
+next
+
+* Supporting building with all AArch64 platforms (not just Linux and macOS).
+
 0.2.1.0
 
 * Make the behavior of the benchmarking functions independent of the
