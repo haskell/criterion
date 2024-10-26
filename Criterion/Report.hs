@@ -38,8 +38,9 @@ import Control.Monad.Reader (ask)
 import Criterion.Monad (Criterion)
 import Criterion.Types
 import Data.Aeson (ToJSON (..), Value(..), object, (.=), Value)
+import qualified Data.Aeson.Key as Key
 import Data.Aeson.Text (encodeToLazyText)
-import Data.Data (Data, Typeable)
+import Data.Data (Data)
 import Data.Foldable (forM_)
 import GHC.Generics (Generic)
 import Paths_criterion (getDataFileName)
@@ -68,10 +69,6 @@ import qualified Data.ByteString.Lazy as BL
 import qualified Data.Text.Encoding as TE
 #else
 import qualified Language.Javascript.Chart as Chart
-#endif
-
-#if MIN_VERSION_aeson(2,0,0)
-import qualified Data.Aeson.Key as Key
 #endif
 
 -- | Trim long flat tails from a KDE plot.
@@ -225,7 +222,7 @@ vector :: (G.Vector v a, ToJSON a) =>
        -> Value
 {-# SPECIALIZE vector :: T.Text -> U.Vector Double -> Value #-}
 vector name v = toJSON . map val . G.toList $ v where
-    val i = object [ toKey name .= i ]
+    val i = object [ Key.fromText name .= i ]
 
 
 -- | Render the elements of two vectors.
@@ -239,18 +236,9 @@ vector2 :: (G.Vector v a, G.Vector v b, ToJSON a, ToJSON b) =>
                        -> Value #-}
 vector2 name1 name2 v1 v2 = toJSON $ zipWith val (G.toList v1) (G.toList v2) where
     val i j = object
-        [ toKey name1 .= i
-        , toKey name2 .= j
+        [ Key.fromText name1 .= i
+        , Key.fromText name2 .= j
         ]
-
-#if MIN_VERSION_aeson(2,0,0)
-toKey :: T.Text -> Key.Key
-toKey = Key.fromText
-#else
-toKey :: T.Text -> T.Text
-toKey = id
-#endif
-
 
 -- | Attempt to include the contents of a file based on a search path.
 -- Returns 'B.empty' if the search fails or the file could not be read.
@@ -275,7 +263,7 @@ includeFile searchPath name = liftIO $ foldr go (return T.empty) searchPath
 -- | A problem arose with a template.
 data TemplateException =
     TemplateNotFound FilePath   -- ^ The template could not be found.
-    deriving (Eq, Read, Show, Typeable, Data, Generic)
+    deriving (Eq, Read, Show, Data, Generic)
 
 instance Exception TemplateException
 
@@ -320,12 +308,6 @@ readFileCheckEmbedded fp =
 #if defined(EMBED)
   `E.catch` \(e :: IOException) ->
     maybe (throwIO e)
-          (pure . TLE.decodeUtf8 . fromStrict)
+          (pure . TLE.decodeUtf8 . BL.fromStrict)
           (lookup fp dataFiles)
-  where
-# if MIN_VERSION_bytestring(0,10,0)
-    fromStrict = BL.fromStrict
-# else
-    fromStrict x = BL.fromChunks [x]
-# endif
 #endif

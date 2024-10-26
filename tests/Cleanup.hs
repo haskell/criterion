@@ -1,8 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE DeriveDataTypeable #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# OPTIONS_GHC -Wno-orphans #-}
 
 import Criterion.Main (Benchmark, bench, nfIO)
 import Criterion.Types (Config(..), Verbosity(Quiet))
@@ -10,7 +9,6 @@ import Control.DeepSeq (NFData(..))
 import Control.Exception (Exception, try, throwIO)
 import Control.Monad (when)
 import Data.ByteString (ByteString)
-import Data.Typeable (Typeable)
 import Prelude ()
 import Prelude.Compat
 import System.Directory (doesFileExist, removeFile)
@@ -26,7 +24,7 @@ import qualified Data.ByteString as BS
 instance NFData Handle where
     rnf !_ = ()
 
-data CheckResult = ShouldThrow | WrongData deriving (Show, Typeable)
+data CheckResult = ShouldThrow | WrongData deriving Show
 
 instance Exception CheckResult
 

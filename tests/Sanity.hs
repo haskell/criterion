@@ -1,6 +1,4 @@
-{-# LANGUAGE CPP #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
 
 import Criterion.Main (bench, bgroup, env, whnf)
 import System.Environment (getEnv, withArgs)
@@ -11,10 +9,6 @@ import Test.HUnit (Assertion, assertFailure)
 import qualified Criterion.Main as C
 import qualified Control.Exception as E
 import qualified Data.ByteString as B
-
-#if !MIN_VERSION_bytestring(0,10,0)
-import Control.DeepSeq (NFData (..))
-#endif
 
 fib :: Int -> Int
 fib = sum . go
@@ -59,8 +53,3 @@ getArgEnv :: IO [String]
 getArgEnv =
   fmap words (getEnv "ARGS") `E.catch`
   \(_ :: E.SomeException) -> return []
-
-#if !MIN_VERSION_bytestring(0,10,0)
-instance NFData B.ByteString where
-    rnf bs = bs `seq` ()
-#endif

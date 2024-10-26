@@ -18,10 +18,6 @@ extra-source-files:
   examples/*.cabal
   examples/*.hs
 tested-with:
-  GHC==7.4.2,
-  GHC==7.6.3,
-  GHC==7.8.4,
-  GHC==7.10.3,
   GHC==8.0.2,
   GHC==8.2.2,
   GHC==8.4.4,
@@ -29,9 +25,11 @@ tested-with:
   GHC==8.8.4,
   GHC==8.10.7,
   GHC==9.0.2,
-  GHC==9.2.7,
-  GHC==9.4.5,
-  GHC==9.6.1
+  GHC==9.2.8,
+  GHC==9.4.8,
+  GHC==9.6.6,
+  GHC==9.8.2,
+  GHC==9.10.1
 
 data-files:
   templates/*.css
@@ -83,14 +81,12 @@ library
     Paths_criterion
 
   build-depends:
-    -- TODO: Eventually, we should bump the lower version bounds to >=2 so that
-    -- we can remove some CPP in Criterion.Report. See #247.
-    aeson >= 1 && < 2.3,
-    base >= 4.5 && < 5,
+    aeson >= 2 && < 2.3,
+    base >= 4.9 && < 5,
     base-compat-batteries >= 0.10 && < 0.15,
-    binary >= 0.5.1.0,
+    binary >= 0.8.3.0,
     binary-orphans >= 1.0.1 && < 1.1,
-    bytestring >= 0.9 && < 1.0,
+    bytestring >= 0.10.8.1 && < 1.0,
     cassava >= 0.3.0.0,
     code-page,
     containers,
@@ -115,18 +111,9 @@ library
     transformers-compat >= 0.6.4,
     vector >= 0.7.1,
     vector-algorithms >= 0.4
-  if impl(ghc < 7.6)
-    build-depends:
-      ghc-prim
-  if !impl(ghc >= 8.0)
-    build-depends:
-      fail == 4.9.*,
-      semigroups
 
   default-language: Haskell2010
-  ghc-options: -Wall -funbox-strict-fields
-  if impl(ghc >= 6.8)
-    ghc-options: -fwarn-tabs
+  ghc-options: -Wall -funbox-strict-fields -Wtabs
   if flag(fast)
     ghc-options: -O0
   else
@@ -151,14 +138,6 @@ Executable criterion-report
     base-compat-batteries,
     criterion,
     optparse-applicative >= 0.13
-
-  if impl(ghc < 7.6)
-    build-depends:
-      ghc-prim
-
-  if !impl(ghc >= 8.0)
-    build-depends:
-      semigroups
 
 test-suite sanity
   type:                 exitcode-stdio-1.0

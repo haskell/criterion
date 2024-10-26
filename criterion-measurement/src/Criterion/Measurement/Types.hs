@@ -68,7 +68,7 @@ import Control.DeepSeq (NFData(rnf))
 import Criterion.Measurement.Types.Internal (fakeEnvironment, nf', whnf')
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..))
-import Data.Data (Data, Typeable)
+import Data.Data (Data)
 import Data.Int (Int64)
 import Data.Map (Map, fromList)
 import GHC.Generics (Generic)
@@ -146,7 +146,7 @@ data Measured = Measured {
     , measGcCpuSeconds       :: !Double
       -- ^ __(GC)__ CPU time spent doing garbage collection.  Access
       -- using 'fromDouble'.
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+    } deriving (Eq, Read, Show, Data, Generic)
 
 instance FromJSON Measured where
     parseJSON v = do

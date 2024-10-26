@@ -1,5 +1,4 @@
 {-# LANGUAGE BangPatterns #-}
-{-# LANGUAGE CPP #-}
 
 -- Ensure that nf' and whnf' are always optimized, even if
 -- criterion-measurement is compiled with -O0 or -fprof-auto (see #184).
@@ -27,12 +26,7 @@ module Criterion.Measurement.Types.Internal
 
 import Data.Int (Int64)
 import Control.Exception
-
-#if MIN_VERSION_ghc_prim(0,3,1)
 import GHC.Types (SPEC(..))
-#else
-import GHC.Exts (SpecConstrAnnotation(..))
-#endif
 
 -- | A dummy environment that is passed to functions that create benchmarks
 -- from environments when no concrete environment is available.
@@ -98,8 +92,3 @@ whnf' f x = go SPEC
          _ <- evaluate (f x)
          go SPEC (n-1)
 {-# NOINLINE whnf' #-}
-
-#if !(MIN_VERSION_ghc_prim(0,3,1))
-data SPEC = SPEC | SPEC2
-{-# ANN type SPEC ForceSpecConstr #-}
-#endif

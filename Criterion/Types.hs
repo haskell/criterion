@@ -79,7 +79,7 @@ import Criterion.Measurement.Types
 import Data.Aeson (FromJSON(..), ToJSON(..))
 import Data.Binary (Binary(..), putWord8, getWord8)
 import Data.Binary.Orphans ()
-import Data.Data (Data, Typeable)
+import Data.Data (Data)
 import Data.Int (Int64)
 import Data.Map (Map)
 import GHC.Generics (Generic)
@@ -94,7 +94,7 @@ import           Statistics.Resampling.Bootstrap ()
 data Verbosity = Quiet
                | Normal
                | Verbose
-                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data,
+                 deriving (Eq, Ord, Bounded, Enum, Read, Show, Data,
                            Generic)
 
 -- | Top-level benchmarking configuration.
@@ -125,7 +125,7 @@ data Config = Config {
       -- benchmarks.
     , template     :: FilePath
       -- ^ Template file to use if writing a report.
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+    } deriving (Eq, Read, Show, Data, Generic)
 
 
 -- | Outliers from sample data, calculated using the boxplot
@@ -141,7 +141,7 @@ data Outliers = Outliers {
     -- ^ Between 1.5 and 3 times the IQR above the third quartile.
     , highSevere  :: !Int64
     -- ^ More than 3 times the IQR above the third quartile.
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+    } deriving (Eq, Read, Show, Data, Generic)
 
 instance FromJSON Outliers
 instance ToJSON Outliers
@@ -158,7 +158,7 @@ data OutlierEffect = Unaffected -- ^ Less than 1% effect.
                    | Moderate   -- ^ Between 10% and 50%.
                    | Severe     -- ^ Above 50% (i.e. measurements
                                 -- are useless).
-                     deriving (Eq, Ord, Read, Show, Typeable, Data, Generic)
+                     deriving (Eq, Ord, Read, Show, Data, Generic)
 
 instance FromJSON OutlierEffect
 instance ToJSON OutlierEffect
@@ -201,7 +201,7 @@ data OutlierVariance = OutlierVariance {
     -- ^ Brief textual description of effect.
     , ovFraction :: Double
     -- ^ Quantitative description of effect (a fraction between 0 and 1).
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+    } deriving (Eq, Read, Show, Data, Generic)
 
 instance FromJSON OutlierVariance
 instance ToJSON OutlierVariance
@@ -221,7 +221,7 @@ data Regression = Regression {
     -- ^ Map from name to value of predictor coefficients.
   , regRSquare    :: St.Estimate St.ConfInt Double
     -- ^ R&#0178; goodness-of-fit estimate.
-  } deriving (Eq, Read, Show, Typeable, Generic)
+  } deriving (Eq, Read, Show, Generic)
 
 instance FromJSON Regression
 instance ToJSON Regression
@@ -246,7 +246,7 @@ data SampleAnalysis = SampleAnalysis {
     , anOutlierVar :: OutlierVariance
       -- ^ Description of the effects of outliers on the estimated
       -- variance.
-    } deriving (Eq, Read, Show, Typeable, Generic)
+    } deriving (Eq, Read, Show, Generic)
 
 instance FromJSON SampleAnalysis
 instance ToJSON SampleAnalysis
@@ -266,7 +266,7 @@ data KDE = KDE {
       kdeType   :: String
     , kdeValues :: U.Vector Double
     , kdePDF    :: U.Vector Double
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+    } deriving (Eq, Read, Show, Data, Generic)
 
 instance FromJSON KDE
 instance ToJSON KDE
@@ -294,7 +294,7 @@ data Report = Report {
       -- ^ Analysis of outliers.
     , reportKDEs     :: [KDE]
       -- ^ Data for a KDE of times.
-    } deriving (Eq, Read, Show, Typeable, Generic)
+    } deriving (Eq, Read, Show, Generic)
 
 instance FromJSON Report
 instance ToJSON Report
@@ -315,7 +315,7 @@ instance NFData Report where
 
 data DataRecord = Measurement Int String (V.Vector Measured)
                 | Analysed Report
-                deriving (Eq, Read, Show, Typeable, Generic)
+                deriving (Eq, Read, Show, Generic)
 
 instance Binary DataRecord where
   put (Measurement i n v) = putWord8 0 >> put i >> put n >> put v

@@ -29,10 +29,7 @@ main = do
               ]
          else []
 
-#if !MIN_VERSION_base(4,6,0)
-getRTSStatsEnabled :: IO Bool
-getRTSStatsEnabled = return False
-#elif !MIN_VERSION_base(4,10,0)
+#if !MIN_VERSION_base(4,10,0)
 getRTSStatsEnabled :: IO Bool
 getRTSStatsEnabled = getGCStatsEnabled
 #endif

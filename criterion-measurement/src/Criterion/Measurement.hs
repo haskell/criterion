@@ -37,7 +37,7 @@ module Criterion.Measurement
 import Criterion.Measurement.Types (Benchmarkable(..), Measured(..))
 import Control.DeepSeq (NFData(rnf))
 import Control.Exception (finally,evaluate)
-import Data.Data (Data, Typeable)
+import Data.Data (Data)
 import Data.Int (Int64)
 import Data.List (unfoldr)
 import Data.Word (Word64)
@@ -49,19 +49,11 @@ import GHC.Stats (GCStats(..))
 #endif
 import Prelude ()
 import Prelude.Compat
-#if MIN_VERSION_base(4,7,0)
 import System.Mem (performGC, performMinorGC)
-# else
-import System.Mem (performGC)
-#endif
 import Text.Printf (printf)
 import qualified Control.Exception as Exc
 import qualified Data.Vector as V
 import qualified GHC.Stats as Stats
-
-#if !(MIN_VERSION_base(4,7,0))
-foreign import ccall "performGC" performMinorGC :: IO ()
-#endif
 
 -- | Statistics about memory usage and the garbage collector. Apart from
 -- 'gcStatsCurrentBytesUsed' and 'gcStatsCurrentBytesSlop' all are cumulative values since
@@ -111,7 +103,7 @@ data GCStatistics = GCStatistics
     , gcStatsCpuSeconds :: !Double
     -- | Total wall clock time elapsed since start
     , gcStatsWallSeconds :: !Double
-    } deriving (Eq, Read, Show, Typeable, Data, Generic)
+    } deriving (Eq, Read, Show, Data, Generic)
 
 -- | Try to get GC statistics, bearing in mind that the GHC runtime
 -- will throw an exception if statistics collection was not enabled

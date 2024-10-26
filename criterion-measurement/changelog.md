@@ -1,3 +1,7 @@
+next
+
+* Drop support for pre-8.0 versions of GHC.
+
 0.2.2.0
 
 * Supporting building with all AArch64 platforms (not just Linux and macOS).

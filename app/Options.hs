@@ -7,7 +7,7 @@ module Options
     , versionInfo
     ) where
 
-import Data.Data (Data, Typeable)
+import Data.Data (Data)
 import Data.Version (showVersion)
 import GHC.Generics (Generic)
 import Paths_criterion (version)
@@ -18,7 +18,7 @@ import Options.Applicative
 data CommandLine
     = Report { jsonFile :: FilePath, outputFile :: FilePath, templateFile :: FilePath }
     | Version
-    deriving (Eq, Read, Show, Typeable, Data, Generic)
+    deriving (Eq, Read, Show, Data, Generic)
 
 reportOptions :: Parser CommandLine
 reportOptions = Report <$> measurements <*> outputFile <*> templateFile

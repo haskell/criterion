@@ -1,3 +1,7 @@
+next
+
+* Drop support for pre-8.0 versions of GHC.
+
 1.6.3.0
 
 * Remove a use of the partial `head` function within `criterion`.

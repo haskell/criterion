@@ -28,7 +28,7 @@ import Criterion.Analysis (validateAccessors)
 import Criterion.Types (Config(..), Verbosity(..), measureAccessors,
                         measureKeys)
 import Data.Char (isSpace, toLower)
-import Data.Data (Data, Typeable)
+import Data.Data (Data)
 import Data.Int (Int64)
 import Data.List (isPrefixOf)
 import Data.Version (showVersion)
@@ -60,7 +60,7 @@ data MatchType = Prefix
                  -- paths.
                | IPattern
                  -- ^ Same as 'Pattern', but case insensitive.
-               deriving (Eq, Ord, Bounded, Enum, Read, Show, Typeable, Data,
+               deriving (Eq, Ord, Bounded, Enum, Read, Show, Data,
                          Generic)
 
 -- | Execution mode for a benchmark program.
@@ -73,7 +73,7 @@ data Mode = List
             -- analysing performance numbers.
           | Run Config MatchType [String]
             -- ^ Run and analyse the given benchmarks.
-          deriving (Eq, Read, Show, Typeable, Data, Generic)
+          deriving (Eq, Read, Show, Data, Generic)
 
 -- | Default benchmarking configuration.
 defaultConfig :: Config

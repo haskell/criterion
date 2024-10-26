@@ -1,7 +1,6 @@
 -- Benchmark the cost of creating various types of map.
 
-{-# LANGUAGE CPP, FlexibleContexts, ScopedTypeVariables #-}
-{-# OPTIONS_GHC -fno-warn-orphans #-}
+{-# LANGUAGE FlexibleContexts, ScopedTypeVariables #-}
 
 import Criterion.Main
 import Data.ByteString (ByteString, pack)
@@ -14,10 +13,6 @@ import qualified Data.Vector as V
 import qualified Data.Vector.Algorithms.Intro as I
 import qualified Data.Vector.Generic as G
 import qualified Data.Vector.Unboxed as U
-
-#if !MIN_VERSION_bytestring(0,10,0)
-import Control.DeepSeq (NFData (..))
-#endif
 
 type V = U.Vector Int
 type B = V.Vector ByteString
@@ -85,8 +80,3 @@ mmap xs = G.foldl' (\m k -> M.insert k value m) M.empty xs
 
 value :: Int
 value = 31337
-
-#if !MIN_VERSION_bytestring(0,10,0)
-instance NFData ByteString where
-    rnf bs = bs `seq` ()
-#endif

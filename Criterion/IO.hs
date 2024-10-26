@@ -1,5 +1,5 @@
 {-# LANGUAGE Trustworthy #-}
-{-# LANGUAGE CPP, OverloadedStrings #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 -- |
 -- Module      : Criterion.IO
@@ -28,11 +28,7 @@ module Criterion.IO
 
 import qualified Data.Aeson as Aeson
 import Data.Binary (Binary(..), encode)
-#if MIN_VERSION_binary(0, 6, 3)
 import Data.Binary.Get (runGetOrFail)
-#else
-import Data.Binary.Get (runGetState)
-#endif
 import Data.Binary.Put (putByteString, putWord16be, runPut)
 import qualified Data.ByteString.Char8 as B
 import Criterion.Types (Report(..))
@@ -81,7 +77,6 @@ readRecords path = withFile path ReadMode hGetRecords
 writeRecords :: Binary a => FilePath -> [a] -> IO ()
 writeRecords path rs = withFile path WriteMode (flip hPutRecords rs)
 
-#if MIN_VERSION_binary(0, 6, 3)
 readAll :: Binary a => Handle -> IO [a]
 readAll handle = do
   let go bs
@@ -90,16 +85,6 @@ readAll handle = do
                          Left (_, _, err) -> fail err
                          Right (bs', _, a) -> (a:) `fmap` go bs'
   go =<< L.hGetContents handle
-#else
-readAll :: Binary a => Handle -> IO [a]
-readAll handle = do
-  let go i bs
-         | L.null bs = return []
-         | otherwise =
-            let (a, bs', i') = runGetState get bs i
-             in (a:) `fmap` go i' bs'
-  go 0 =<< L.hGetContents handle
-#endif
 
 -- | On disk we store (name,version,reports), where
 --   'version' is the version of Criterion used to generate the file.
