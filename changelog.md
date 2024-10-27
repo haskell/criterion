@@ -1,4 +1,4 @@
-next
+1.6.4.0
 
 * Drop support for pre-8.0 versions of GHC.
 
