@@ -68,6 +68,18 @@ criterion_rdtsc (void)
   return result;
 }
 
+#elif wasm32_HOST_ARCH
+
+#include <time.h>
+
+StgWord64 criterion_rdtsc(void)
+{
+  struct timespec ts;
+  StgWord64 result_stg = 0;
+  clock_gettime(CLOCK_REALTIME, &ts);
+  result_stg = ts.tv_sec * 1000000000LL + ts.tv_nsec;
+  return result_stg;
+}
 #else
 
 #error Unsupported OS/architecture/compiler!
