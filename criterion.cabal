@@ -5,7 +5,7 @@ license:        BSD3
 license-file:   LICENSE
 author:         Bryan O'Sullivan <bos@serpentine.com>
 maintainer:     Ryan Scott <ryan.gl.scott@gmail.com>
-copyright:      2009-2016 Bryan O'Sullivan and others
+copyright:      2009-present Bryan O'Sullivan and others
 category:       Development, Performance, Testing, Benchmarking
 homepage:       https://github.com/haskell/criterion
 bug-reports:    https://github.com/haskell/criterion/issues
@@ -17,6 +17,10 @@ extra-source-files:
   examples/LICENSE
   examples/*.cabal
   examples/*.hs
+  www/*.html
+  www/*.png
+  www/*.jpg
+  www/*.css
 tested-with:
   GHC==8.0.2,
   GHC==8.2.2,

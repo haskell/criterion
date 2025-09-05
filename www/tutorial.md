@@ -1,6 +1,3 @@
-% A criterion tutorial
-% Learn how to write Haskell microbenchmarks.
-
 # Getting started
 
 Here's `Fibber.hs`: a simple and complete benchmark, measuring the performance of
