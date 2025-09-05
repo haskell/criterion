@@ -17,10 +17,9 @@ extra-source-files:
   examples/LICENSE
   examples/*.cabal
   examples/*.hs
-  www/*.html
-  www/*.png
-  www/*.jpg
-  www/*.css
+  www/fibber.html
+  www/report.html
+  www/fibber-screenshot.png
 tested-with:
   GHC==8.0.2,
   GHC==8.2.2,
