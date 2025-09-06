@@ -1,13 +1,13 @@
 name:           criterion
-version:        1.6.4.0
+version:        1.6.4.1
 synopsis:       Robust, reliable performance measurement and analysis
 license:        BSD3
 license-file:   LICENSE
 author:         Bryan O'Sullivan <bos@serpentine.com>
 maintainer:     Ryan Scott <ryan.gl.scott@gmail.com>
-copyright:      2009-2016 Bryan O'Sullivan and others
+copyright:      2009-present Bryan O'Sullivan and others
 category:       Development, Performance, Testing, Benchmarking
-homepage:       http://www.serpentine.com/criterion
+homepage:       https://github.com/haskell/criterion
 bug-reports:    https://github.com/haskell/criterion/issues
 build-type:     Simple
 cabal-version:  >= 1.10
@@ -17,6 +17,9 @@ extra-source-files:
   examples/LICENSE
   examples/*.cabal
   examples/*.hs
+  www/fibber.html
+  www/report.html
+  www/fibber-screenshot.png
 tested-with:
   GHC==8.0.2,
   GHC==8.2.2,
@@ -39,17 +42,14 @@ data-files:
 
 description:
   This library provides a powerful but simple way to measure software
-  performance.  It provides both a framework for executing and
+  performance.  It consists of both a framework for executing and
   analysing benchmarks and a set of driver functions that makes it
   easy to build and run benchmarks, and to analyse their results.
   .
   The fastest way to get started is to read the
-  <http://www.serpentine.com/criterion/tutorial.html online tutorial>,
+  <https://github.com/haskell/criterion/blob/master/README.markdown#tutorial online tutorial>,
   followed by the documentation and examples in the "Criterion.Main"
   module.
-  .
-  For examples of the kinds of reports that criterion generates, see
-  <http://www.serpentine.com/criterion the home page>.
 
 flag fast
   description: compile without optimizations
