@@ -411,7 +411,7 @@ performance---be skeptical and investigate!
 > 
 > Fortunately for this particular misbehaving benchmark suite, GHC has
 > an option named
-> [`-fno-full-laziness`](https://www.haskell.org/ghc/docs/latest/html/users_guide/options-optimise.html)
+> [`-fno-full-laziness`](https://downloads.haskell.org/ghc/latest/docs/users_guide/using-optimisation.html#ghc-flag-ffull-laziness)
 > that will turn off let-floating and restore the first two benchmarks
 > to performing in line with the second two.
 >
@@ -572,7 +572,7 @@ The purpose of linear regression is to predict how much one variable
 (the *responder*) will change in response to a change in one or more
 others (the *predictors*).
 
-On each step through through a benchmark loop, criterion changes the number of
+On each step through a benchmark loop, criterion changes the number of
 iterations.  This is the most obvious choice for a predictor
 variable.  This variable is named `iters`.
 
