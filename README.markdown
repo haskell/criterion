@@ -36,7 +36,7 @@ directory](https://github.com/haskell/criterion/tree/master/examples).
 ## Credits and contacts
 
 This library is written by Bryan O'Sullivan
-(<bos@serpentine.com>) and maintained by Ryan J. Scott (<ryan.gl.scott@gmail.com>).
+(<bos@serpentine.com>) and maintained by Ryan Scott (<ryan.gl.scott@gmail.com>).
 Please report bugs via the
 [GitHub issue tracker](https://github.com/haskell/criterion/issues).
 
