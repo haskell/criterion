@@ -160,7 +160,7 @@ indicates how often that measurement was repeated.
 The chart on the right contains the raw measurements from which the
 kernel density estimate was built. The $x$ axis indicates the number
 of loop iterations, while the $y$ axis shows measured execution time
-for the given number of iterations. The line "behind" the values is a
+for the given number of iterations. The line “behind” the values is a
 linear regression generated from this data.  Ideally, all measurements
 will be on (or very near) this line.
 
@@ -207,22 +207,22 @@ information that looks like this.
 
 The second row is the result of a linear regression run on the measurements displayed in the right-hand chart.
 
-* "**OLS regression**" estimates the time needed for a single
+* “**OLS regression**” estimates the time needed for a single
   execution of the activity being benchmarked, using an
   [ordinary least-squares regression model](https://en.wikipedia.org/wiki/Ordinary_least_squares).
-  This number should be similar to the "mean execution time" row a
+  This number should be similar to the “mean execution time” row a
   couple of rows beneath.  The OLS estimate is usually more accurate
   than the mean, as it more effectively eliminates measurement
   overhead and other constant factors.
 
-* "**R² goodness-of-fit**" is a measure of how accurately the linear
+* “**R² goodness-of-fit**” is a measure of how accurately the linear
   regression model fits the observed measurements. If the measurements
   are not too noisy, R² should lie between 0.99 and 1, indicating an
   excellent fit. If the number is below 0.99, something is confounding
   the accuracy of the linear model.  A value below 0.9 is outright
   worrisome.
 
-* "**Mean execution time**" and "**Standard deviation**" are
+* “**Mean execution time**” and “**Standard deviation**” are
   statistics calculated (more or less) from execution time divided by
   number of iterations.
 
@@ -253,13 +253,13 @@ The first column is a name; the second is an estimate. The third and
 fourth, in parentheses, are the 95% lower and upper bounds on the
 estimate.
 
-* `time` corresponds to the "OLS regression" field in the HTML table
+* `time` corresponds to the “OLS regression” field in the HTML table
   above.
 
 * `R²` is the goodness-of-fit metric for `time`.
 
-* `mean` and `std dev` have the same meanings as "Mean execution time"
-  and "Standard deviation" in the HTML table.
+* `mean` and `std dev` have the same meanings as “Mean execution time”
+  and “Standard deviation” in the HTML table.
 
 
 ## How to write a benchmark suite
@@ -357,7 +357,7 @@ whnfIO :: IO a -> Benchmarkable
 This function is useful if your `IO` action returns a simple value
 like an `Int`, or something more complex like a
 [`Map`](http://hackage.haskell.org/package/containers/docs/Data-Map-Lazy.html#t:Map)
-where evaluating the outermost constructor will do "enough work".
+where evaluating the outermost constructor will do “enough work”.
 
 
 ## Be careful with lazy I/O!
@@ -389,17 +389,17 @@ openFile: resource exhausted (Too many open files)
 ```
 
 
-## Beware "pretend" I/O!
+## Beware “pretend” I/O!
 
 GHC is an aggressive compiler.  If you have an `IO` action that
 doesn't really interact with the outside world, *and* it has just the
 right structure, GHC may notice that a substantial amount of its
-computation can be memoised via "let-floating".
+computation can be memoised via “let-floating”.
 
 There exists a
 [somewhat contrived example](https://github.com/haskell/criterion/blob/master/examples/ConduitVsPipes.hs)
 of this problem, where the first two benchmarks run between 40 and
-40,000 times faster than they "should".
+40,000 times faster than they “should”.
 
 As always, if you see numbers that look wildly out of whack, you
 shouldn't rejoice that you have magically achieved fast
@@ -424,7 +424,7 @@ performance---be skeptical and investigate!
 
 Lazy evaluation makes it tricky to benchmark pure code. If we tried to
 saturate a function with all of its arguments and evaluate it
-repeatedly, laziness would ensure that we'd only do "real work" the
+repeatedly, laziness would ensure that we'd only do “real work” the
 first time through our benchmarking loop.  The expression would be
 overwritten with that result, and no further work would happen on
 subsequent loops through our benchmarking harness.
@@ -674,7 +674,7 @@ attention to.
 
 If some external factors are making your measurements noisy, criterion
 tries to make it easy to tell.  At the level of raw data, noisy
-measurements will show up as "outliers", but you shouldn't need to
+measurements will show up as “outliers”, but you shouldn't need to
 inspect the raw data directly.
 
 The easiest yellow flag to spot is the R² goodness-of-fit measure
@@ -685,11 +685,11 @@ measurement chart when you're using `--output`.  These should be easy
 to spot: they'll be points sitting far from the linear regression line
 (usually above it).
 
-If the lower and upper bounds on an estimate aren't "tight" (close to
+If the lower and upper bounds on an estimate aren't “tight” (close to
 the estimate), this suggests that noise might be having some kind of
 negative effect.
 
-A warning about "variance introduced by outliers" may be printed.
+A warning about “variance introduced by outliers” may be printed.
 This indicates the degree to which the standard deviation is inflated
 by outlying measurements, as in the following snippet (notice that the
 lower and upper bounds aren't all that tight, too).
