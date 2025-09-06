@@ -375,7 +375,7 @@ of this problem, where the first two benchmarks run between 40 and
 
 As always, if you see numbers that look wildly out of whack, you
 shouldn't rejoice that you have magically achieved fast
-performance---be skeptical and investigate!
+performance—be skeptical and investigate!
 
 
 > [!TIP]
@@ -401,7 +401,7 @@ first time through our benchmarking loop.  The expression would be
 overwritten with that result, and no further work would happen on
 subsequent loops through our benchmarking harness.
 
-We can defeat laziness by benchmarking an *unsaturated* function---one
+We can defeat laziness by benchmarking an *unsaturated* function—one
 that has been given *all but one* of its arguments.
 
 This is why the
@@ -459,7 +459,7 @@ Guidelines for thinking about when to use `nf` or `whnf`:
   cause way too much unnecessary computation.
 
 * If a result is something simple like an `Int`, you're probably safe
-  using `whnf`---but then again, there should be no additional cost to
+  using `whnf`—but then again, there should be no additional cost to
   using `nf` in these cases.
 
 
