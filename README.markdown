@@ -170,40 +170,12 @@ will be on (or very near) this line.
 Underneath the chart for each benchmark is a small table of
 information that looks like this.
 
-<table>
-  <thead>
-   <tr style="font-weight:700"><th></th>
-   <th style="opacity:0.6" title="0.95 confidence level">lower bound</th>
-   <th>estimate</th>
-   <th style="opacity:0.6" title="0.95 confidence level">upper bound</th>
-  </tr></thead>
-  <tbody>
-   <tr>
-    <td title="Estimate of expected time for a single execution.">OLS regression</td>
-    <td title="95% of estimates fall above this value."><span style="opacity:0.4">31.0 ms</span></td>
-    <td title="Estimate of expected execution time.">37.4 ms</td>
-    <td title="95% of estimates fall below this value."><span style="opacity:0.4">42.9 ms</span></td>
-   </tr>
-   <tr>
-    <td title="Numeric description of the how well the OLS estimate above fits the actual data.">R² goodness-of-fit</td>
-    <td title="95% of estimates fall above this value. Note that this lower bound is suspiciously low, as it is less than 0.9."><span style="opacity:0.4">0.887</span></td>
-    <td title="This value is between 0 and 1. A value below 0.99 indicates a somewhat poor fit. Values below 0.9 are outright suspicious.">0.942</td>
-    <td title="95% of estimates fall below this value."><span style="opacity:0.4">0.994</span></td>
-   </tr>
-   <tr>
-    <td>Mean execution time</td>
-    <td title="95% of estimates fall above this value."><span style="opacity:0.4">34.8 ms</span></td>
-    <td title="The estimated mean execution time.">37.0 ms</td>
-    <td title="95% of estimates fall below this value."><span style="opacity:0.4">43.1 ms</span></td>
-   </tr>
-   <tr>
-    <td>Standard deviation</td>
-    <td title="95% of estimates fall above this value."><span style="opacity:0.4">2.11 ms</span></td>
-    <td title="The estimated standard deviation of execution time.">6.49 ms</td>
-    <td title="95% of estimates fall below this value."><span style="opacity:0.4">11.0 ms</span></td>
-   </tr>
-  </tbody>
- </table>
+|                      | lower bound | estimate   | upper bound |
+|----------------------|-------------|------------|-------------|
+| OLS regression       | 31.0 ms     | 37.4 ms    | 42.9 ms     |
+| R² goodness-of-fit   | 0.887       | 0.942      | 0.994       |
+| Mean execution time  | 34.8 ms     | 37.0 ms    | 43.1 ms     |
+| Standard deviation   | 2.11 ms     | 6.49 ms    | 11.0 ms     |
 
 The second row is the result of a linear regression run on the measurements displayed in the right-hand chart.
 
@@ -612,33 +584,12 @@ runtime using `+RTS -T`.
 
 ### Useful regressions
 
-<table>
-  <thead><tr style="font-weight:500">
-    <th align="left">regression</th>
-    <th align="left">`--regress`</th>
-    <th align="left">notes</th>
-  </tr></thead>
-  <tbody><tr>
-    <td>CPU cycles</td>
-        <td>`cycles:iters`</td>
-        <td></td>
-  </tr>
-  <tr>
-    <td>Bytes allocated</td>
-        <td>`allocated:iters`</td>
-        <td>`+RTS -T`</td>
-  </tr>
-  <tr>
-    <td>Number of garbage collections</td>
-        <td>`numGcs:iters`</td>
-        <td>`+RTS -T`</td>
-  </tr>
-  <tr>
-    <td>CPU frequency</td>
-        <td>`cycles:time`</td>
-        <td></td>
-  </tr></tbody>
-</table>
+| regression                     | `--regress`        | notes
+| -------------------------------|------------------- |-----------
+| CPU cycles                     | `cycles:iters`     |
+| Bytes allocated                | `allocated:iters`  | `+RTS -T`
+| Number of garbage collections  | `numGcs:iters`     | `+RTS -T`
+| CPU frequency                  | `cycles:time`      |
 
 
 ## Tips, tricks, and pitfalls
