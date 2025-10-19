@@ -102,16 +102,13 @@ library
     mtl >= 2,
     mwc-random >= 0.8.0.3,
     optparse-applicative >= 0.18 && < 0.20,
-    parsec >= 3.1.0,
     prettyprinter >= 1.7 && < 1.8,
     prettyprinter-ansi-terminal >= 1.1 && < 1.2,
     statistics >= 0.14 && < 0.17,
     text >= 0.11,
-    time,
     transformers,
     transformers-compat >= 0.6.4,
-    vector >= 0.7.1,
-    vector-algorithms >= 0.4
+    vector >= 0.7.1
 
   default-language: Haskell2010
   ghc-options: -Wall -funbox-strict-fields -Wtabs
