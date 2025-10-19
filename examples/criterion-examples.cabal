@@ -52,8 +52,7 @@ executable conduit-vs-pipes
     base >= 4.9 && < 5,
     conduit >= 1.2.13.1,
     criterion,
-    pipes >= 4.3.5,
-    transformers
+    pipes >= 4.3.5
 
 executable maps
   if !flag(maps)
