@@ -68,7 +68,6 @@ executable maps
     bytestring,
     containers,
     criterion,
-    deepseq,
     hashable,
     mwc-random >= 0.13.1,
     unordered-containers,
