@@ -1,3 +1,7 @@
+next
+
+* Remove unused `parsec`, `time`, and `vector-algorithms` dependencies.
+
 1.6.4.1
 
 * Merge tutorial into README.
