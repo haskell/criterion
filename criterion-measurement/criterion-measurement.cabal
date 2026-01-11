@@ -24,8 +24,9 @@ tested-with:
   GHC==9.4.8,
   GHC==9.6.7,
   GHC==9.8.4,
-  GHC==9.10.2,
-  GHC==9.12.2
+  GHC==9.10.3,
+  GHC==9.12.2,
+  GHC==9.14.1
 
 flag fast
   description: compile without optimizations
