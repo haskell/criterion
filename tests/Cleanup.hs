@@ -1,6 +1,7 @@
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 import Criterion.Main (Benchmark, bench, nfIO)
@@ -15,7 +16,12 @@ import System.Directory (doesFileExist, removeFile)
 import System.Environment (withArgs)
 import System.IO ( Handle, IOMode(ReadWriteMode), SeekMode(AbsoluteSeek)
                  , hClose, hFileSize, hSeek, openFile)
-import Test.Tasty (TestTree, defaultMain, testGroup)
+import Test.Tasty (TestTree, defaultMain)
+#if MIN_VERSION_tasty(1,5,4)
+import Test.Tasty (inOrderTestGroup)
+#else
+import Test.Tasty (TestName, testGroup)
+#endif
 import Test.Tasty.HUnit (testCase)
 import Test.HUnit (assertFailure)
 import qualified Criterion.Main as C
@@ -100,8 +106,14 @@ testSuccess = testCleanup False
 testFailure :: String -> BenchmarkWithFile -> TestTree
 testFailure = testCleanup True
 
+-- before 1.5.4, tasty would not execute tests in parallel without +RTS -N
+#if !MIN_VERSION_tasty(1,5,4)
+inOrderTestGroup :: TestName -> [TestTree] -> TestTree
+inOrderTestGroup = testGroup
+#endif
+
 main :: IO ()
-main = defaultMain $ testGroup "cleanup"
+main = defaultMain $ inOrderTestGroup "cleanup"
     [ testSuccess "perRun Success" perRun
     , testFailure "perRun Failure" perRun
     , testSuccess "perBatch Success" perBatch
