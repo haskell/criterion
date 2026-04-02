@@ -1,3 +1,7 @@
+next
+
+* Support building with `wasm32-wasi`.
+
 0.2.3.0
 
 * Drop support for pre-8.0 versions of GHC.
