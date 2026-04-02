@@ -1,5 +1,6 @@
 next
 
+* Make the test suite work with `tasty-1.5.4` or later.
 * Remove unused `parsec`, `time`, and `vector-algorithms` dependencies.
 
 1.6.4.1
