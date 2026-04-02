@@ -503,7 +503,7 @@ envWithCleanup = Environment
 -- The environment is evaluated to normal form before the benchmark is run.
 --
 -- When using 'whnf', 'whnfIO', etc. Criterion creates a 'Benchmarkable'
--- whichs runs a batch of @N@ repeat runs of that expressions. Criterion may
+-- which's runs a batch of @N@ repeat runs of that expressions. Criterion may
 -- run any number of these batches to get accurate measurements. Environments
 -- created by 'env' and 'envWithCleanup', are shared across all these batches
 -- of runs.
