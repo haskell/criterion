@@ -1,7 +1,7 @@
+{-# LANGUAGE CPP #-}
 {-# LANGUAGE BangPatterns #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE CPP #-}
 {-# OPTIONS_GHC -Wno-orphans #-}
 
 import Criterion.Main (Benchmark, bench, nfIO)
