@@ -32,7 +32,7 @@ import GHC.Types (SPEC(..))
 -- from environments when no concrete environment is available.
 fakeEnvironment :: env
 fakeEnvironment = error $ unlines
-  [ "Criterion atttempted to retrieve a non-existent environment!"
+  [ "Criterion attempted to retrieve a non-existent environment!"
   , "\tPerhaps you forgot to use lazy pattern matching in a function which"
   , "\tconstructs benchmarks from an environment?"
   , "\t(see the documentation for `env` for details)"

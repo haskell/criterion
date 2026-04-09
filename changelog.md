@@ -103,7 +103,7 @@
 1.5.4.0
 
 * Add `parserWith`, which allows creating a `criterion` command-line interface
-  using a custom `optparse-applicative` `Parser`. This is usefule for sitations
+  using a custom `optparse-applicative` `Parser`. This is useful for situations
   where one wants to add additional command-line arguments to the default ones
   that `criterion` provides.
 
@@ -284,7 +284,7 @@
 1.2.1.0
 
 * Add `GCStatistics`, `getGCStatistics`, and `applyGCStatistics` to
-  `Criterion.Measurement`. These are inteded to replace `GCStats` (which has
+  `Criterion.Measurement`. These are intended to replace `GCStats` (which has
   been deprecated in `base` and will be removed in GHC 8.4), as well as
   `getGCStats` and `applyGCStats`, which have also been deprecated and will be
   removed in the next major `criterion` release.
@@ -340,7 +340,7 @@
 
 * Restore support for 32-bit Intel CPUs.
 
-* Restore build compatibilty with GHC 7.4.
+* Restore build compatibility with GHC 7.4.
 
 1.1.1.0
 
