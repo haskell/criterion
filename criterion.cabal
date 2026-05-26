@@ -82,7 +82,7 @@ library
     Paths_criterion
 
   build-depends:
-    aeson >= 2 && < 2.3,
+    aeson >= 2 && < 2.4,
     base >= 4.9 && < 5,
     base-compat-batteries >= 0.10 && < 0.16,
     binary >= 0.8.3.0,

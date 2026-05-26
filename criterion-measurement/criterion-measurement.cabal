@@ -37,7 +37,7 @@ library
   exposed-modules:     Criterion.Measurement
                        Criterion.Measurement.Types
                        Criterion.Measurement.Types.Internal
-  build-depends:       aeson >= 2 && < 2.3
+  build-depends:       aeson >= 2 && < 2.4
                      , base >= 4.9 && < 5
                      , base-compat >= 0.9
                      , binary >= 0.8.3.0
