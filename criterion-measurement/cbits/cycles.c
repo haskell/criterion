@@ -18,6 +18,19 @@ StgWord64 criterion_rdtsc(void)
   return ret;
 }
 
+#elif powerpc64le_HOST_ARCH || powerpc64_HOST_ARCH
+
+StgWord64 criterion_rdtsc(void)
+{
+  // Read the PowerPC Time Base: a monotonically-increasing 64-bit counter
+  // that is the architectural analogue of x86's TSC. SPR 268 returns the
+  // full 64-bit Time Base on 64-bit PowerPC (this is what the deprecated
+  // `mftb` mnemonic expanded to).
+  StgWord64 ret;
+  __asm__ __volatile__ ("mfspr %0, 268" : "=r"(ret));
+  return ret;
+}
+
 #elif x86_64_HOST_ARCH || i386_HOST_ARCH
 
 StgWord64 criterion_rdtsc(void)
