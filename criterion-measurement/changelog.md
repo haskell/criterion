@@ -1,3 +1,7 @@
+next
+
+* Support building on PowerPC.
+
 0.2.4.0
 
 * Support building with `wasm32-wasi`.
