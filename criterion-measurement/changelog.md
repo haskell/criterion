@@ -1,4 +1,4 @@
-next
+0.2.5.0
 
 * Support building on PowerPC.
 
